@@ -24,7 +24,7 @@
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
 - [Gallery仓库](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 - 已引用的大佬脚本如下：
-  - bilibili签到（获取CK需登录https://www.bilibili.com 或 https://live.bilibili.com）
+  - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
   - WPS签到
   - 京喜财富岛提现
   - TT语音签到
