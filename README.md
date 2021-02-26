@@ -11,7 +11,7 @@
 - 本仓库只搬运各位大佬的脚本自用，并不负责维护脚本.
 - 本仓库不提供QX的配置文件，如有需要请往下看.
 
-### 初学者学习使用Quantumult X的简短步骤——亦或是使用本仓库脚本的前提条件
+### 食用本仓库脚本的前提条件——学会QX
 1. 浏览[Quantumult X用户教程](https://www.notion.so/Quantumult-X-1d32ddc6e61c4892ad2ec5ea47f00917)了解配置文件使用方法（懒人请直接阅读第五大点学习配置导入）
 2. 参考或直接使用下方[@KOP-XIAO]大佬的懒人配置
    - [Quantumult X完整配置解读](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)
