@@ -22,6 +22,21 @@
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
 - [Gallery](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
+- 已引用的大佬脚本：
+  - 京喜财富岛提现
+  - TT语音签到
+  - CrazyJoy挂机
+  - 笑谱ziye版本
+  - 中青系列
+  - 芝嫲视频
+  - 步步宝
+  - 百度极速版
+  - 抽奖机（京东）
+  - 排行榜（京东）
+  - 京喜财富岛
+  - 京东多合一签到
+  - 百度贴吧签到
+  - 滴滴出行系列
 - 以上脚本建议配合LXK的京东系列脚本食用，最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
 ### 一些APP JS（长按复制链接食用即可）
 - [JS](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
