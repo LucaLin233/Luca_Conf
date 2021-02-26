@@ -19,7 +19,7 @@
      - **https://limbopro.xyz/archives/11131.html**
 3. 吃透以上两点，对于QX的大致玩法想必你已经掌握得差不多了，请往下看。
 
-### 脚本食用
+### 脚本食用（长按复制链接即可）
 - [Get Cookies](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
 - [Gallery](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 
@@ -33,7 +33,7 @@
 
 **如果我编写的简易说明对你的使用有帮助，可否麻烦你点个*Star*, 感激不尽:gift_heart::gift_heart::gift_heart:**.
 
-### 特别感谢以下脚本作者以及整合时参考的作者 (排名不分先后）
+### 特别感谢以下脚本作者以及整合时参考的作者 (排名不分先后，如有遗漏万分抱歉，请联系我加上）
 - [@NobyDal](https://github.com/NobyDa)
 - [@chavyleung](https://github.com/chavyleung)
 - [@Sunert](https://github.com/Sunert)
