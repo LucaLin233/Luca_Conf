@@ -47,10 +47,7 @@
   - VSCO VIP
   - 扫描全能王 VIP
 
-**如果我编写的简易说明和整合的脚本对你的QuantumultX使用有帮助，可否麻烦你点个*Star*, 感激不尽:gift_heart::gift_heart::gift_heart:**.
-
 ### 特别感谢以下脚本作者以及整合时参考的作者 
-## (排名不分先后，如有遗漏万分抱歉，请联系我加上）
 - [@NobyDal](https://github.com/NobyDa)
 - [@chavyleung](https://github.com/chavyleung)
 - [@Sunert](https://github.com/Sunert)
@@ -63,3 +60,6 @@
 - [@KOP-XIAO](https://github.com/KOP-XIAO)
 ### 图标作者
 - [@Orz-3](https://github.com/Orz-3)
+## (排名不分先后，如有遗漏万分抱歉，请联系我加上）
+
+**如果我编写的简易说明和整合的脚本对你的QuantumultX使用有帮助，可否麻烦你点个*Star*, 感激不尽:gift_heart::gift_heart::gift_heart:**.
