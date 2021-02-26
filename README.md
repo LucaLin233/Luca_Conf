@@ -11,19 +11,19 @@
 - 本仓库只搬运各位大佬的脚本自用，并不负责维护脚本.
 - 本仓库不提供QX的配置文件，如有需要请往下看.
 
-### 食用本仓库脚本的前提条件——学会QX
+### 食用本仓库脚本的前提条件——学会QuantumultX
 1. 浏览[Quantumult X用户教程](https://www.notion.so/Quantumult-X-1d32ddc6e61c4892ad2ec5ea47f00917)了解配置文件使用方法（懒人请直接阅读第五大点学习配置导入）
 2. 参考或直接使用下方[@KOP-XIAO]大佬的懒人配置
    - [Quantumult X完整配置解读](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)
      - 下面是由[@limbopro](https://github.com/limbopro)写的常用正则表达筛选公式,或许对你筛选节点有帮助:
      - **https://limbopro.xyz/archives/11131.html**
-3. 吃透以上两点，对于QX的大致玩法想必你已经掌握得差不多了，请往下看。
+3. 吃透以上两点，对于QuantumultX的大致玩法想必你已经掌握得差不多了，请往下看。
 
-### 脚本食用（长按复制链接即可）
+### 脚本食用（长按复制链接食用即可）
 - [Get Cookies](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
 - [Gallery](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 
-### 一些APP JS
+### 一些APP JS（长按复制链接食用即可）
 - [JS](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
 - 目前清单如下：
   - 微信公众号广告
