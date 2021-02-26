@@ -23,8 +23,6 @@
 4. 寻找各位大佬的脚本整合属于自己的GetCookie重写并将Task任务脚本整理到自己task gallery的文件中以便订阅脚本
    - 下面是由[@Orz-3](https://github.com/Orz-3)整理的各个脚本作者的task gallery链接: 
    - **https://github.com/Orz-3/QuantumultX/tree/master/Task**
-   
-   ***因为不想订阅多个task gallery以及引用多个Cookie重写所以自己去整理自用，只有适合自己的才是最好的:grin:***
 
 **如果我的思路对你有帮助，麻烦可否点个*Star*, 在下感激不尽:gift_heart::gift_heart::gift_heart:**.
 
