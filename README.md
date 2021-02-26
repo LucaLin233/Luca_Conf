@@ -33,12 +33,16 @@
 
 **如果我编写的简易说明和整合的脚本对你的QuantumultX使用有帮助，可否麻烦你点个*Star*, 感激不尽:gift_heart::gift_heart::gift_heart:**.
 
-### 特别感谢以下脚本作者以及整合时参考的作者 (排名不分先后，如有遗漏万分抱歉，请联系我加上）
+### 特别感谢以下脚本作者以及整合时参考的作者 
+## (排名不分先后，如有遗漏万分抱歉，请联系我加上）
 - [@NobyDal](https://github.com/NobyDa)
 - [@chavyleung](https://github.com/chavyleung)
 - [@Sunert](https://github.com/Sunert)
 - [@lxk0301](https://github.com/lxk0301)
-- [blackmatrix7](https://github.com/blackmatrix7)
+- [@blackmatrix7](https://github.com/blackmatrix7)
+- [@WowYiJiu](https://github.com/WowYiJiu)
+- [@ZhiYi-N](https://github.com/ZhiYi-N)
+- [@ziye66666](https://github.com/ziye66666)
 ### 配置文件作者
 - [@KOP-XIAO](https://github.com/KOP-XIAO)
 ### 图标作者
