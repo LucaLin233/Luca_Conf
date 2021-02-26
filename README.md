@@ -1,40 +1,45 @@
 # 自用配置
-## 本仓库之中配置纯属自用
+## 本仓库之中所有配置纯属自用
 ## 特别声明
-- LucaLin233 对任何配置中包含的脚本的问题概不负责，包括但不限于由任何脚本错误导致的任何损失或损害.
+- LucaLin233 对任何仓库中包含的脚本的问题概不负责，包括但不限于由任何脚本错误导致的任何损失或损害.
 
 - 间接使用脚本的任何用户，包括但不限于建立VPS或在某些行为违反国家/地区法律或相关法规的情况下进行传播, LucaLin233 对于由此引起的任何隐私泄漏或其他后果概不负责.
 
 - 任何以任何方式查看此项目的人或直接或间接使用该项目的任何脚本的使用者都应仔细阅读此声明。LucaLin233 保留随时更改或补充此免责声明的权利。一旦使用并复制了任何相关脚本或Script项目的规则，则视为您已接受此免责声明.
 
 ### 说明
-- 本仓库只搬运大佬脚本，并不负责维护脚本.
-- 只测试自用脚本，其他大部分脚本未测试可用性.
+- 本仓库只搬运各位大佬的脚本自用，并不负责维护脚本.
+- 本仓库不提供QX的配置文件，如有需要请往下看.
 
-### 初学者（我）学习Quantumult X的大致步骤
-1. 浏览[Quantumult X用户教程](https://www.notion.so/Quantumult-X-1d32ddc6e61c4892ad2ec5ea47f00917)了解配置文件使用方法
-2. 参考Shawn大的懒人配置创建自己的策略组
+### 初学者学习使用Quantumult X的简短步骤（亦或是使用本仓库脚本的前提条件，毕竟如果QX都不会用，也就没有必要使用本仓库脚本相关了）
+1. 浏览[Quantumult X用户教程](https://www.notion.so/Quantumult-X-1d32ddc6e61c4892ad2ec5ea47f00917)了解配置文件使用方法（懒人请直接阅读第五大点学习配置导入）
+2. 参考或直接使用下方[@KOP-XIAO]大佬的懒人配置
    - [Quantumult X完整配置解读](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)
      - 下面是由[@limbopro](https://github.com/limbopro)写的常用正则表达筛选公式,或许对你筛选节点有帮助:
      - **https://limbopro.xyz/archives/11131.html**
-3. 给策略组添加分流规则
-   本人采用的分流规则均来自于以下Github大佬:
-   - [@blackmatrix7](https://github.com/blackmatrix7)
-4. 寻找各位大佬的脚本整合属于自己的GetCookie重写并将Task任务脚本整理到自己task gallery的文件中以便订阅脚本
-   - 下面是由[@Orz-3](https://github.com/Orz-3)整理的各个脚本作者的task gallery链接: 
-   - **https://github.com/Orz-3/QuantumultX/tree/master/Task**
+3. 吃透以上两点，对于QX的大致玩法想必你已经掌握得差不多了，请往下看。
 
-**如果我的思路对你有帮助，麻烦可否点个*Star*, 在下感激不尽:gift_heart::gift_heart::gift_heart:**.
+### 脚本食用
+- Get Cookies(https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
+- Gallery(https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 
-### 特别感谢以下脚本作者以及整合时参考的作者 (排名不分先后，如有遗漏非常抱歉）
+### 一些APP JS
+- JS(https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
+- 目前清单如下：
+  - 微信公众号广告
+  - 抖音去广告去水印
+  - VSCO VIP
+  - 扫描全能王 VIP
+
+**如果我编写的简易说明对你的使用有帮助，可否麻烦你点个*Star*, 感激不尽:gift_heart::gift_heart::gift_heart:**.
+
+### 特别感谢以下脚本作者以及整合时参考的作者 (排名不分先后）
 - [@NobyDal](https://github.com/NobyDa)
 - [@chavyleung](https://github.com/chavyleung)
 - [@Sunert](https://github.com/Sunert)
-- [@yichahucha](https://github.com/yichahucha)
 - [@lxk0301](https://github.com/lxk0301)
+- [blackmatrix7](https://github.com/blackmatrix7)
+### 配置文件作者
 - [@KOP-XIAO](https://github.com/KOP-XIAO)
-- [@nzw9314](https://github.com/nzw9314)
-### 分流规则作者
-- [@blackmatrix7](https://github.com/blackmatrix7)
 ### 图标作者
 - [@Orz-3](https://github.com/Orz-3)
