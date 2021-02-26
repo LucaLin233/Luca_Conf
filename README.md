@@ -20,11 +20,11 @@
 3. 吃透以上两点，对于QX的大致玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用
-- Get Cookies(https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
-- Gallery(https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
+- [Get Cookies](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
+- [Gallery](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 
 ### 一些APP JS
-- JS(https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
+- [JS](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
 - 目前清单如下：
   - 微信公众号广告
   - 抖音去广告去水印
