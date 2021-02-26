@@ -20,8 +20,8 @@
 3. 吃透以上两点，对于QuantumultX的大致玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用（长按复制链接食用即可）
-- [Get Cookies](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
-- [Gallery](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
+- [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
+- [Gallery仓库](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 - 已引用的大佬脚本：
   - 京喜财富岛提现
   - TT语音签到
