@@ -1,14 +1,14 @@
 # QuantumultX自用脚本配置及简易食用教程
-## （初版，如有发现编写错误和个人建议欢迎提issue）
-## 本仓库之中所有脚本配置纯属自用备份
-## 特别声明
+### （初版，如有发现编写错误和个人建议欢迎提issue）
+### 本仓库之中所有脚本配置纯属自用备份
+# 特别声明
 - LucaLin233 对任何仓库中包含的脚本的问题概不负责，包括但不限于由任何脚本错误导致的任何损失或损害.
 
 - 间接使用脚本的任何用户，包括但不限于建立VPS或在某些行为违反国家/地区法律或相关法规的情况下进行传播, LucaLin233 对于由此引起的任何隐私泄漏或其他后果概不负责.
 
 - 任何以任何方式查看此项目的人或直接或间接使用该项目的任何脚本的使用者都应仔细阅读此声明。LucaLin233 保留随时更改或补充此免责声明的权利。一旦使用并复制了任何相关脚本或Script项目的规则，则视为您已接受此免责声明.
 
-### 补充说明
+## 补充说明
 - 本仓库只搬运各位大佬的脚本作为自用库使用，并不负责维护脚本.
 - 本仓库不提供QuantumultX的配置文件，如有需要请往下看.
 
@@ -23,9 +23,13 @@
 
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
-  - 食用方式：
+  
+  - 食用方式如下（在下图中的框框内填入重写链接）
+  ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E9%87%8D%E5%86%99%E9%A3%9F%E7%94%A81.png)
 - [Gallery仓库](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
-  - 食用方式：
+  
+  - 食用方式如下（在下图标记的+号中填入链接仓库链接）
+  ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E8%84%9A%E6%9C%AC%E9%A3%9F%E7%94%A81.jpg)
 - 已引用的大佬脚本如下：
   - By[@chavyleung](https://github.com/chavyleung)
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
