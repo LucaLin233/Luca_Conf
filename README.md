@@ -1,6 +1,6 @@
-# QuantumultX自用脚本配置
-## （初版，如有错误和建议欢迎开issue）
-## 本仓库之中所有脚本配置纯属自用
+# QuantumultX自用脚本配置及简易食用教程
+## （初版，如有发现编写错误和个人建议欢迎提issue）
+## 本仓库之中所有脚本配置纯属自用备份
 ## 特别声明
 - LucaLin233 对任何仓库中包含的脚本的问题概不负责，包括但不限于由任何脚本错误导致的任何损失或损害.
 
@@ -19,12 +19,13 @@
      - 下面是由[@limbopro](https://github.com/limbopro)写的常用正则表达筛选公式,或许对你筛选节点有帮助:
      - **https://limbopro.xyz/archives/11131.html**
      - 另附分流规则推荐：[@blackmatrix7分流规则](https://github.com/blackmatrix7/ios_rule_script)
-3. 吃透以上两点，对于QuantumultX的大致玩法想必你已经掌握得差不多了，请往下看。
+3. 吃透以上两点，对于QuantumultX的初步玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
+  - 食用方式：
 - [Gallery仓库](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
-
+  - 食用方式：
 - 已引用的大佬脚本如下：
   - By[@chavyleung](https://github.com/chavyleung)
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
