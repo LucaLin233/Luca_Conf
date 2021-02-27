@@ -18,28 +18,41 @@
    - [Quantumult X完整配置解读](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)
      - 下面是由[@limbopro](https://github.com/limbopro)写的常用正则表达筛选公式,或许对你筛选节点有帮助:
      - **https://limbopro.xyz/archives/11131.html**
+     - 另附分流规则推荐：[@blackmatrix7分流规则](https://github.com/blackmatrix7/ios_rule_script)
 3. 吃透以上两点，对于QuantumultX的大致玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
 - [Gallery仓库](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
 - 已引用的大佬脚本如下：
-  - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
-  - WPS签到
-  - 京喜财富岛提现
-  - TT语音签到
-  - CrazyJoy挂机
-  - 笑谱ziye版本
-  - 中青系列
-  - 芝嫲视频
-  - 步步宝
-  - 百度极速版
-  - 抽奖机（京东）
-  - 排行榜（京东）
-  - 京喜财富岛
-  - 京东多合一签到
-  - 百度贴吧签到
-  - 滴滴出行系列
+  - By[@chavyleung](https://github.com/chavyleung)
+    - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
+    - WPS签到
+  - 作者未知，如有知情者恳请告知
+    - 京喜财富岛提现
+  - By[@ziye66666](https://github.com/ziye66666)
+    - TT语音签到
+    - 笑谱ziye版本
+  - By[@lxk0301](https://github.com/lxk0301)
+    - CrazyJoy挂机
+  - By[@Sunert](https://github.com/Sunert)
+    - 中青系列
+    - 百度极速版
+  - By[@age174](https://github.com/age174)
+    - 芝嫲视频
+  - By[@adwkkt](https://github.com/adwktt)
+    - 步步宝
+  - By[@yangtingxiao](https://github.com/yangtingxiao)
+    - 抽奖机（京东）
+    - 排行榜（京东）
+  - By[@moposmall](https://github.com/moposmall)
+    - 京喜财富岛
+  - By[@NobyDa](https://github.com/NobyDa)
+    - 京东多合一签到
+  - By[@ChuheGit](https://github.com/ChuheGit)
+    - 百度贴吧签到
+  - By[@blackmatrix7](https://github.com/blackmatrix7)
+    - 滴滴出行系列
 - 本仓库脚本建议配合LXK的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
 - LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
 ### 一些APP JS重写规则（长按复制链接食用即可）
@@ -51,7 +64,7 @@
   - 扫描全能王 VIP
 
 ### 特别感谢以下脚本作者以及整合时参考的作者 
-- [@NobyDal](https://github.com/NobyDa)
+- [@NobyDa](https://github.com/NobyDa)
 - [@chavyleung](https://github.com/chavyleung)
 - [@Sunert](https://github.com/Sunert)
 - [@lxk0301](https://github.com/lxk0301)
@@ -59,8 +72,15 @@
 - [@WowYiJiu](https://github.com/WowYiJiu)
 - [@ZhiYi-N](https://github.com/ZhiYi-N)
 - [@ziye66666](https://github.com/ziye66666)
+- [@age174](https://github.com/age174)
+- [@adwkkt](https://github.com/adwktt)
+- [@yangtingxiao](https://github.com/yangtingxiao)
+- [@moposmall](https://github.com/moposmall)
+- [@ChuheGit](https://github.com/ChuheGit)
 ### 配置文件作者
 - [@KOP-XIAO](https://github.com/KOP-XIAO)
+### 分流规则作者
+- [@blackmatrix7](https://github.com/blackmatrix7)
 ### 图标作者
 - [@Orz-3](https://github.com/Orz-3)
 ## (排名不分先后，如有遗漏万分抱歉，请联系我加上）
