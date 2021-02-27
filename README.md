@@ -13,13 +13,17 @@
 - 本仓库不提供QuantumultX的配置文件，如有需要请往下看.
 
 ### 食用本仓库脚本的前提条件——学会QuantumultX
-1. 浏览[Quantumult X用户教程](https://www.notion.so/Quantumult-X-1d32ddc6e61c4892ad2ec5ea47f00917)了解配置文件使用方法（懒人请直接阅读第五大点学习配置导入）
-2. 参考或直接使用下方[@KOP-XIAO]大佬的懒人配置
-   - [Quantumult X完整配置解读(即配置文件)](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)
-     - 下面是由[@limbopro](https://github.com/limbopro)写的常用正则表达筛选公式,或许对你筛选节点有帮助:
-     - **https://limbopro.xyz/archives/11131.html**
-     - 另附分流规则推荐：[@blackmatrix7分流规则](https://github.com/blackmatrix7/ios_rule_script)
-3. 吃透以上两点，对于QuantumultX的初步玩法想必你已经掌握得差不多了，请往下看。
+- 浏览[Quantumult X用户教程](https://www.notion.so/Quantumult-X-1d32ddc6e61c4892ad2ec5ea47f00917)了解配置文件使用方法（懒人请直接阅读第五大点学习配置导入）
+
+- 参考或直接使用下方[@KOP-XIAO]大佬的懒人配置
+  - [Quantumult X完整配置解读(即配置文件)](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)
+
+- 下面是由[@limbopro](https://github.com/limbopro)写的常用正则表达筛选公式,或许对你筛选节点有帮助:
+  - **https://limbopro.xyz/archives/11131.html**
+
+- 另附分流规则推荐：[@blackmatrix7分流规则](https://github.com/blackmatrix7/ios_rule_script)
+
+- 吃透以上几点，对于QuantumultX的初步玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
