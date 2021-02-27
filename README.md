@@ -63,7 +63,7 @@
     - 滴滴出行系列
 - 本仓库脚本建议配合LXK的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
 - LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
-### 一些APP JS重写规则（如同上面的CK重写使用方式一致，长按复制链接食用即可）
+### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
 - [JS重写规则](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
 - 目前已有JS重写规则如下：
   - 微信公众号广告
