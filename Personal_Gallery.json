@@ -7,6 +7,7 @@
     "0 0 * * * https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png, enabled=true",
     "0 8 * * * https://raw.githubusercontent.com/ZhiYi-N/Private-Script/master/Scripts/TT.js, tag=TT语音签到, img-url=https://raw.githubusercontent.com/LiuYuanwork/Head/main/TT.png, enabled=true",
     "*/6 8-23 * * * https://raw.githubusercontent.com/ziye66666/JavaScript/main/Task/iboxpay.js, tag=笑谱ziye版, img-url=https://qxzy.top/rules/QuantumultX/img/xp.png, enabled=true",
+    "*/6 8-23 * * * https://raw.githubusercontent.com/ZhiYi-N/Private-Script/master/Scripts/xp.js, tag=笑谱zhiyi版, img-url=https://qxzy.top/rules/QuantumultX/img/xp.png, enabled=true",
     "0 8-23/1 * * * https://jdsharedresourcescdn.azureedge.net/jdresource/jd_crazy_joy_coin.js, tag=crazyJoy挂机, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jd_crazy_joy.png, enabled=false",
     "0 0-23/3 * * * https://raw.githubusercontent.com/Sunert/Scripts/master/Task/Youth_Read.js, tag=中青自动阅读, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png, enabled=true",
     "10 */1 * * * https://raw.githubusercontent.com/Sunert/Scripts/master/Task/youth.js, tag=中青看点转盘宝箱, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/youth.png, enabled=true",
@@ -17,8 +18,8 @@
     "11 1 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_lotteryMachine.js, tag=抽奖机, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_lotteryMachine.png, enabled=true",
     "11 9 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_rankingList.js, tag=排行榜, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_rankingList.png, enabled=true",
     "0 * * * * https://raw.githubusercontent.com/moposmall/Script/main/Me/jx_cfd.js, tag=京喜财富岛, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png, enabled=true",
-    "5 0 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png, enabled=true",
-    "20 9 * * * https://raw.githubusercontent.com/ChuheGit/1/main/Script/tieba.js, tag=百度贴吧, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/tieba.png, enabled=true",
+    "5 0 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东多合一签到, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png, enabled=true",
+    "20 9 * * * https://raw.githubusercontent.com/ChuheGit/1/main/Script/tieba.js, tag=百度贴吧签到, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/tieba.png, enabled=true",
     "20 0 7 * * * https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/didichuxing/didi_checkin.js, tag=滴滴出行, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/didi_checkin.png, enabled=true"
  ]
 }
