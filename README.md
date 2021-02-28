@@ -43,8 +43,9 @@
   - 作者未知，如有知情者恳请告知
     - 京喜财富岛提现
   - By[@ziye66666](https://github.com/ziye66666)
-    - TT语音签到
     - 笑谱ziye版本
+  - By[@ZhiYi-N](https://github.com/ZhiYi-N)
+    - TT语音签到
   - By[@lxk0301](https://github.com/lxk0301)
     - CrazyJoy挂机
   - By[@Sunert](https://github.com/Sunert)
