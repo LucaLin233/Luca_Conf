@@ -62,6 +62,7 @@
     - 百度极速版
   - By[@age174](https://github.com/age174)
     - 芝嫲视频
+    - 云扫码
   - By[@adwkkt](https://github.com/adwktt)
     - 步步宝
   - By[@yangtingxiao](https://github.com/yangtingxiao)
