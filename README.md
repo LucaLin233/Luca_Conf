@@ -67,8 +67,6 @@
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
-  - By[@moposmall](https://github.com/moposmall)
-    - 京喜财富岛
   - By[@NobyDa](https://github.com/NobyDa)
     - 京东多合一签到
   - By[@ChuheGit](https://github.com/ChuheGit)
@@ -98,7 +96,6 @@
 - [@age174](https://github.com/age174)
 - [@adwkkt](https://github.com/adwktt)
 - [@yangtingxiao](https://github.com/yangtingxiao)
-- [@moposmall](https://github.com/moposmall)
 - [@ChuheGit](https://github.com/ChuheGit)
 - [@zZPiglet](https://github.com/zZPiglet)
 ### 配置文件作者
