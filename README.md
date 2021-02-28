@@ -75,6 +75,7 @@
   - 抖音去广告去水印
   - VSCO VIP
   - 扫描全能王 VIP
+  - 百度、知乎更改User-Agent（禁止百度的下载弹窗）
 
 ### 特别感谢以下脚本作者以及整合时参考的作者 
 - [@NobyDa](https://github.com/NobyDa)
@@ -90,6 +91,7 @@
 - [@yangtingxiao](https://github.com/yangtingxiao)
 - [@moposmall](https://github.com/moposmall)
 - [@ChuheGit](https://github.com/ChuheGit)
+- [@zZPiglet](https://github.com/zZPiglet)
 ### 配置文件作者
 - [@KOP-XIAO](https://github.com/KOP-XIAO)
 ### 分流规则作者
