@@ -54,6 +54,7 @@
   - By[@ziye11](https://github.com/ziye66666)
     - 笑谱ziye版本
     - 步步宝ziye版本
+    - 芝嫲视频ziye版
   - By[@ZhiYi-N](https://github.com/ZhiYi-N)
     - TT语音签到
   - By[@lxk0301](https://github.com/lxk0301)
@@ -62,7 +63,6 @@
     - 中青系列
     - 百度极速版
   - By[@age174](https://github.com/age174)
-    - 芝嫲视频
     - 云扫码
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
@@ -78,10 +78,10 @@
 ### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
 - [JS重写规则](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
 - 目前已有JS重写规则如下：
-  - 微信公众号广告
+  - 微信公众号去广告
   - 抖音去广告去水印
-  - VSCO VIP
-  - 扫描全能王 VIP
+  - VSCO
+  - 扫描全能王
   - 百度、知乎更改User-Agent（禁止百度的下载弹窗）
 
 ### 特别感谢以下脚本作者以及整合时参考的作者 
