@@ -51,7 +51,7 @@
     - WPS签到
   - 作者未知，如有知情者恳请告知
     - 京喜财富岛提现
-  - By[@ziye66666](https://github.com/ziye66666)
+  - By[@ziye11](https://github.com/ziye66666)
     - 笑谱ziye版本
     - 步步宝ziye版本
   - By[@ZhiYi-N](https://github.com/ZhiYi-N)
@@ -92,7 +92,7 @@
 - [@blackmatrix7](https://github.com/blackmatrix7)
 - [@WowYiJiu](https://github.com/WowYiJiu)
 - [@ZhiYi-N](https://github.com/ZhiYi-N)
-- [@ziye66666](https://github.com/ziye66666)
+- [@ziye11](https://github.com/ziye66666)
 - [@age174](https://github.com/age174)
 - [@yangtingxiao](https://github.com/yangtingxiao)
 - [@ChuheGit](https://github.com/ChuheGit)
