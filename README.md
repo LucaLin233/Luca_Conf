@@ -53,6 +53,7 @@
     - 京喜财富岛提现
   - By[@ziye66666](https://github.com/ziye66666)
     - 笑谱ziye版本
+    - 步步宝ziye版本
   - By[@ZhiYi-N](https://github.com/ZhiYi-N)
     - TT语音签到
   - By[@lxk0301](https://github.com/lxk0301)
@@ -63,8 +64,6 @@
   - By[@age174](https://github.com/age174)
     - 芝嫲视频
     - 云扫码
-  - By[@adwkkt](https://github.com/adwktt)
-    - 步步宝
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
@@ -95,7 +94,6 @@
 - [@ZhiYi-N](https://github.com/ZhiYi-N)
 - [@ziye66666](https://github.com/ziye66666)
 - [@age174](https://github.com/age174)
-- [@adwkkt](https://github.com/adwktt)
 - [@yangtingxiao](https://github.com/yangtingxiao)
 - [@ChuheGit](https://github.com/ChuheGit)
 - [@zZPiglet](https://github.com/zZPiglet)
