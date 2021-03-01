@@ -14,7 +14,7 @@
     "30 6 * * * https://raw.githubusercontent.com/ztxtop/x/main/youth_banner.js, tag=中青看看赚, img-url=https://raw.githubusercontent.com/Orz-3/task/master/youth.png, enabled=true",
     "*/30 6-23 * * * https://raw.githubusercontent.com/Sunert/Scripts/master/Task/baidu_speed.js, tag=百度极速版, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/baidu_speed.png, enabled=true",
     "0 */1 * * * https://raw.githubusercontent.com/age174/-/main/zmsp.js, tag=芝嫲视频, img-url=https://s3.ax1x.com/2021/02/06/yYzeWn.png, enabled=true",
-    "0 8-23/2 * * * https://raw.githubusercontent.com/adwktt/adwktt/master/BBB.js, tag=步步宝, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/BBB.png, enabled=true",
+    "0,30 0-23 * * * https://raw.githubusercontent.com/LucaLin233/JavaScriptss/main/Task/bububao.js, tag=步步宝ziye版, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/BBB.png, enabled=true",
     "11 1 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_lotteryMachine.js, tag=抽奖机, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_lotteryMachine.png, enabled=true",
     "11 9 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_rankingList.js, tag=排行榜, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_rankingList.png, enabled=true",
     "5 0 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东多合一签到, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png, enabled=true",
