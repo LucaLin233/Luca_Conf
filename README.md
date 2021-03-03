@@ -77,12 +77,7 @@
 - LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
 ### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
 - [JS重写规则](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_App_JS.conf)
-- 目前已有JS重写规则如下：
-  - 微信公众号去广告
-  - 抖音去广告去水印
-  - VSCO
-  - 扫描全能王
-  - 百度、知乎更改User-Agent（禁止百度的下载弹窗）
+- 具体内容自己体验或查看库内代码说明，懂的都懂
 
 ### 特别感谢以下脚本作者以及整合时参考的作者 
 - [@NobyDa](https://github.com/NobyDa)
