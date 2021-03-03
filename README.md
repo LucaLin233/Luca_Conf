@@ -40,7 +40,7 @@
   **食用方式如下（在下图中的框框内填入重写链接）**
   
   ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E9%87%8D%E5%86%99%E9%A3%9F%E7%94%A81.png)
-- [Gallery仓库](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/Personal_Gallery.json)
+- [Gallery仓库](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Gallery.json)
   
   **食用方式如下（在下图标记的+号中填入链接仓库链接）**
   
