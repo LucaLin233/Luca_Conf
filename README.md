@@ -36,7 +36,9 @@
 
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/Personal_Cookies.conf)
-  
+  - 额外补充看看赚重写（需开启解析器）：[中青看看赚](https://raw.githubusercontent.com/ztxtop/x/main/rewrite-zqkkz.plugin)
+  - 额外补充中青抓body重写（也许需要开启解析器）：[中青抓body](https://raw.githubusercontent.com/Sunert/Scripts/master/TaskConf/youth/qx_youthread.txt)
+
   **食用方式如下（在下图中的框框内填入重写链接）**
   
   ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E9%87%8D%E5%86%99%E9%A3%9F%E7%94%A81.png)
