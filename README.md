@@ -96,6 +96,7 @@
 - [@yangtingxiao](https://github.com/yangtingxiao)
 - [@ChuheGit](https://github.com/ChuheGit)
 - [@zZPiglet](https://github.com/zZPiglet)
+- [@whyour](https://github.com/whyour)
 ### 配置文件作者
 - [@KOP-XIAO](https://github.com/KOP-XIAO)
 ### 分流规则作者
