@@ -67,6 +67,7 @@
   - By[@age174](https://github.com/age174)
     - 云扫码
     - 悬赏喵喵
+    - 嘀嗒星球
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
