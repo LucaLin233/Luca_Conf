@@ -52,7 +52,7 @@
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
     - WPS签到
   - By[@whyour](https://github.com/whyour)
-    - 京喜财富岛提现
+    - 京喜财富岛提现(不再维护，经测试2021.3.1后无法提现，请自测)
   - By[@ziye11](https://github.com/ziye11)
     - 笑谱ziye版本
     - 步步宝ziye版本
