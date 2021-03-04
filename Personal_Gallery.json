@@ -2,6 +2,7 @@
  "name": "LucaLin233 Task Gallery",
  "description": "个人收集的Task脚本,京东部分请配合LXK使用",
  "task": [
+    "15 0,6,12,18, * * * https://raw.githubusercontent.com/age174/-/main/ddxq.js, tag=嘀嗒星球, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
     "15 0,6,12,18, * * * https://raw.githubusercontent.com/age174/-/main/xsmm.js, tag=悬赏喵喵, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
     "15 12,14,16,20,22 * * * https://raw.githubusercontent.com/age174/-/main/ysm.js, tag=云扫码, img-url=https://s3.ax1x.com/2021/02/28/6CRWb8.jpg",
     "0 9 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js, tag=WPS签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/wps.png",
