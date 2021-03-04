@@ -51,9 +51,9 @@
   - By[@chavyleung](https://github.com/chavyleung)
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
     - WPS签到
-  - 作者未知，如有知情者恳请告知
+  - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现
-  - By[@ziye11](https://github.com/ziye66666)
+  - By[@ziye11](https://github.com/ziye11)
     - 笑谱ziye版本
     - 步步宝ziye版本
     - 芝嫲视频ziye版
