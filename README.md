@@ -68,6 +68,7 @@
     - 云扫码
     - 悬赏喵喵
     - 嘀嗒星球
+    - 番茄看看
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
