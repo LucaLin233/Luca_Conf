@@ -53,7 +53,7 @@
     - WPS签到
   - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现(不再维护，经测试2021.3.1后无法提现，请自测)
-  - By[@ziye11](https://github.com/ziye11)
+  - By @ziye （大佬库老被删，我就不放主页了）
     - 笑谱ziye版本
     - 步步宝ziye版本
     - 芝嫲视频ziye版
