@@ -1,0 +1,31 @@
+#    新建一个库，此文件路径为   .github/workflows/ziye-sync.yml，   然后新建分支main   
+#    打开教程链接   https://www.jianshu.com/p/bb82b3ad1d11   申请PAT  （勾选时尽量全部勾选 ），填入secrets      手动运行或者定时运行即可同步
+
+name: ziye-sync
+on:
+  schedule:
+    - cron: '1 */3 * * *'
+  workflow_dispatch:
+  watch:
+    types: started
+  repository_dispatch:
+    types: sync-6Svip120apk69-gitee_q8qsTAUA_cThxc1RBVUE
+jobs:
+  repo-sync:
+    env:
+      PAT: ${{ secrets.PAT }} 
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: sync 6Svip120apk69-gitee_q8qsTAUA_cThxc1RBVUE
+        uses: repo-sync/github-sync@v2
+        if: env.PAT
+        with:
+          source_repo: "https://github.com/6Svip120apk69/gitee_q8qsTAUA_cThxc1RBVUE.git"
+          source_branch: "main"
+          destination_branch: "main"
+          github_token: ${{ secrets.PAT }}
