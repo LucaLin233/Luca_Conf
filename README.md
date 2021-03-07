@@ -53,8 +53,8 @@
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
     - WPS签到
   - By[@whyour](https://github.com/whyour)
-    - 京喜财富岛提现(不再维护，经测试2021.3.1后无法提现，请自测)
-  - By@ziye（大佬库老被删，我就不放主页了）
+    - 京喜财富岛提现
+  - By@ziye（防止大佬再被封，故不贴出））
     - 笑谱ziye版本
     - 步步宝ziye版本
     - 芝嫲视频ziye版
@@ -93,7 +93,7 @@
 - [@blackmatrix7](https://github.com/blackmatrix7)
 - [@WowYiJiu](https://github.com/WowYiJiu)
 - [@ZhiYi-N](https://github.com/ZhiYi-N)
-- [@ziye11](https://github.com/ziye66666)
+- @ziye（防止大佬再被封，故不贴出）
 - [@age174](https://github.com/age174)
 - [@yangtingxiao](https://github.com/yangtingxiao)
 - [@ChuheGit](https://github.com/ChuheGit)
@@ -109,6 +109,7 @@
 - [@Orz-3](https://github.com/Orz-3)
 - [@ChuheGit](https://github.com/ChuheGit)
 - [@58xinian](https://github.com/58xinian)
+- @ziye（防止大佬再被封，故不贴出）
 ### (排名不分先后，如有遗漏万分抱歉，请联系我加上）
 
 ### 如果我编写的简易说明和整合的脚本对你的QuantumultX使用有帮助，可否麻烦你点个*Star*, 感激不尽:gift_heart::gift_heart::gift_heart:.
