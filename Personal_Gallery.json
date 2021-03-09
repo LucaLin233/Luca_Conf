@@ -5,7 +5,6 @@
     "15 13,15,17,19 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/hldsp.js, tag=哈喽短视频, img-url=https://ae01.alicdn.com/kf/Uda8ecbbe50444fe293b538cbccf9d719q.jpg",
     "20 12,14,16,18 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/xyzd.js, tag=幸运赚点, img-url=https://ae01.alicdn.com/kf/U1680ecdfa17544669c71e00400c542e31.jpg",
     "15 */2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/xsmm.js, tag=悬赏喵喵, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
-    "5 1 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/bigfun.js, tag=bigfun签到, img-url=https://raw.githubusercontent.com/shoujiqiyuan/PokemonGOforQuanX/master/IconSet/Z003.png",
     "15 12,14,16,20 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/fqkk.js, tag=番茄看看, img-url=https://ftp.bmp.ovh/imgs/2021/02/f8306006536eb49c.jpeg",
     "15 */2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ddxq.js, tag=嘀嗒星球, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
     "15 9-21/2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ysm.js, tag=云扫码, img-url=https://s3.ax1x.com/2021/02/28/6CRWb8.jpg",
