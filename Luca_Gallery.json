@@ -8,8 +8,6 @@
     "15 12,14,16,20 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/fqkk.js, tag=番茄看看, img-url=https://ftp.bmp.ovh/imgs/2021/02/f8306006536eb49c.jpeg",
     "15 8-16/2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ddxq.js, tag=嘀嗒星球, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
     "15 9-21/2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ysm.js, tag=云扫码, img-url=https://s3.ax1x.com/2021/02/28/6CRWb8.jpg",
-    "0 7 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js, tag=WPS签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/wps.png",
-    "2 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/bilibili/bilibili.js, tag=bilibili签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Alpha/bilibili.png",
     "0 0 0 * * * https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png",
     "0 6 * * * https://raw.githubusercontent.com/ZhiYi-N/Private-Script/master/Scripts/TT.js, tag=TT语音签到, img-url=https://raw.githubusercontent.com/LiuYuanwork/Head/main/TT.png",
     "0 12 * * * https://jdsharedresourcescdn.azureedge.net/jdresource/jd_crazy_joy_coin.js, tag=crazyJoy挂机, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jd_crazy_joy.png",
@@ -24,6 +22,8 @@
     "5 0,1 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东多合一签到, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png",
     "20 7 * * * https://raw.githubusercontent.com/ChuheGit/1/main/Script/tieba.js, tag=百度贴吧签到, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/tieba.png",
     "20 0 7 * * * https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/didichuxing/didi_checkin.js, tag=滴滴出行, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/didi_checkin.png",
+    "0 7 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js, tag=WPS签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/wps.png",
+    "2 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/bilibili/bilibili.js, tag=bilibili签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Alpha/bilibili.png",
     "1 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.cookie.js, tag=10000签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10000.png",
     "10 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10086/10086.fee.js, tag=10086-查话费, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10086.png",
  ]
