@@ -18,13 +18,13 @@
     "20 5 10 * * * https://raw.githubusercontent.com/Sunert/Scripts/master/Task/youth_gain.js, tag=中青看看赚&浏览赚, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
     "*/6 8-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_ziye/main/Task/iboxpay.js, tag=笑谱ziye版, img-url=https://raw.githubusercontent.com/LucaLin233/ScriptCopy_ziye/main/Task/iboxpay.png",
     "0 */1 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_ziye/main/Task/zhima.js, tag=芝嫲视频ziye版, img-url=https://s3.ax1x.com/2021/02/06/yYzeWn.png",
-    "0,30 0-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_ziye/main/Task/bububao.js, tag=步步宝ziye版, img-url=https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/%E6%AD%A5%E6%AD%A5%E5%AE%9D.png",
+    "0,30 0-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_ziye/main/Task/bububao.js, tag=步步宝ziye版, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/BBB.png",
     "11 1 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_lotteryMachine.js, tag=抽奖机, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_lotteryMachine.png",
     "11 9 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_rankingList.js, tag=排行榜, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_rankingList.png",
     "5 0,1 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东多合一签到, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png",
     "20 9 * * * https://raw.githubusercontent.com/ChuheGit/1/main/Script/tieba.js, tag=百度贴吧签到, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/tieba.png",
     "20 0 7 * * * https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/didichuxing/didi_checkin.js, tag=滴滴出行, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/didi_checkin.png",
-    "1 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.cookie.js, tag=10000签到",
-    "10 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10086/10086.fee.js, tag=10086-查话费",
+    "1 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.cookie.js, tag=10000签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10000.png",
+    "10 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10086/10086.fee.js, tag=10086-查话费, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10086.png",
  ]
 }
