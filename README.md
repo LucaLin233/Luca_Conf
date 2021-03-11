@@ -38,7 +38,7 @@
 ### 脚本食用（长按复制链接食用即可）
 - [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Luca_Get_Cookies.conf)
   - 如果你使用的是ztxtop的看看赚，请添加他的看看赚CK重写：[中青看看赚](https://raw.githubusercontent.com/ztxtop/x/main/rewrite-zqkkz.plugin)
-  - 补充中青抓body重写（也许需要开启解析器）：[中青抓body](https://raw.githubusercontent.com/Sunert/Scripts/master/TaskConf/youth/qx_youthread.txt)
+  - 补充中青抓body重写：[中青抓body](https://raw.githubusercontent.com/LucaLin233/ScriptCopy_Maomaoyu0319/main/TaskConf/youth/qx_youthread.txt)
 
   **食用方式如下（在下图中的框框内填入重写链接）**
   
