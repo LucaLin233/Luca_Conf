@@ -9,7 +9,6 @@
     "15 8-16/2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ddxq.js, tag=嘀嗒星球, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
     "15 9-21/2 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ysm.js, tag=云扫码, img-url=https://s3.ax1x.com/2021/02/28/6CRWb8.jpg",
     "0 0 0 * * * https://raw.githubusercontent.com/LucaLin233/QuantumultX-Personal-Configuration/main/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png",
-    "0 6 * * * https://raw.githubusercontent.com/ZhiYi-N/Private-Script/master/Scripts/TT.js, tag=TT语音签到, img-url=https://raw.githubusercontent.com/LiuYuanwork/Head/main/TT.png",
     "0 12 * * * https://jdsharedresourcescdn.azureedge.net/jdresource/jd_crazy_joy_coin.js, tag=crazyJoy挂机, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jd_crazy_joy.png",
     "0 2,6,10,14 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/Youth_Read.js, tag=中青自动阅读, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
     "0,30 * * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/youth.js, tag=中青看点转盘宝箱, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/youth.png",
