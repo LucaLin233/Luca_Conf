@@ -53,6 +53,8 @@
   - By[@chavyleung](https://github.com/chavyleung)
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
     - WPS签到
+    - 10000签到（自行去大佬库看CK获取方式）
+    - 10086查话费（自行去大佬库看CK获取方式）
   - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现
   - By[@lxk0301](https://github.com/lxk0301)
