@@ -65,7 +65,6 @@
     - 云扫码
     - 嘀嗒星球
     - 番茄看看
-    - 蜗牛吧
     - 春风转
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
