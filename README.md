@@ -63,7 +63,6 @@
     - 中青系列
   - By[@age174](https://github.com/age174)
     - 云扫码
-    - 嘀嗒星球
     - 番茄看看
     - 春风转
   - By[@yangtingxiao](https://github.com/yangtingxiao)
