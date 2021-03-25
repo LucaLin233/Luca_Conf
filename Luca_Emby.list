@@ -4,11 +4,11 @@
 HOST-KEYWORD, emby, Emby
 
 # 普拉斯公益服
-HOST-KEYWORD,emby-cf.plusmedia.site
-HOST-KEYWORD,emby.xeton.dev
-HOST-KEYWORD,jellyfin.xeton.dev
-HOST-KEYWORD,movie.xeton.dev
-HOST-KEYWORD,servers.xeton.dev
+HOST-KEYWORD, emby-cf.plusmedia.site
+HOST-KEYWORD, emby.xeton.dev
+HOST-KEYWORD, jellyfin.xeton.dev
+HOST-KEYWORD, movie.xeton.dev
+HOST-KEYWORD, servers.xeton.dev
 
 # 奶昔/按摩院专属服
 HOST, emby.nexitally.com, Emby
