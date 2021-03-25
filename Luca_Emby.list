@@ -10,7 +10,7 @@ IP-CIDR,38.94.109.97/24
 HOST, emby.plusmedia.site
 
 # CF公益服(仅限挂代理观看)
-emby-cf.plusmedia.site 
+HOST, emby-cf.plusmedia.site 
 
 # 备用服
 HOST, emby.xeton.dev
