@@ -3,9 +3,6 @@
 # 关键字匹配
 HOST-KEYWORD, emby, Emby
 
-# IP段
-IP-CIDR, 38.94.109.97/32
-
 # AGA公益服(中国电信可直连观看)
 HOST, emby.plusmedia.site, Emby
 
