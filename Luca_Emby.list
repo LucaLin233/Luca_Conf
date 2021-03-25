@@ -3,12 +3,20 @@
 # 关键字匹配
 HOST-KEYWORD, emby, Emby
 
-# 普拉斯公益服
-HOST-KEYWORD, emby-cf.plusmedia.site
-HOST-KEYWORD, emby.xeton.dev
-HOST-KEYWORD, jellyfin.xeton.dev
-HOST-KEYWORD, movie.xeton.dev
-HOST-KEYWORD, servers.xeton.dev
+# IP段
+IP-CIDR,38.94.109.97/24
+
+# AGA公益服(中国电信可直连观看)
+HOST, emby.plusmedia.site
+
+# CF公益服(仅限挂代理观看)
+emby-cf.plusmedia.site 
+
+# 备用服
+HOST, emby.xeton.dev
+HOST, jellyfin.xeton.dev
+HOST, movie.xeton.dev
+HOST, servers.xeton.dev
 
 # 奶昔/按摩院专属服
 HOST, emby.nexitally.com, Emby
