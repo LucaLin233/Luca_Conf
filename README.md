@@ -80,8 +80,8 @@
 ### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
 - [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Luca_Apps_JS.conf)
 - 具体内容自己体验或查看库内代码说明，懂的都懂
-### 新增emby分流规则
-- 包含以下服务器
+### 新增Emby分流规则
+- 包含以下服务器：
   - 普拉斯AGA服务器（中国电信直连使用）
   - CF公益服(仅限挂代理观看)
   - 普拉斯备用服（4个）
