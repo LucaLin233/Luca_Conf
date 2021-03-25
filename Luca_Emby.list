@@ -4,19 +4,19 @@
 HOST-KEYWORD, emby, Emby
 
 # IP段
-IP-CIDR,38.94.109.97/24
+IP-CIDR, 38.94.109.97/24
 
 # AGA公益服(中国电信可直连观看)
-HOST, emby.plusmedia.site
+HOST, emby.plusmedia.site, Emby
 
 # CF公益服(仅限挂代理观看)
-HOST, emby-cf.plusmedia.site 
+HOST, emby-cf.plusmedia.site, Emby
 
 # 备用服
-HOST, emby.xeton.dev
-HOST, jellyfin.xeton.dev
-HOST, movie.xeton.dev
-HOST, servers.xeton.dev
+HOST, emby.xeton.dev, Emby
+HOST, jellyfin.xeton.dev, Emby
+HOST, movie.xeton.dev, Emby
+HOST, servers.xeton.dev, Emby
 
 # 奶昔/按摩院专属服
 HOST, emby.nexitally.com, Emby
