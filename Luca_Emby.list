@@ -18,7 +18,7 @@ HOST, jellyfin.xeton.dev, Emby
 HOST, movie.xeton.dev, Emby
 HOST, servers.xeton.dev, Emby
 
-# 奶昔/按摩院专属服
+# Nexitally/AmyTelecom专属服（仅限美国专用节点观看）
 HOST, emby.nexitally.com, Emby
 
 #Exflux专属服
