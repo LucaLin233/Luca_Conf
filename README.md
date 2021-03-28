@@ -53,7 +53,6 @@
   - By[@chavyleung](https://github.com/chavyleung)
     - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
     - WPS签到
-    - 10000签到（自行去大佬库看CK获取方式）
     - 10086查话费（自行去大佬库看CK获取方式）
   - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现
@@ -70,8 +69,6 @@
     - 排行榜（京东）
   - By[@NobyDa](https://github.com/NobyDa)
     - 京东多合一签到
-  - By[@ChuheGit](https://github.com/ChuheGit)
-    - 百度贴吧签到
   - By[@blackmatrix7](https://github.com/blackmatrix7)
     - 滴滴出行系列
 - 本仓库脚本建议配合LXK的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
