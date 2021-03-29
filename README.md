@@ -64,6 +64,8 @@
     - 云扫码
     - 番茄看看
     - 春风转
+    - 文创阅读
+    - 西梅
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
