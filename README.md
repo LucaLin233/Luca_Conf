@@ -65,7 +65,7 @@
     - 番茄看看
     - 春风转
     - 西梅
-    - 朗果英语
+    - 葫芦音乐
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
