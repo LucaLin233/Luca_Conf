@@ -18,7 +18,6 @@
     "5 0,1 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东多合一签到, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png",
     "20 0 7 * * * https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/didichuxing/didi_checkin.js, tag=滴滴出行, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/didi_checkin.png",
     "0 7 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/wps/wps.js, tag=WPS签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/wps.png",
-    "2 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/bilibili/bilibili.js, tag=bilibili签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Alpha/bilibili.png",
-    "10 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/10086/10086.fee.js, tag=10086-查话费, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/10086.png",
+    "2 0 * * * https://raw.githubusercontent.com/chavyleung/scripts/master/bilibili/bilibili.js, tag=bilibili签到, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Alpha/bilibili.png"
  ]
 }
