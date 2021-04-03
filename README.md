@@ -50,9 +50,6 @@
   
   ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E8%84%9A%E6%9C%AC%E9%A3%9F%E7%94%A81.jpg)
 - 已引用的大佬脚本如下：
-  - By[@chavyleung](https://github.com/chavyleung)
-    - bilibili签到（获取CK需登录 https://www.bilibili.com 或 https://live.bilibili.com ）
-    - WPS签到
   - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现
   - By[@lxk0301](https://github.com/lxk0301)
