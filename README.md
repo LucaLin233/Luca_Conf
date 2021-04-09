@@ -62,6 +62,8 @@
     - 春风转
     - 西梅
     - 葫芦音乐
+    - V生活
+    - 生活圈
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
