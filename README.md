@@ -59,11 +59,10 @@
   - By[@age174](https://github.com/age174)
     - 云扫码
     - 番茄看看
-    - 春风转
     - 西梅
     - 葫芦音乐
     - V生活
-    - 生活圈
+    - 千禾阅读（需自行添加本地CK重写）
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
