@@ -2,11 +2,10 @@
  "name": "LucaLin233 Task Gallery",
  "description": "个人收集的Task脚本,京东部分请配合LXK使用",
  "task": [
-    "0-59 9,12,22 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/shq.js, tag=生活圈, img-url=https://ftp.bmp.ovh/imgs/2021/04/e2b32e2eb2ad0cd3.png",
+    "35 9-22 * * * https://raw.githubusercontent.com/age174/-/main/qhyd.js, tag=千禾阅读, img-url=https://ae01.alicdn.com/kf/U413ab7460abb4a28b11deac3c5034243N.jpg",
     "15 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/vsh.js, tag=V生活, img-url=https://ae01.alicdn.com/kf/Uf0da879c7acd4c7bad91f0e5a97667e1O.jpg",
     "0,30 8-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/hlyy.js, tag=葫芦音乐, img-url=https://ae01.alicdn.com/kf/U49d941738c0c41569f7db55825943375f.jpg",
     "20 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ximei.js, tag=西梅, img-url=https://ae01.alicdn.com/kf/Ucd02ea79ef22473daf3576486d134509Q.jpg",
-    "26,52 10-21 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/cfz.js, tag=春风转, img-url=https://ae01.alicdn.com/kf/U8a3a2572bf5d4584928d1d7cde52b50ba.jpg",
     "5,35 1,5,9-22 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/wkzz.js, tag=微客众智, img-url=https://ae01.alicdn.com/kf/Uff0a0bb9e66a479591c9b02c176fd276A.jpg",
     "15 12,14,16,20 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/fqkk.js, tag=番茄看看, img-url=https://ftp.bmp.ovh/imgs/2021/02/f8306006536eb49c.jpeg",
     "15 12,14,16,20,22 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ysm.js, tag=云扫码, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
