@@ -77,7 +77,7 @@
 - [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Apps_JS.conf)
 - 具体内容自己体验或查看库内代码说明，懂的都懂
 ### 新增Emby分流规则
-- [Emby分流](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Emby.list)
+[Emby分流](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Emby.list)
 - 包含以下服务器：
   - 普拉斯AGA服务器（中国电信直连使用）
   - CF公益服(仅限挂代理观看)
