@@ -9,7 +9,7 @@
     "5,35 1,5,9-22 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/wkzz.js, tag=微客众智, img-url=https://ae01.alicdn.com/kf/Uff0a0bb9e66a479591c9b02c176fd276A.jpg",
     "15 12,14,16,20 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/fqkk.js, tag=番茄看看, img-url=https://ftp.bmp.ovh/imgs/2021/02/f8306006536eb49c.jpeg",
     "15 12,14,16,20,22 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ysm.js, tag=云扫码, img-url=https://raw.githubusercontent.com/erdongchanyo/icon/main/taskicon/Yunsaoma.png",
-    "0 0 0 * * * https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png",
+    "0 0 0 * * * https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png",
     "0 12 * * * https://jdsharedresourcescdn.azureedge.net/jdresource/jd_crazy_joy_coin.js, tag=crazyJoy挂机, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jd_crazy_joy.png",
     "0 2,6,10,14 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/Youth_Read.js, tag=中青自动阅读, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
     "0,30 * * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/youth.js, tag=中青看点转盘宝箱, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/youth.png",
