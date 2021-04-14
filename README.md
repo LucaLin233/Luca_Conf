@@ -37,18 +37,18 @@
 - 吃透以上几点，对于QuantumultX的初步玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用（长按复制链接食用即可）
-- [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Luca_Get_Cookies.conf)
+- [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Get_Cookies.conf)
   - 如果你使用的是ztxtop的看看赚，请添加他的看看赚CK重写：[中青看看赚](https://raw.githubusercontent.com/ztxtop/x/main/rewrite-zqkkz.plugin)
   - 补充中青抓body重写：[中青抓body](https://raw.githubusercontent.com/LucaLin233/ScriptCopy_Maomaoyu0319/main/TaskConf/youth/qx_youthread.txt)
 
   **食用方式如下（在下图中的框框内填入重写链接）**
   
-  ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E9%87%8D%E5%86%99%E9%A3%9F%E7%94%A81.png)
-- [Gallery仓库](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Luca_Gallery.json)
+  ![](https://github.com/LucaLin233/Luca_Conf/blob/main/Icon/%E9%87%8D%E5%86%99%E9%A3%9F%E7%94%A81.png)
+- [Gallery仓库](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Gallery.json)
   
   **食用方式如下（在下图标记的+号中填入链接仓库链接）**
   
-  ![](https://github.com/LucaLin233/QuantumultX-Personal-Configuration/blob/main/%E8%84%9A%E6%9C%AC%E9%A3%9F%E7%94%A81.jpg)
+  ![](https://github.com/LucaLin233/Luca_Conf/blob/main/Icon/%E8%84%9A%E6%9C%AC%E9%A3%9F%E7%94%A81.jpg)
 - 已引用的大佬脚本如下：
   - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现
@@ -74,7 +74,7 @@
 - LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
   - 请添加对应域名规则并指向proxy，或使用全局代理的方式食用lxk大佬的Gallery。（PS：不要使用香港节点）
 ### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
-- [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Luca_Apps_JS.conf)
+- [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Apps_JS.conf)
 - 具体内容自己体验或查看库内代码说明，懂的都懂
 ### 新增Emby分流规则
 - 包含以下服务器：
