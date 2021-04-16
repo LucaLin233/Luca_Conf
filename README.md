@@ -63,6 +63,7 @@
     - 葫芦音乐
     - V生活
     - 千禾阅读（需自行添加本地CK重写）
+    - 招招试药
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
