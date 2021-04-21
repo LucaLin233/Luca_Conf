@@ -64,6 +64,9 @@
     - V生活
     - 招招试药
     - 久金人脉
+    - 视频号互助
+    - 太平洋汽车网
+    - Keep小程序
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
