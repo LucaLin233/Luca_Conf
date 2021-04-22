@@ -3,12 +3,8 @@
  "description": "个人收集的Task脚本,京东部分请配合LXK使用",
  "task": [
     "35 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/tpyqc.js, tag=太平洋汽车网, img-url=https://ae01.alicdn.com/kf/Uf51ecfcc4b0949e18441fc3f3f4919ede.jpg",
-    "10 8 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/sphz.js, tag=视频号互助, img-url=https://ae01.alicdn.com/kf/U6fe8c098a65740039ac7767867746c4aK.jpg",
-    "0 0/30 * * * * https://raw.githubusercontent.com/xl2101200/-/main/keepjs.js, tag=keep浇水",
-    "0 0 0/1 * * * https://raw.githubusercontent.com/xl2101200/-/main/keepdk.js, tag=keep打卡偷能量",
     "20,50 0-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/jjrm.js, tag=久金人脉, img-url=https://ae01.alicdn.com/kf/Uf3f262fb6d81492a8e350a0bb97a04a0g.jpg",
     "35 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/zzsy.js, tag=招招试药, img-url=https://ae01.alicdn.com/kf/Ub0056a0721e94c9a85a8bbeb2f2aed6fn.jpg",
-    "15 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/vsh.js, tag=V生活, img-url=https://ae01.alicdn.com/kf/Uf0da879c7acd4c7bad91f0e5a97667e1O.jpg",
     "0,30 8-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/hlyy.js, tag=葫芦音乐, img-url=https://ae01.alicdn.com/kf/U49d941738c0c41569f7db55825943375f.jpg",
     "20 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ximei.js, tag=西梅, img-url=https://ae01.alicdn.com/kf/Ucd02ea79ef22473daf3576486d134509Q.jpg",
     "0 0 0 * * * https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png",
