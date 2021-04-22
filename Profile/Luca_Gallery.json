@@ -3,7 +3,6 @@
  "description": "个人收集的Task脚本,京东部分请配合LXK使用",
  "task": [
     "35 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/tpyqc.js, tag=太平洋汽车网, img-url=https://ae01.alicdn.com/kf/Uf51ecfcc4b0949e18441fc3f3f4919ede.jpg",
-    "20,50 0-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/jjrm.js, tag=久金人脉, img-url=https://ae01.alicdn.com/kf/Uf3f262fb6d81492a8e350a0bb97a04a0g.jpg",
     "35 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/zzsy.js, tag=招招试药, img-url=https://ae01.alicdn.com/kf/Ub0056a0721e94c9a85a8bbeb2f2aed6fn.jpg",
     "0,30 8-23 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/hlyy.js, tag=葫芦音乐, img-url=https://ae01.alicdn.com/kf/U49d941738c0c41569f7db55825943375f.jpg",
     "20 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/ximei.js, tag=西梅, img-url=https://ae01.alicdn.com/kf/Ucd02ea79ef22473daf3576486d134509Q.jpg",
