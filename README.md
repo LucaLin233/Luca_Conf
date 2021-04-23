@@ -60,7 +60,6 @@
     - 云扫码
     - 番茄看看
     - 西梅
-    - 葫芦音乐
     - 招招试药
     - 太平洋汽车网
   - By[@yangtingxiao](https://github.com/yangtingxiao)
