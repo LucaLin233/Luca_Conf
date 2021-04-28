@@ -62,6 +62,8 @@
     - 西梅
     - 招招试药
     - 太平洋汽车网
+    - 幸福养鸡场
+    - 百事乐元
   - By[@yangtingxiao](https://github.com/yangtingxiao)
     - 抽奖机（京东）
     - 排行榜（京东）
@@ -69,6 +71,8 @@
     - 京东多合一签到
   - By[@blackmatrix7](https://github.com/blackmatrix7)
     - 滴滴出行系列
+  - ByZiye（大佬库总是被封，就不贴了）
+    - 特仑苏
 - 本仓库脚本建议配合LXK的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
 - LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
   - 请添加对应域名规则并指向proxy，或使用全局代理的方式食用lxk大佬的Gallery。（PS：不要使用香港节点）
