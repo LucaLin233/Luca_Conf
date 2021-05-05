@@ -54,7 +54,7 @@
     - 京喜财富岛提现
   - By[@lxk0301](https://github.com/lxk0301)
     - CrazyJoy挂机
-  - By[@Sunert](https://github.com/Sunert)
+  - By[@sunert](https://github.com/Sunert)
     - 中青系列
   - By[@zhiyi](https://github.com/Ariszy)
     - 快乐猜歌
@@ -75,7 +75,7 @@
     - 京东多合一签到
   - By[@blackmatrix7](https://github.com/blackmatrix7)
     - 滴滴出行系列
-  - ByZiye（大佬库总是被封，就不贴了）
+  - By ziye（大佬库总是被封，就不贴了）
     - 特仑苏
 - 本仓库脚本建议配合LXK的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
 - LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
