@@ -56,6 +56,10 @@
     - CrazyJoy挂机
   - By[@Sunert](https://github.com/Sunert)
     - 中青系列
+  - By[@zhiyi](https://github.com/Ariszy)
+    - 快乐猜歌
+    - 开心花园
+    - 如意花园
   - By[@age174](https://github.com/age174)
     - 云扫码
     - 番茄看看
@@ -96,6 +100,7 @@
 - [@blackmatrix7](https://github.com/blackmatrix7)
 - [@WowYiJiu](https://github.com/WowYiJiu)
 - [@ZhiYi-N](https://github.com/ZhiYi-N)
+- [@zhiyi](https://github.com/Ariszy)
 - @ziye（防止大佬再被封，故不贴出）
 - [@age174](https://github.com/age174)
 - [@yangtingxiao](https://github.com/yangtingxiao)
