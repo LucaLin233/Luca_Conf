@@ -9,8 +9,6 @@
     "0 2,6,10,14 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/Youth_Read.js, tag=中青自动阅读, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
     "0,30 * * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/youth.js, tag=中青看点转盘宝箱, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/youth.png",
     "20 5 10 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_sunert/main/Task/youth_gain.js, tag=中青看看赚&浏览赚, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
-    "11 1 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_lotteryMachine.js, tag=抽奖机, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_lotteryMachine.png",
-    "11 9 * * * https://raw.githubusercontent.com/yangtingxiao/QuantumultX/master/scripts/jd/jd_rankingList.js, tag=排行榜, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jd_rankingList.png",
     "5 0,1 * * * https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js, tag=京东多合一签到, img-url=https://raw.githubusercontent.com/Orz-3/task/master/jd.png",
     "20 0 7 * * * https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/didichuxing/didi_checkin.js, tag=滴滴出行, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/didi_checkin.png"
  ]
