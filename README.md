@@ -58,7 +58,6 @@
     - 中青系列
   - By[@age174](https://github.com/age174)
     - 招招试药
-    - 太平洋汽车网
   - By[@NobyDa](https://github.com/NobyDa)
     - 京东多合一签到
   - By[@blackmatrix7](https://github.com/blackmatrix7)
