@@ -52,8 +52,6 @@
 - 已引用的大佬脚本如下：
   - By[@whyour](https://github.com/whyour)
     - 京喜财富岛提现
-  - By[@lxk0301](https://github.com/lxk0301)
-    - CrazyJoy挂机
   - By[@sunert](https://github.com/Sunert)
     - 中青系列
   - By[@age174](https://github.com/age174)
