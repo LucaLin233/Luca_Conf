@@ -4,7 +4,6 @@
  "task": [
     "35 9 * * * https://raw.githubusercontent.com/LucaLin233/ScriptCopy_feizao/main/zzsy.js, tag=招招试药, img-url=https://ae01.alicdn.com/kf/Ub0056a0721e94c9a85a8bbeb2f2aed6fn.jpg",
     "0 0 0 * * * https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/jx_cfdtx.js, tag=京喜财富岛提现, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/jx_cfd.png",
-    "0 12 * * * https://jdsharedresourcescdn.azureedge.net/jdresource/jd_crazy_joy_coin.js, tag=crazyJoy挂机, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jd_crazy_joy.png",
     "0 2,6,10,14 * * * https://raw.githubusercontent.com/Sunert/Script/master/Task/Youth_Read.js, tag=中青自动阅读, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
     "0,30 * * * * https://raw.githubusercontent.com/Sunert/Script/master/Task/youth.js, tag=中青看点转盘宝箱, img-url=https://raw.githubusercontent.com/ChuheGit/1/main/QuantumultX/Gallery/API-Icon/youth.png",
     "20 5 10 * * * https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js, tag=中青看看赚&浏览赚, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/youth.png",
