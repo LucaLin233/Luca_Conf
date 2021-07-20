@@ -58,9 +58,9 @@
     - 京东多合一签到
   - By[@blackmatrix7](https://github.com/blackmatrix7)
     - 滴滴出行系列
-- 本仓库脚本建议配合LXK的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
-- LXK大佬最新Gallery地址：[LXK0301](https://jdsharedresourcescdn.azureedge.net/jdresource/lxk0301_gallery.json)
-  - 请添加对应域名规则并指向proxy，或使用全局代理的方式食用lxk大佬的Gallery。（PS：不要使用香港节点）
+- 本仓库脚本建议配合Hello World大佬的京东系列脚本食用，以达到良好的薅羊毛体验（bushi）
+- Hello World大佬Github地址：[Hello World](https://github.com/JDHelloWorld/jd_scripts)
+
 ### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
 - [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Profile/Luca_Apps_JS.conf)
 - 具体内容自己体验或查看库内代码说明，懂的都懂
