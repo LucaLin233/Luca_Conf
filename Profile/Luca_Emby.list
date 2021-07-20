@@ -20,3 +20,6 @@ HOST, emby.nexitally.com, Emby
 
 # Exflux专属服
 HOST, line.emby.men, Emby
+
+# Skicat专属服
+HOST, https://skicat.tv, Emby
