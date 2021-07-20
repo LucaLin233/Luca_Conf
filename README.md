@@ -50,8 +50,6 @@
   
   ![](https://github.com/LucaLin233/Luca_Conf/blob/main/Icon/%E8%84%9A%E6%9C%AC%E9%A3%9F%E7%94%A81.jpg)
 - 已引用的大佬脚本如下：
-  - By[@whyour](https://github.com/whyour)
-    - 京喜财富岛提现
   - By[@sunert](https://github.com/Sunert)
     - 中青系列
   - By[@age174](https://github.com/age174)
@@ -74,6 +72,7 @@
   - 普拉斯备用服（4个）
   - Exflux专属服
   - Nexitally/AmyTelecom专属服(共用，仅限美国特定节点观看，佩奇已标注）
+  - Skicat专属服
 
 ### 特别感谢以下脚本作者以及整合时参考的作者 
 - [@NobyDa](https://github.com/NobyDa)
