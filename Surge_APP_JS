@@ -1,0 +1,119 @@
+#!name=Luca-APP-JS
+#!desc=这是一个Luca收集的个人自用模块
+#!system=ios
+
+[Script]
+#yichahucha的Netflix评分
+nf_rating.js = type=http-request,pattern=^https?:\/\/ios(-.*)?\.prod\.ftl\.netflix\.com\/iosui\/user/.+path=%5B%22videos%22%2C%\d+%22%2C%22summary%22%5D,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/nf_rating.js
+nf_rating.js = type=http-response,requires-body=1,pattern=^https?:\/\/ios(-.*)?\.prod\.ftl\.netflix\.com\/iosui\/user/.+path=%5B%22videos%22%2C%\d+%22%2C%22summary%22%5D,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/nf_rating.js
+# 单集评分
+nf_rating_season.js = type=http-response,pattern=^https?:\/\/ios(-.*)?\.prod\.ftl\.netflix\.com\/iosui\/warmer/.+type=show-ath,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/yichahucha/surge/master/nf_rating_season.js
+
+#Pneg-YM的淘票票豆瓣评分
+淘票票豆瓣评分=type=http-response, requires-body=1, pattern=^https:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.film\.mtopshowapi\.getextendshowbyid, script-path=https://raw.githubusercontent.com/Peng-YM/QuanX/master/Rewrites/TaoPiaoPiao/taopiaopiao.js
+
+#NobyDa的TF修正
+TF下载修正 = type=http-request,pattern=^https?:\/\/testflight\.apple\.com\/v\d\/accounts\/.+?\/install$,requires-body=1,max-size=0,script-path=https://gist.githubusercontent.com/NobyDa/9be418b93afc5e9c8a8f4d28ae403cf2/raw/TF_Download.js
+
+#普拉斯提供的EMBY解锁
+embyPremiere.js = type=http-response,pattern=^https?:\/\/mb3admin.com\/admin\/service\/registration\/validateDevice,requires-body=1,max-size=0,script-path=https://subweb.oss-cn-hongkong.aliyuncs.com/Script/embyPremiere.js
+
+#NobyDa的微信公众号去广告
+http-response ^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/File/Wechat.js
+
+#NobyDa的VSCO解锁
+http-response ^https:\/\/(api\.revenuecat\.com\/v\d\/subscribers|vsco\.co\/api\/subscriptions\/\d\.\d\/user-subscriptions)\/ requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/File/vsco.js
+
+#NobyDa的扫描全能王解锁
+http-response https:\/\/(api|api-cs)\.intsig\.net\/purchase\/cs\/query_property\? requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/CamScanner.js
+
+#zZPiglet的百度修改
+# 百度（全站替换为手机百度 Quark 的 User-Agent）
+BaiduChangeUA = type=http-request,pattern=^https?:\/\/(?!d\.pcs).*(?<!map)\.baidu\.com,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/BaiduChangeUA.js
+
+[Header Rewrite]
+# 知乎（部分替换为手机百度 Quark 的 User-Agent）By zZPiglet
+^https?:\/\/www\.zhihu\.com header-replace User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/16C50 Quark/604.1 T7/10.3 SearchCraft/2.6.3 (Baidu; P1 8.0.0)
+
+[URL Rewrite]
+#zZPiglet的Url重写
+# wiki xxx (Wikipedia)
+^https:\/\/duckduckgo.com\/\?q=wiki(\+|%20)([^&]+).+ https://wikipedia.org/wiki/$2 302
+
+# wk xxx (Wikipedia 中文)
+^https:\/\/duckduckgo.com\/\?q=wk(\+|%20)([^&]+).+ https://zh.wikipedia.org/wiki/$2 302
+
+# mg xxx (Magi)
+^https:\/\/duckduckgo.com\/\?q=mg(\+|%20)([^&]+).+ https://magi.com/search?q=$2 302
+
+# bd xxx (百度)
+^https:\/\/duckduckgo.com\/\?q=bd(\+|%20)([^&]+).+ https://www.baidu.com/s?wd=$2 302
+
+# gh xxx (GitHub)
+^https:\/\/duckduckgo.com\/\?q=gh(\+|%20)([^&]+).+ https://github.com/search?q=$2 302
+
+# tf xxx (Google 搜索 TestFlight)
+^https:\/\/duckduckgo.com\/\?q=tf(\+|%20)([^&]+).+ https://www.google.com/search?as_q=$2&as_sitesearch=testflight.apple.com 302
+
+# gi xxx (Google 图片)
+^https:\/\/duckduckgo.com\/\?q=gi(\+|%20)([^&]+).+ https://www.google.com/search?&tbm=isch&q=$2 302
+
+# yd xxx (有道词典)
+^https:\/\/duckduckgo.com\/\?q=yd(\+|%20)([^&]+).+ https://dict.youdao.com/search?q=$2 302
+
+# trc xxx (Google 译至中)
+^https:\/\/duckduckgo.com\/\?q=trc(\+|%20)([^&]+).+ https://translate.google.com/#view=home&op=translate&sl=auto&tl=zh-CN&text=$2 302
+
+# tre xxx (Google 译至英)
+^https:\/\/duckduckgo.com\/\?q=tre(\+|%20)([^&]+).+ https://translate.google.com/#view=home&op=translate&sl=auto&tl=en&text=$2 302
+
+# trj xxx (Google 译至日)
+^https:\/\/duckduckgo.com\/\?q=trj(\+|%20)([^&]+).+ https://translate.google.com/#view=home&op=translate&sl=auto&tl=ja&text=$2 302
+
+# sspai xxx (少数派站内搜索)
+^https:\/\/duckduckgo.com\/\?q=sspai(\+|%20)([^&]+).+ https://sspai.com/search/post/$2 302
+
+# ssp xxx (Google 搜索少数派)
+^https:\/\/duckduckgo.com\/\?q=ssp(\+|%20)([^&]+).+ https://www.google.com/search?as_q=$2&as_sitesearch=sspai.com 302
+
+# ytb xxx (YouTube)
+^https:\/\/duckduckgo.com\/\?q=ytb(\+|%20)([^&]+).+ https://www.youtube.com/results?search_query=$2 302
+
+# so xxx (Stack Overflow)
+^https:\/\/duckduckgo.com\/\?q=so(\+|%20)([^&]+).+ https://stackoverflow.com/search?q=$2 302
+
+# se xxx (StackExchange)
+^https:\/\/duckduckgo.com\/\?q=se(\+|%20)([^&]+).+ https://stackexchange.com/search?q=$2 302
+
+# wa xxx (WolframAlpha)
+^https:\/\/duckduckgo.com\/\?q=wa(\+|%20)([^&]+).+ https://www.wolframalpha.com/input/?i=$2 302
+
+# db xxx (豆瓣)
+^https:\/\/duckduckgo.com\/\?q=db(\+|%20)([^&]+).+ https://www.douban.com/search?q=$2 302
+
+# zh xxx (知乎)
+^https:\/\/duckduckgo.com\/\?q=zh(\+|%20)([^&]+).+ https://www.zhihu.com/search?q=$2 302
+
+# wb xxx (微博)
+^https:\/\/duckduckgo.com\/\?q=wb(\+|%20)([^&]+).+ https://s.weibo.com/weibo/$2 302
+
+# rd xxx (Reddit)
+^https:\/\/duckduckgo.com\/\?q=rd(\+|%20)([^&]+).+ https://www.reddit.com/search?q=$2 302
+
+# tw xxx (Twitter)
+^https:\/\/duckduckgo.com\/\?q=tw(\+|%20)([^&]+).+ https://twitter.com/search?q=$2 302
+
+# gd xxx (Google 搜索 Google Drive 资源)
+^https:\/\/duckduckgo.com\/\?q=gd(\+|%20)([^&]+).+ https://www.google.com/search?q=%22Google+Drive%22+$2 302
+
+# tgd xxx (t.me/gdurl 搜索 Google Drive 资源)
+^https:\/\/duckduckgo.com\/\?q=tgd(\+|%20)([^&]+).+ https://t.me/s/gdurl?q=$2 302
+
+# ddg xxx (还原 DuckDuckGo)
+^https:\/\/duckduckgo.com\/\?q=ddg(\+|%20)([^&]+).+ https://duckduckgo.com/?ia=about&q=$2 302
+
+# xxx （无指令默认为 Google）
+^https:\/\/duckduckgo.com\/\?q=(?!dl(c|e|j)(\+|%20))([^&]+).+ https://www.google.com/search?q=$3 302
+
+[MITM]
+hostname = ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com,guide-acs.m.taobao.com, %APPEND% testflight.apple.com, %APPEND% mb3admin.com, mp.weixin.qq.com, vsco.co, api.revenuecat.com, ap*.intsig.net, %APPEND% *.baidu.com, www.zhihu.com, %APPEND% duckduckgo.com
