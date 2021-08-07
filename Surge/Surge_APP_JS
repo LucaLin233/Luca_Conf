@@ -38,6 +38,9 @@ BaiduChangeUA = type=http-request,pattern=^https?:\/\/(?!d\.pcs).*(?<!map)\.baid
 # 知乎（部分替换为手机百度 Quark 的 User-Agent）By zZPiglet
 ^https?:\/\/www\.zhihu\.com header-replace User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 13_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/16C50 Quark/604.1 T7/10.3 SearchCraft/2.6.3 (Baidu; P1 8.0.0)
 
+#Tartarus 彩云天气
+彩云天气SVIP = type=http-response,requires-body=1,max-size=0,pattern=https?:\/\/biz\.caiyunapp\.com\/(membership_rights|v2\/user),script-path=https://raw.githubusercontent.com/Tartarus2014/Script/master/CaiYun.js
+
 [URL Rewrite]
 #zZPiglet的Url重写
 # wiki xxx (Wikipedia)
@@ -119,4 +122,4 @@ BaiduChangeUA = type=http-request,pattern=^https?:\/\/(?!d\.pcs).*(?<!map)\.baid
 ^https:\/\/duckduckgo.com\/\?q=(?!dl(c|e|j)(\+|%20))([^&]+).+ https://www.google.com/search?q=$3 302
 
 [MITM]
-hostname = ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com,guide-acs.m.taobao.com, %APPEND% testflight.apple.com, %APPEND% mb3admin.com, mp.weixin.qq.com, vsco.co, api.revenuecat.com, ap*.intsig.net, %APPEND% *.baidu.com, www.zhihu.com, %APPEND% duckduckgo.com
+hostname = ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com,guide-acs.m.taobao.com, %APPEND% testflight.apple.com, %APPEND% mb3admin.com, mp.weixin.qq.com, vsco.co, api.revenuecat.com, ap*.intsig.net, %APPEND% *.baidu.com, www.zhihu.com, %APPEND% duckduckgo.com, biz.caiyunapp.com
