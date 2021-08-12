@@ -6,6 +6,6 @@
 中青看点浏览赚 = type=http-request,pattern=https:\/\/kandian\.wkandian\.com\/v5\/task\/browse_start\.json,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js, requires-body=true
 中青看点看看赚 = type=http-request,pattern=https:\/\/kandian\.wkandian\.com\/v5\/Nameless\/adlickstart\.json,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js, requires-body=true
 
-招招试药 = type=http-request,pattern=https://yaowu360.com/get/my/waitTask,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/age174/-/main/zzsy.js,script-update-interval=0
+招招试药 = type=http-request,pattern=https://yaowu360.com/get/my/waitTask,script-path=https://raw.githubusercontent.com/age174/-/main/zzsy.js, requires-body=true
 [MITM]
 hostname = %APPEND% kandian.wkandian.com,yaowu360.com
