@@ -122,4 +122,4 @@ BaiduChangeUA = type=http-request,pattern=^https?:\/\/(?!d\.pcs).*(?<!map)\.baid
 ^https:\/\/duckduckgo.com\/\?q=(?!dl(c|e|j)(\+|%20))([^&]+).+ https://www.google.com/search?q=$3 302
 
 [MITM]
-hostname = ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com, guide-acs.m.taobao.com, testflight.apple.com, mb3admin.com, mp.weixin.qq.com, vsco.co, api.revenuecat.com, ap*.intsig.net, *.baidu.com, www.zhihu.com, duckduckgo.com, biz.caiyunapp.com
+hostname = %APPEND% ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com, guide-acs.m.taobao.com, testflight.apple.com, mb3admin.com, mp.weixin.qq.com, vsco.co, api.revenuecat.com, ap*.intsig.net, *.baidu.com, www.zhihu.com, duckduckgo.com, biz.caiyunapp.com
