@@ -1,0 +1,30 @@
+[Rule]
+# 关键字匹配
+DOMAIN-KEYWORD,emby
+
+# AGA公益服(中国电信可直连观看)
+DOMAIN,emby.plusmedia.site, Emby
+
+# CF公益服(仅限挂代理观看)
+DOMAIN,emby-cf.plusmedia.site
+
+# 备用服
+DOMAIN,emby.xeton.dev
+DOMAIN,jellyfin.xeton.dev
+DOMAIN,movie.xeton.dev
+DOMAIN,servers.xeton.dev
+
+# Nexitally/AmyTelecom专属服（仅限美国专用节点观看）
+DOMAIN, emby.nexitally.com
+
+# Exflux专属服
+DOMAIN, line.emby.men
+
+# Skicat专属服
+DOMAIN, https://skicat.tv
+
+# Godetia专属服1（猫熊）
+DOMAIN,emby.ssltd.xyz
+
+# Godetia专属服2（3DM）
+DOMAIN,emby.3DMmp.com
