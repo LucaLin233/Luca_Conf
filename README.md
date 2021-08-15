@@ -73,6 +73,7 @@
   - Exflux专属服
   - Nexitally/AmyTelecom专属服(共用，仅限美国特定节点观看，佩奇已标注）
   - Skicat专属服
+  - Godetia专属服（猫熊和3DM）
 
 ### 特别感谢以下脚本作者以及整合时参考的作者 
 - [@NobyDa](https://github.com/NobyDa)
