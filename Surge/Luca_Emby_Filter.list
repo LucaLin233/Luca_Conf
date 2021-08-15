@@ -1,4 +1,5 @@
-[Rule]
+# NAME: Emby_Filter
+# AUTHOR: LucaLin233
 # 关键字匹配
 DOMAIN-KEYWORD,emby
 
