@@ -14,7 +14,7 @@
 招招试药 = type=http-request,pattern=https://yaowu360.com/get/my/waitTask,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/age174/-/main/zzsy.js,script-update-interval=0
 #定时任务
 招招试药 = type=cron,cronexp=35 9 * * *,script-path=https://raw.githubusercontent.com/age174/-/main/zzsy.js,wake-system=1,timeout=1800,script-update-interval=0
-V2P同步CK = type=cron,cronexp=35 5 8,20 * *,script-path=https://raw.githubusercontent.com/CenBoMin/GithubSync/main/ELECV2PJS/PushBoxjsCookie_elecV2p.js,wake-system=1,timeout=1800,script-update-interval=0
+V2P同步CK = type=cron,cronexp=35 8,20 * * *,script-path=https://raw.githubusercontent.com/CenBoMin/GithubSync/main/ELECV2PJS/PushBoxjsCookie_elecV2p.js,wake-system=1,timeout=1800,script-update-interval=0
 
 [MITM]
 hostname = %APPEND% kandian.wkandian.com, yaowu360.com
