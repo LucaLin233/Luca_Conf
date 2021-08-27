@@ -7,7 +7,7 @@
 中青看点浏览赚 = type=http-request,pattern=https:\/\/kandian\.wkandian\.com\/v5\/task\/browse_start\.json,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js,requires-body=true
 中青看点看看赚 = type=http-request,pattern=https:\/\/kandian\.wkandian\.com\/v5\/Nameless\/adlickstart\.json,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js,requires-body=true
 #定时任务
-中青看点浏览赚 = type=cron,cronexp="35 5 8,20 * * *",wake-system=1,timeout=1800,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js,script-update-interval=0
+中青看点浏览赚 = type=cron,cronexp="35 5 6,12,20 * * *",wake-system=1,timeout=1800,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js,script-update-interval=0
 
 ###招招###
 #重写
