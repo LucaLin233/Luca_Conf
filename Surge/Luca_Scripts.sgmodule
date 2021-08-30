@@ -2,6 +2,9 @@
 #!desc=这是一个Luca收集的定时任务模块
 
 [Script]
+#定时任务
+V2P同步CK = type=cron,cronexp=35 8,20 * * *,script-path=https://raw.githubusercontent.com/CenBoMin/GithubSync/main/ELECV2PJS/PushBoxjsCookie_elecV2p.js,wake-system=1,timeout=1800,script-update-interval=0
+
 ###中青###
 #重写
 中青看点浏览赚 = type=http-request,pattern=https:\/\/kandian\.wkandian\.com\/v5\/task\/browse_start\.json,script-path=https://raw.githubusercontent.com/Sunert/Script/master/Task/youth_gain.js,requires-body=true
@@ -15,8 +18,8 @@
 #定时任务
 招招试药 = type=cron,cronexp=35 9 * * *,script-path=https://raw.githubusercontent.com/age174/-/main/zzsy.js,wake-system=1,timeout=1800,script-update-interval=0
 
-#定时任务
-V2P同步CK = type=cron,cronexp=35 8,20 * * *,script-path=https://raw.githubusercontent.com/CenBoMin/GithubSync/main/ELECV2PJS/PushBoxjsCookie_elecV2p.js,wake-system=1,timeout=1800,script-update-interval=0
+###京东CK###
+获取京东Cookie = type=http-request,requires-body=1,pattern=^https:\/\/(api\.m|me-api|ms\.jr)\.jd\.com\/(client\.action\?functionId=signBean|user_new\/info\/GetJDUserInfoUnion\?|gw\/generic\/hy\/h5\/m\/appSign\?),script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js
 
 [MITM]
-hostname = %APPEND% kandian.wkandian.com, yaowu360.com
+hostname = %APPEND% kandian.wkandian.com, yaowu360.com, ms.jr.jd.com, me-api.jd.com, api.m.jd.com
