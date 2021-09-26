@@ -9,6 +9,7 @@ flushDNS = script-name=flushDNS,update-interval=-1
 
 !(async () => {
     let dnsCache = ""
+    await httpAPI("/v1/dns/flush");
     let delay = ((await httpAPI("/v1/test/dns_delay")).delay * 1000).toFixed(0);
     let panel = {
         title: "Flush DNS",
