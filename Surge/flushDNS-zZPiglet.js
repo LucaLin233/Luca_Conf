@@ -12,7 +12,7 @@ flushDNS = script-name=flushDNS,update-interval=-1
     await httpAPI("/v1/dns/flush");
     let delay = ((await httpAPI("/v1/test/dns_delay")).delay * 1000).toFixed(0);
     let panel = {
-        title: "Flush DNS",
+        title: "刷新DNS缓存",
         content: `delay: ${delay}ms${dnsCache ? `\nserver:\n${dnsCache}` : ""}`,
     };
     if (typeof $argument != "undefined") {
