@@ -1,8 +1,8 @@
 /*
 [Script]
-flushDNS = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js
+flushDNS = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/flushDNS-zZPiglet.js
 // use "icon" and "color" in "argument":
-// flushDNS = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=icon=arrow.clockwise&color=#3d3d5b
+// flushDNS = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/flushDNS-zZPiglet.js,argument=icon=arrow.clockwise&color=#34C759
 [Panel]
 flushDNS = script-name=flushDNS,update-interval=-1
 */
