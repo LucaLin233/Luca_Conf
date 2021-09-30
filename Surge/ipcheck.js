@@ -8,7 +8,7 @@
 * [Panel]
 * net-info-panel = title="网络状态",content="请刷新",style=info,script-name=net-info-panel, update-interval=1
 * [Script]
-* net-info-panel = script-path = https://raw.githubusercontent.com/Nebulosa-Cat/Surge/main/Panel/Network-Info/networkCheck.js,type=generic
+* net-info-panel = script-path = https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/ipcheck.js,type=generic
 */
 const { wifi, v4, v6 } = $network;
 
