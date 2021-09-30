@@ -1,5 +1,5 @@
-#!name=Luca-Scripts
-#!desc=这是一个Luca收集的定时任务模块
+#!name=Scripts
+#!desc=一个Luca收集的定时任务模块
 
 [Script]
 #定时任务
