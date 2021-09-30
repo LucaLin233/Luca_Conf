@@ -10,7 +10,7 @@
 * ipcheck = type=generic,timeout=5,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/Luca_ipcheck.js
 */
 
-let url = "http://ip-api.com/json"
+let url = "http://ip-api.com/json/?lang=zh-CN"
 
 $httpClient.get(url, function(error, response, data){
     let jsonData = JSON.parse(data)
@@ -21,7 +21,7 @@ $httpClient.get(url, function(error, response, data){
     let isp = jsonData.isp
   body = {
     title: "节点信息",
-    content: `IP: ${ip}\nISP: ${isp}\n位置: ${emoji}${country}-${city}`,
+    content: `IP: ${ip}\n服务商: ${isp}\n位置: ${emoji}${country}-${city}`,
     icon: "network"
   }
   $done(body);
