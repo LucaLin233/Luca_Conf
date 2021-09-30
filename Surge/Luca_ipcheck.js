@@ -20,9 +20,9 @@ $httpClient.get(url, function(error, response, data){
     let city = jsonData.city
     let isp = jsonData.isp
   body = {
-    title: "节点信息",
+    title: "节点相关信息",
     content: `IP信息: ${ip}\n运营商: ${isp}\n归属地: ${emoji}${country} - ${city}`,
-    icon: "network"
+    icon: "globe.asia.australia.fill"
   }
   $done(body);
 });
