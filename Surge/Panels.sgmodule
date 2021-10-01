@@ -8,7 +8,7 @@ ipcheck = script-name=ipcheck, title="节点信息", content="请刷新", style=
 刷新DNS = script-name=刷新DNS, update-interval=1
 
 #奈飞检测
-nf_check = script-name=nf_check, title="Netflix 解锁检测", content="请刷新", update-interval=1
+nf_check = script-name=nf_check, title="Netflix 解锁检测", content="请刷新", update-interval=-1
 
 [Script]
 #节点检测
