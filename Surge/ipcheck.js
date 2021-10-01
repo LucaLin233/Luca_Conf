@@ -11,6 +11,8 @@
 */
 
 let url = "http://ip-api.com/json/?lang=zh-CN"
+let group = (await httpAPI("/v1/policy_groups/select?group_name=手动选择")).policy;
+let name = (await httpAPI("/v1/policy_groups/select?group_name="+group+"")).policy;
 
 $httpClient.get(url, function(error, response, data){
     let jsonData = JSON.parse(data)
@@ -27,6 +29,13 @@ $httpClient.get(url, function(error, response, data){
   $done(body);
 });
 
+function httpAPI(path = "", method = "GET", body = null) {
+    return new Promise((resolve) => {
+        $httpAPI(method, path, body, (result) => {
+            resolve(result);
+        });
+    });
+};
 
 function getFlagEmoji(countryCode) {
     const codePoints = countryCode
