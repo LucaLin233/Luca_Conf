@@ -22,7 +22,7 @@ $httpClient.get(url, function(error, response, data){
     let isp = jsonData.isp
     let org =jsonData.org
   body = {
-    title: "节点相关信息",
+    title: "name",
     content: `地理位置: ${emoji}${country} - ${city}\n运营商家: ${isp}\n数据中心: ${org}`,
     icon: "globe.asia.australia.fill"
   }
