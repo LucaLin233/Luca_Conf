@@ -1,13 +1,13 @@
 #!name=Panels
 #!desc=一个Luca自用的信息面板模块
 [Panel]
-#节点检测
+#节点检测 by @congcong
 ipcheck = script-name=ipcheck, title="节点信息", content="请刷新", style=info, update-interval=1
 
-#刷新DNS
+#刷新DNS by @FAKEzZPiglet
 刷新DNS = script-name=刷新DNS, update-interval=1
 
-#奈飞检测
+#奈飞检测 by @Helge_0x00
 nf_check = script-name=nf_check, title="Netflix 解锁检测", content="请刷新", update-interval=-1
 
 [Script]
