@@ -18,4 +18,4 @@ ipcheck = type=generic, timeout=3, script-path=https://raw.githubusercontent.com
 刷新DNS = type=generic, timeout=10, script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
 
 #奈飞检测
-nf_check = type=generic, script-path=https://gist.githubusercontent.com/Hyseen/b06e911a41036ebc36acf04ddebe7b9a/raw/nf_check.js?version=1633074636264, argument=title=Netflix 解锁检测
+nf_check = type=generic, script-path=https://gist.githubusercontent.com/Hyseen/b06e911a41036ebc36acf04ddebe7b9a/raw/nf_check.js?version=1633074636264, argument=title=Netflix 解锁检测&fullContent=#REGION_FLAG##REGION_CODE#完全解锁&onlyOriginalContent=#REGION_FLAG##REGION_CODE#仅自制剧解锁&notAvailableContent=不支持解锁
