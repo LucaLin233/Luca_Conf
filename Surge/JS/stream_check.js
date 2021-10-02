@@ -8,6 +8,8 @@ const REQUEST_HEADERS = {
   let panel_result = {
     title: '流媒体解锁检测',
     content: '',
+    icon: 'play.tv.fill',
+    icon-color: '#FF2D55',
   }
   await Promise.all([check_netflix(), check_youtube_premium()])
     .then((result) => {
@@ -57,13 +59,13 @@ async function check_youtube_premium() {
   await inner_check()
     .then((code) => {
       if (code === 'Not Available') {
-        youtube_check_result += '🔴 不支持解锁 Premium'
+        youtube_check_result += '不支持解锁 Premium'
       } else {
-        youtube_check_result += '🟢 解锁 Premium，区域：' + code.toUpperCase()
+        youtube_check_result += '解锁 Premium，区域：' + code.toUpperCase()
       }
     })
     .catch((error) => {
-      youtube_check_result += '⚠️ 检测失败，请刷新面板'
+      youtube_check_result += '检测失败，请刷新面板'
     })
 
   return youtube_check_result
@@ -115,7 +117,7 @@ async function check_netflix() {
       if (code === 'Not Found') {
         return inner_check(80018499)
       }
-      netflix_check_result += '🟢 完整解锁，区域：' + code.toUpperCase()
+      netflix_check_result += '完整解锁，区域：' + code.toUpperCase()
       return Promise.reject('BreakSignal')
     })
     .then((code) => {
@@ -123,7 +125,7 @@ async function check_netflix() {
         return Promise.reject('Not Available')
       }
 
-      netflix_check_result += '🟡 仅解锁自制剧，区域：' + code.toUpperCase()
+      netflix_check_result += '仅解锁自制剧，区域：' + code.toUpperCase()
       return Promise.reject('BreakSignal')
     })
     .catch((error) => {
@@ -131,10 +133,10 @@ async function check_netflix() {
         return
       }
       if (error === 'Not Available') {
-        netflix_check_result += '🔴 不支持解锁'
+        netflix_check_result += '不支持解锁'
         return
       }
-      netflix_check_result += '⚠️ 检测失败，请刷新面板'
+      netflix_check_result += '检测失败，请刷新面板'
     })
 
   return netflix_check_result
