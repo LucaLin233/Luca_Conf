@@ -59,9 +59,9 @@ async function check_youtube_premium() {
   await inner_check()
     .then((code) => {
       if (code === 'Not Available') {
-        youtube_check_result += '不支持解锁 Premium'
+        youtube_check_result += '不支持解锁'
       } else {
-        youtube_check_result += '解锁 Premium，区域：' + code.toUpperCase()
+        youtube_check_result += '已解锁，区域：' + code.toUpperCase()
       }
     })
     .catch((error) => {
@@ -117,7 +117,7 @@ async function check_netflix() {
       if (code === 'Not Found') {
         return inner_check(80018499)
       }
-      netflix_check_result += '完整解锁，区域：' + code.toUpperCase()
+      netflix_check_result += '已完整解锁，区域：' + code.toUpperCase()
       return Promise.reject('BreakSignal')
     })
     .then((code) => {
@@ -133,7 +133,7 @@ async function check_netflix() {
         return
       }
       if (error === 'Not Available') {
-        netflix_check_result += '不支持解锁'
+        netflix_check_result += '该节点不支持解锁'
         return
       }
       netflix_check_result += '检测失败，请刷新面板'
