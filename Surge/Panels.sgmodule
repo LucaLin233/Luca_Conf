@@ -15,7 +15,7 @@ stream_check = script-name=stream_check, title="流媒体解锁检测", content=
 
 [Script]
 #节点检测
-ipcheck = type=generic, timeout=3, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/ipcheck.js
+ipcheck = type=generic, timeout=3, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/ipcheck.js
 
 #刷新DNS
 刷新DNS = type=generic, timeout=3, script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
