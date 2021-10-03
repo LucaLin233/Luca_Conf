@@ -2,22 +2,22 @@
 来自鲨鲨佬的自动切换：
   脚本已经比较成熟了，但难免还会有bug，使用过程中遇到障碍请联系Telegram：https://t.me/okmytg
 最近更新：修复全解锁列表为空时无法切换至自制列表
-	嵌套策略组下，面板显示内容更新为根节点名称
+  嵌套策略组下，面板显示内容更新为根节点名称
 脚本说明：
-	1:本脚本修改自 @Helge_0x00 
-	2:脚本在自动更新时刷新持久化数据（可解锁节点列表）
-	3:点击panel时切换至下一个可解锁节点
-	4:网飞数据会有所变动，因此你可能遇到切换至非全解锁节点，此时切换至下一个即可，待下一次自动更新时，节点列表将得到更新与修正
-	5:可用的自定义参数：
-	icon1 color1:全解锁时的图标及颜色
-	icon2 color2:仅自制时的图标及颜色
-	icon3 color3:无可用节点的图标及颜色
-	netflixGroup：网飞策略组名称
-	[Script]
-netflixAutoselect = type=generic, script-path=https://raw.githubusercontent.com/fishingworld/something/main/nf_autoselect_test.js, argument=icon1=checkmark.circle&color1=#55ba94&icon2=checkmark.circle.trianglebadge.exclamationmark&color2=#9a9ced&icon3=xmark.shield&color3=#AF52DE&netflixGroup=Netflix
+  1:本脚本修改自 @Helge_0x00 
+  2:脚本在自动更新时刷新持久化数据（可解锁节点列表）
+  3:点击panel时切换至下一个可解锁节点
+  4:网飞数据会有所变动，因此你可能遇到切换至非全解锁节点，此时切换至下一个即可，待下一次自动更新时，节点列表将得到更新与修正
+  5:可用的自定义参数：
+  icon1 color1:全解锁时的图标及颜色
+  icon2 color2:仅自制时的图标及颜色
+  icon3 color3:无可用节点的图标及颜色
+  netflixGroup：网飞策略组名称
+  [Script]
+  netflixAutoselect = type=generic, script-path=https://raw.githubusercontent.com/fishingworld/something/main/nf_autoselect_test.js, argument=icon1=checkmark.circle&color1=#55ba94&icon2=checkmark.circle.trianglebadge.exclamationmark&color2=#9a9ced&icon3=xmark.shield&color3=#AF52DE&netflixGroup=Netflix
 
   [Panel]
-netflixAutoselect = script-name=netflixAutoselect, update-interval=43200
+  netflixAutoselect = script-name=netflixAutoselect, update-interval=43200
 */
 
 
