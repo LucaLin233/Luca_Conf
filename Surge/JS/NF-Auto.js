@@ -13,6 +13,11 @@
 	icon2 color2:仅自制时的图标及颜色
 	icon3 color3:无可用节点的图标及颜色
 	netflixGroup：网飞策略组名称
+	[Script]
+netflixAutoselect = type=generic, script-path=https://raw.githubusercontent.com/fishingworld/something/main/nf_autoselect_test.js, argument=icon1=checkmark.circle&color1=#55ba94&icon2=checkmark.circle.trianglebadge.exclamationmark&color2=#9a9ced&icon3=xmark.shield&color3=#AF52DE&netflixGroup=Netflix
+
+  [Panel]
+netflixAutoselect = script-name=netflixAutoselect, update-interval=43200
 */
 
 
