@@ -1,7 +1,6 @@
 #!name=Panels
 #!desc=一个Luca自用的信息面板模块
 [Panel]
-
 #启动时间 by @okmytg(TG)
 SurgePro_ReloadProfile = script-name=SurgePro_ReloadProfile,update-interval=1
 
