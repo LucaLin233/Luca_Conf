@@ -15,7 +15,7 @@ nf_rating_season.js = type=http-response,pattern=^https?:\/\/ios(-.*)?\.prod\.ft
 TF下载修正 = type=http-request,pattern=^https?:\/\/testflight\.apple\.com\/v\d\/accounts\/.+?\/install$,requires-body=1,max-size=0,script-path=https://gist.githubusercontent.com/NobyDa/9be418b93afc5e9c8a8f4d28ae403cf2/raw/TF_Download.js
 
 # 普拉斯提供的EMBY解锁
-embyPremiere.js = type=http-response,pattern=^https?:\/\/mb3admin.com\/admin\/service\/registration\/validateDevice,requires-body=1,max-size=0,script-path=https://subweb.s3.fr-par.scw.cloud/Script/embyPremiere.js
+embyPremiere.js = type=http-response,pattern=^https?:\/\/mb3admin.com\/admin\/service\/registration\/validateDevice,requires-body=1,max-size=0,script-path=https://luca-profile.oss-cn-guangzhou.aliyuncs.com/embyPremiere.js
 
 # NobyDa的微信公众号去广告
 微信公众号去广告 = type=http-response,pattern=^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/File/Wechat.js
