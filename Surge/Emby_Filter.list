@@ -16,10 +16,10 @@ DOMAIN,movie.xeton.dev
 DOMAIN,servers.xeton.dev
 
 # Exflux专属服
-DOMAIN, line.emby.men
+DOMAIN,line.emby.men
 
 # Skicat专属服
-DOMAIN, https://skicat.tv
+DOMAIN,https://skicat.tv
 
 # Godetia专属服1（猫熊）
 DOMAIN,emby.ssltd.xyz
