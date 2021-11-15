@@ -15,8 +15,8 @@ DOMAIN,jellyfin.xeton.dev
 DOMAIN,movie.xeton.dev
 DOMAIN,servers.xeton.dev
 
-# Exflux专属服
-DOMAIN,line.emby.men
+#佩奇专属服
+DOMAIN,emby.nexitally.com
 
 # Skicat专属服
 DOMAIN,https://skicat.tv
