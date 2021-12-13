@@ -1,28 +1,21 @@
 #!name=Panels
 #!desc=一个Luca自用的信息面板模块
 [Panel]
-#启动时间 by @okmytg(TG)
-SurgePro_ReloadProfile = script-name=SurgePro_ReloadProfile,update-interval=1
-
-#节点检测 by @congcong(TG)
-ipcheck = script-name=ipcheck, title="节点信息", content="请刷新", style=info, update-interval=1
-
-#刷新DNS by @FAKEzZPiglet(TG)
-刷新DNS = script-name=刷新DNS, update-interval=1
-
-#流媒体解锁检测 by @laincat(TG) @Hyseen(Github) 
-stream-checktool = script-name=stream-checktool, title="流媒体解锁检测", content="请刷新面板", update-interval=-1
+# 刷新DNS
+刷新DNS = script-name=刷新DNS,update-interval=1
+# 疫情查询
+covid19 = script-name=covid19,title=疫情检测,content=请刷新,update-interval=3600
+# 节假日查询
+timecard = script-name=timecard,update-interval=3600
+# D+检测
+disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,content=请刷新面板,update-interval=21600
 
 [Script]
-
-#启动时间
-SurgePro_ReloadProfile = type=generic,timeout=10,script-path= https://raw.githubusercontent.com/fishingworld/something/main/PanelScripts/surgepro_reloadprofile.js ,argument=icon=crown.fill&color=#f6c970
-
-#节点检测
-ipcheck = type=generic, timeout=3, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/ipcheck.js
-
-#刷新DNS
-刷新DNS = type=generic, timeout=3, script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
-
-#流媒体解锁检测
-stream-checktool = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream-checktool.js
+# 刷新DNS
+刷新DNS = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
+# 新冠疫情查询
+covid19 = type=generic,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/covid19.js
+# 节假日提醒
+timecard = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/timecard.js
+# Disney+解锁检测
+disney_check = type=generic,script-path=https://gist.githubusercontent.com/Hyseen/729fc4c3ac28c3f2e7c4a832d81780f3/raw/disney_check.js?version=1637153952428
