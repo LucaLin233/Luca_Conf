@@ -5,8 +5,6 @@
 刷新DNS = script-name=刷新DNS,update-interval=1
 # 疫情查询
 covid19 = script-name=covid19,title=疫情检测,content=请刷新,update-interval=3600
-# 节假日查询
-timecard = script-name=timecard,update-interval=3600
 # D+检测
 disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,content=请刷新面板,update-interval=21600
 
@@ -15,7 +13,5 @@ disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,c
 刷新DNS = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
 # 新冠疫情查询
 covid19 = type=generic,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/covid19.js
-# 节假日提醒
-timecard = type=generic,timeout=10,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/timecard.js
 # Disney+解锁检测
 disney_check = type=generic,script-path=https://gist.githubusercontent.com/Hyseen/729fc4c3ac28c3f2e7c4a832d81780f3/raw/disney_check.js?version=1637153952428
