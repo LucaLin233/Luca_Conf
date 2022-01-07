@@ -1,6 +1,8 @@
 #!name=Panels
 #!desc=一个Luca自用的信息面板模块
 [Panel]
+# 配置重载
+配置重载 = title=配置重载,content=配置重载,style=info,script-name=配置重载,update-interval=-1
 # 刷新DNS
 刷新DNS = script-name=刷新DNS,update-interval=1
 # 疫情查询
@@ -11,6 +13,8 @@ disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,c
 nf_check = script-name=nf_check, title="Netflix 解锁检测", content="请刷新", update-interval=1
 
 [Script]
+# 配置重载
+配置重载=script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/Reload.js,type=generic
 # 刷新DNS
 刷新DNS = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
 # 新冠疫情查询
