@@ -13,6 +13,6 @@ $httpAPI("POST", "/v1/profiles/reload", {}, data => {
         title: "配置重载",
         content: "配置重载成功",
         icon: "pencil.and.outline",
-        "icon-color": "#5AC8FA",
+        "icon-color": "#FF9500",
      })
     });
