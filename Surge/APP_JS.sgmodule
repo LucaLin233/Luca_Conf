@@ -1,5 +1,6 @@
 #!name=App_JS
 #!desc=一个Luca收集的APP_JS模块
+#!system=ios
 
 [Script]
 # yichahucha的Netflix评分
