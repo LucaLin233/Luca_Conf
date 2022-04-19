@@ -26,17 +26,17 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
       'icon-color': '#FF2D55',
     }
   let [{ region, status }] = await Promise.all([testDisneyPlus()])
-    await Promise.all([check_netflix(),check_youtube_premium()])
+    await Promise.all([check_youtube_premium(),check_netflix()])
       .then((result) => { 
          console.log(result)
  let disney_result=""
     if (status==STATUS_COMING) {
         //console.log(1)
-        disney_result="Disney+: 即将登陆~"+region.toUpperCase()
+        disney_result="Disney+：即将登陆~"+region.toUpperCase()
       } else if (status==STATUS_AVAILABLE){
         //console.log(2)
         console.log(region)
-        disney_result="Disney+: 已解锁，区域："+region.toUpperCase()
+        disney_result="Disney+：已解锁，区域："+region.toUpperCase()
         // console.log(result["Disney"])
       } else if (status==STATUS_NOT_AVAILABLE) {
         //console.log(3)
