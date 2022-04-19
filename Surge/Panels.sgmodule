@@ -30,5 +30,5 @@ nf_check = type=generic, script-path=https://gist.githubusercontent.com/Hyseen/b
 # 奈飞、油管解锁检测
 stream-check = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream_check.js
 # 流媒体解锁检测
-stream-all = type=generic, timeout=15, script-path=https://github.com/LucaLin233/Luca_Conf/blob/main/Surge/JS/stream-all.js
+stream-all = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream-all.js
 
