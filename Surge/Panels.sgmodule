@@ -8,11 +8,11 @@
 # 疫情查询
 covid19 = script-name=covid19,title=疫情检测,content=请刷新,update-interval=3600
 # D+检测
-disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,content=请刷新面板,update-interval=21600
+#disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,content=请刷新面板,update-interval=21600
 # nf检测
-nf_check = script-name=nf_check, title="Netflix 解锁检测", content="请刷新", update-interval=1
+#nf_check = script-name=nf_check, title="Netflix 解锁检测", content="请刷新", update-interval=1
 # 奈飞、油管解锁检测
-stream-checktools = script-name=stream-check, title="奈飞、油管解锁检测", content="请刷新面板", update-interval=-1
+#stream-checktools = script-name=stream-check, title="奈飞、油管解锁检测", content="请刷新面板", update-interval=-1
 # 流媒体解锁检测
 stream-all = script-name=stream-all, title="流媒体解锁检测", content="请刷新面板", update-interval=-1
 
@@ -24,11 +24,11 @@ stream-all = script-name=stream-all, title="流媒体解锁检测", content="请
 # 新冠疫情查询
 covid19 = type=generic,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/covid19.js
 # D+解锁检测
-disney_check = type=generic,script-path=https://gist.githubusercontent.com/Hyseen/729fc4c3ac28c3f2e7c4a832d81780f3/raw/disney_check.js?version=1637153952428
+#disney_check = type=generic,script-path=https://gist.githubusercontent.com/Hyseen/729fc4c3ac28c3f2e7c4a832d81780f3/raw/disney_check.js?version=1637153952428
 # nf检测
-nf_check = type=generic, script-path=https://gist.githubusercontent.com/Hyseen/b06e911a41036ebc36acf04ddebe7b9a/raw/nf_check.js?version=1633074636264, argument=title=Netflix 解锁检测
+#nf_check = type=generic, script-path=https://gist.githubusercontent.com/Hyseen/b06e911a41036ebc36acf04ddebe7b9a/raw/nf_check.js?version=1633074636264, argument=title=Netflix 解锁检测
 # 奈飞、油管解锁检测
-stream-check = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream_check.js
+#stream-check = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream_check.js
 # 流媒体解锁检测
 stream-all = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream-all.js
 
