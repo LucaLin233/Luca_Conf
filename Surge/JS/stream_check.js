@@ -61,7 +61,7 @@ async function check_youtube_premium() {
       if (code === 'Not Available') {
         youtube_check_result += '油管未解锁'
       } else {
-        youtube_check_result += '油管解锁 ： ' + code.toUpperCase()
+        youtube_check_result += '油管解锁：' + code.toUpperCase()
       }
     })
     .catch((error) => {
@@ -117,7 +117,7 @@ async function check_netflix() {
       if (code === 'Not Found') {
         return inner_check(80018499)
       }
-      netflix_check_result += '奈飞解锁 ： ' + code.toUpperCase()
+      netflix_check_result += '奈飞解锁：' + code.toUpperCase()
       return Promise.reject('BreakSignal')
     })
     .then((code) => {
