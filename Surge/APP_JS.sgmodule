@@ -18,15 +18,6 @@ nf_rating_season.js = type=http-response,pattern=^https?:\/\/ios(-.*)?\.prod\.ft
 # NobyDa的TF修正
 TF下载修正 = type=http-request,pattern=^https?:\/\/testflight\.apple\.com\/v\d\/accounts\/.+?\/install$,requires-body=1,script-update-interval=-1,max-size=0,script-path=https://gist.githubusercontent.com/NobyDa/9be418b93afc5e9c8a8f4d28ae403cf2/raw/TF_Download.js
 
-# NobyDa的微信公众号去广告
-微信公众号去广告 = type=http-response,pattern=^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/File/Wechat.js
-
-# NobyDa的扫描全能王解锁
-扫描全能王解锁 = type=http-response,pattern=https:\/\/(api|api-cs)\.intsig\.net\/purchase\/cs\/query_property\?,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/CamScanner.js
-
-# Tartarus的彩云天气
-彩云天气SVIP = type=http-response,requires-body=1,max-size=0,pattern=https?:\/\/biz\.caiyunapp\.com\/(membership_rights|v2\/user),script-path=https://raw.githubusercontent.com/Tartarus2014/Script/master/CaiYun.js
-
 #blackmatrix7的开屏去广告
 美团外卖_开屏去广告 = type=http-response,requires-body=1,max-size=0,pattern=^https?:\/\/wmapi\.meituan\.com\/api\/v\d+\/loadInfo?,script-path=https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/startup/startup.js
 小爱音箱_开屏去广告 = type=http-response,requires-body=1,max-size=0,pattern=^https?:\/\/hd\.mina\.mi\.com\/splashscreen\/alert,script-path=https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/script/startup/startup.js
@@ -39,4 +30,4 @@ http-request ^https?:\/\/(?!d\.pcs).*(?<!map)\.baidu\.com header-replace-regex U
 
 
 [MITM]
-hostname = %APPEND% ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com, guide-acs.m.taobao.com, testflight.apple.com, mp.weixin.qq.com, api.revenuecat.com, ap*.intsig.net, duckduckgo.com, biz.caiyunapp.com, wmapi.meituan.com, hd.mina.mi.com, *.baidu.com, www.zhihu.com
+hostname = %APPEND% ios-*.prod.ftl.netflix.com, ios.prod.ftl.netflix.com, guide-acs.m.taobao.com, testflight.apple.com, wmapi.meituan.com, hd.mina.mi.com, *.baidu.com, www.zhihu.com
