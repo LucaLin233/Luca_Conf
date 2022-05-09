@@ -18,7 +18,7 @@ $done({
     title:"Surge  已运行"+startTime,
     content:"Mitm:"+icon_status(mitm_status.enabled)+"  Rewrite:"+icon_status(rewrite_status.enabled)+"  Scripting:"+icon_status(scripting_status.enabled),
     icon: "checkmark.seal.fill",
-   // "icon-color":params.color
+    "icon-color":#3CB371
 });
 })();
 function icon_status(status){
