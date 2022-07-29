@@ -1,4 +1,4 @@
-#来源：eHpo1
+#来源：eHpo1、LucaLin233
 #https://github.com/787a68?tab=repositories
 # Map
 DOMAIN-SUFFIX,ls.apple.com
@@ -16,6 +16,9 @@ USER-AGENT,com.apple.appstored*
 DOMAIN-SUFFIX,mzstatic.com
 DOMAIN,iosapps.itunes.apple.com
 DOMAIN,osxapps.itunes.apple.com
+
+# Testflight
+DOMAIN,testflight.apple.com
 
 # Update
 DOMAIN,supportdownload.apple.com
