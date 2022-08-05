@@ -17,6 +17,9 @@ DOMAIN-SUFFIX,mzstatic.com
 DOMAIN,iosapps.itunes.apple.com
 DOMAIN,osxapps.itunes.apple.com
 
+# Testflight
+DOMAIN,testflight.apple.com
+
 # Update
 DOMAIN,supportdownload.apple.com
 DOMAIN,appldnld.apple.com
