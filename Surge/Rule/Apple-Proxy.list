@@ -1,5 +1,5 @@
 #Add
-DOMAIN,apps.apple.com,Proxy
+DOMAIN,apps.apple.com
 #System
 USER-AGENT,*com.apple.mobileme.fmip1
 USER-AGENT,*WeatherFoundation*
