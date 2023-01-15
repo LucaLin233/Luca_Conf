@@ -1,0 +1,13 @@
+#!name=哔哩哔哩优化
+#!desc=干掉哔哩哔哩垃圾CDN
+[General]
+force-http-engine-hosts =  %APPEND% cn*.bilivideo.com
+
+[Rule]
+OR,((DOMAIN-SUFFIX,szbdyd.com), (DOMAIN-SUFFIX,mcdn.bilivideo.com), (DEST-PORT,4480)),REJECT
+
+[URL Rewrite]
+cn.*bilivideo.com - reject
+
+[MITM]
+hostname= %APPEND% cn*.bilivideo.com
