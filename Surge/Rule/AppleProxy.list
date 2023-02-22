@@ -1,4 +1,6 @@
+# 单独规则
 DOMAIN,apps.apple.com
+# System
 USER-AGENT,*com.apple.mobileme.fmip1
 USER-AGENT,*WeatherFoundation*
 USER-AGENT,%E5%9C%B0%E5%9B%BE*
@@ -32,6 +34,7 @@ DOMAIN-SUFFIX,lcdn-locator.apple.com
 DOMAIN-SUFFIX,lcdn-registration.apple.com
 DOMAIN-SUFFIX,ls.apple.com
 PROCESS-NAME,trustd
+# Mr.Liu编写规则
 DOMAIN-SUFFIX,cdn-apple.com
 DOMAIN-SUFFIX,mzstatic.com // App Store & iTunes Images
 DOMAIN-SUFFIX,aaplimg.com
