@@ -1,0 +1,65 @@
+#!name=Fuck AD
+#!desc=Fuck AD with Script/Rewrite(by ocd0711)
+
+[Rule]
+# > 微博_请手动添加以下分流至本地
+DOMAIN-SUFFIX,sdkapp.uve.weibo.com,DIRECT
+
+[Map Local]
+# > 微博_每日一次的开屏广告请求
+^https?:\/\/boot\.biz\.weibo\.com\/v1\/ad\/realtime data="https://raw.githubusercontent.com/ocd0711/Profiles/master/reject-200.txt"
+# > 微博_去除底部超话栏表层浮icon及tips
+^https?:\/\/api\.weibo\.cn\/\d\/!\/huati\/discovery_home_bottom_getdotinfo data="https://raw.githubusercontent.com/ocd0711/Profiles/master/reject-dict.json"
+# > 微博_屏蔽首页左上角每日的弹窗tips
+^https?:\/\/m?api\.weibo\.c(n|om)\/\d/push/daily data="https://raw.githubusercontent.com/ocd0711/Profiles/master/reject-dict.json"
+# > 微博_Spotlight
+^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/hot\/hours_spotlight data="https://raw.githubusercontent.com/ocd0711/Profiles/master/reject-dict.json"
+# > 微博国际版_屏蔽hotsearch
+^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php\?a=hot_search_users data="https://raw.githubusercontent.com/ocd0711/Profiles/master/reject-dict.json"
+# > 微博国际版_屏蔽热推荐
+^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/ad\/weibointl\? data="https://raw.githubusercontent.com/ocd0711/Profiles/master/reject-dict.json"
+# > 微博国际版_屏蔽searching_info
+^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php.*user&a=get_searching_info data="https://github.com/ddgksf2013/Scripts/raw/master/weibo_search_info.json"
+# > 微博国际版_屏蔽search_topic 
+^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php.*feed&a=search_topic data="https://github.com/ddgksf2013/Scripts/raw/master/weibo_search_topic.json"
+
+[URL Rewrite]
+# > 微博_应用内弹窗广告
+^https?:\/\/(preload-click|preload-impression)\.uve\.weibo\.com\/(interface\/wbpullad\/wbpullad_click\.php|wbapplua\/get_wbpullad_log\.lua) - reject
+# > 微博_屏蔽sdkconfig请求
+^https?:\/\/sdkapp\.uve\.weibo\.com\/interface\/sdk\/sdkconfig\.php - reject
+
+[Script]
+# > 微博_未登陆状态下首页信息流处理
+weibo_json = type=http-response,pattern=^https?:\/\/api\.weibo\.cn\/\d\/\w{5}\/(statuses_unread_hot_timeline|timeline),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博_视频信息处理
+weibo_json = type=http-response,pattern=^https?:\/\/api\.weibo\.cn\/\d\/video\/tiny_stream_mid_detail,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博_屏蔽发现页面搜索框热词
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/\w{5}\/cardlist,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博_自定义tab皮肤
+weibo_json = type=http-response,pattern=^https://api.weibo.cn/2/!/client/light_skin,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博_非会员设置tab皮肤
+weibo_json = type=http-response,pattern=^https://new.vip.weibo.cn/littleskin/preview,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博_去广告以及去除各部分推广模块
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/(searchall|page\?|messageflow),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/statuses/(unread_)?friends(/|_)timeline,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/groups/timeline,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/statuses/(container_timeline|unread_hot_timeline|extend|video_mixtimeline|unread_topic_timeline),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/profile/(me|container_timeline),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/video/(community_tab|remind_info|tiny_stream_video_list),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/search/(finder|container_timeline|container_discover),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/(checkin/show|\!/live/media_homelist|comments/build_comments|container/get_item),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+weibo_json = type=http-response,pattern=^https?:\/\/m?api\.weibo\.c(n|om)\/\d\/cardlist,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博国际版_屏蔽开屏广告 
+weibo_json = type=http-response,pattern=^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php.*get_coopen_ads,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博国际版_屏蔽sdkad
+weibo_json = type=http-response,pattern=^https?://(sdk|wb)app\.uve\.weibo\.com(/interface/sdk/sdkad.php|/wbapplua/wbpullad.lua),requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博国际版_趋势顶部Card去广告
+weibo_json = type=http-response,pattern=^https?:\/\/weibointl\.api\.weibo\.c(n|om)\/portal\.php.*feed&a=trends,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博国际版_屏蔽用户VIP栏
+weibo_json = type=http-response,pattern=^https?:\/\/weibointl\.api\.weibo\.cn\/portal\.php\?a=user_center,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+# > 微博国际版_热搜处理
+weibo_json = type=http-response,pattern=^https?:\/\/weibointl\.api\.weibo\.cn\/portal\.php\?a=search_topic,requires-body=1,max-size=-1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/weibo_json.js
+
+[MITM]
+hostname = %APPEND% api.weibo.*, *.api.weibo.*, mapi.weibo.*, *.uve.weibo.com, new.vip.weibo.cn, boot.biz.weibo.com
