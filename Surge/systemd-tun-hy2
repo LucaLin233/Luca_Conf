@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/hysteria server --config /etc/hysteria.yaml
+ExecStart=/usr/local/bin/hysteria server --config /etc/hy2/hysteria.yaml
 WorkingDirectory=~
 User=tun
 Group=tun
