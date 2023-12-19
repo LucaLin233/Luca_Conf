@@ -2,4 +2,4 @@
 #!desc=干掉哔哩哔哩垃圾CDN
 
 [Rule]
-OR,((DEST-PORT,4480), (DEST-PORT,3478), (DOMAIN-SUFFIX,szbdyd.com)),REJECT-NO-DROP // 禁用b站垃圾cdn
+OR,((AND,((RULE-SET,https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Surge/BiliBili/BiliBili.list?raw=true,extended-matching), (NOT,((OR,((DEST-PORT,80), (DEST-PORT,443))))))), (OR,((DOMAIN-KEYWORD,-pcdn-,extended-matching), (DOMAIN-KEYWORD,upos-hz-,extended-matching), (DOMAIN-KEYWORD,upos-sz-,extended-matching), (DOMAIN-KEYWORD,httpdns,extended-matching), (DOMAIN-KEYWORD,mcdn.bilivideo.cn,extended-matching), (DOMAIN-SUFFIX,v1d.szbdyd.com,extended-matching), (DOMAIN-SUFFIX,ourdvsss.com,extended-matching))), (DEST-PORT,3478)),REJECT-DROP // 干掉b站垃圾cdn
