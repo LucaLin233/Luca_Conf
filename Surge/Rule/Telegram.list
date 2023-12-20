@@ -11,11 +11,11 @@ DOMAIN-SUFFIX,t.me
 DOMAIN-SUFFIX,tdesktop.com
 DOMAIN-SUFFIX,telega.one
 DOMAIN-SUFFIX,telegra.ph
-DOMAIN-KEYWORD,telegram
 DOMAIN-SUFFIX,telesco.pe
 DOMAIN-SUFFIX,tg.dev
 DOMAIN-SUFFIX,tx.me
 DOMAIN-SUFFIX,usercontent.dev
+DOMAIN-KEYWORD,telegram
 DOMAIN-KEYWORD,nicegram
 # DC5
 IP-CIDR,91.108.16.0/22,no-resolve
