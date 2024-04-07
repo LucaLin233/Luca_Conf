@@ -18,7 +18,8 @@ DOMAIN-SUFFIX,usercontent.dev
 DOMAIN-KEYWORD,telegram
 DOMAIN-KEYWORD,nicegram
 # 网络环境差时出站
-IP-CIDR,5.28.192.0/18,no-resolve
+IP-CIDR,5.28.195.80/32,no-resolve
+IP-CIDR,95.161.76.101/32,no-resolve
 # DC5
 IP-CIDR,91.108.16.0/22,no-resolve
 IP-CIDR,91.108.56.0/23,no-resolve
