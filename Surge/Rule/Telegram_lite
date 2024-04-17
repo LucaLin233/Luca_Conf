@@ -1,0 +1,31 @@
+# AUTHOR: blackmatrix7 & Luca
+DOMAIN,api.swiftgram.app
+DOMAIN-SUFFIX,comments.app
+DOMAIN-SUFFIX,contest.com
+DOMAIN-SUFFIX,graph.org
+DOMAIN-SUFFIX,legra.ph
+DOMAIN-SUFFIX,mbrx.app
+DOMAIN-SUFFIX,quiz.directory
+DOMAIN-SUFFIX,stel.com
+DOMAIN-SUFFIX,t.me
+DOMAIN-SUFFIX,tdesktop.com
+DOMAIN-SUFFIX,telega.one
+DOMAIN-SUFFIX,telegra.ph
+DOMAIN-SUFFIX,telesco.pe
+DOMAIN-SUFFIX,tg.dev
+DOMAIN-SUFFIX,tx.me
+DOMAIN-SUFFIX,usercontent.dev
+DOMAIN-KEYWORD,telegram
+DOMAIN-KEYWORD,nicegram
+# 网络环境差时出站
+IP-CIDR,95.161.76.101/32,no-resolve
+# DC1-ASN
+IP-ASN,59930,no-resolve
+# DC2-ASN
+IP-ASN,44907,no-resolve
+# DC3-ASN
+IP-ASN,211157,no-resolve
+# DC4-ASN
+IP-ASN,62041,no-resolve
+# DC5-ASN
+IP-ASN,62014,no-resolve
