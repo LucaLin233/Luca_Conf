@@ -4,11 +4,11 @@ IP-CIDR,91.108.12.0/22,no-resolve
 IP-CIDR,149.154.172.0/22,no-resolve
 IP-CIDR6,2001:b28:f23d::/48,no-resolve
 
-# DC2 AS62041
+# DC2 AS44907
 IP-CIDR,91.108.20.0/22,no-resolve
 IP-CIDR6,2001:b28:f23c::/48,no-resolve
 
-# DC3 AS59930
+# DC3 AS211157
 IP-CIDR,91.105.192.0/23,no-resolve
 IP-CIDR,185.76.151.0/24,no-resolve
 IP-CIDR6,2a0a:f280:203::/48,no-resolve
