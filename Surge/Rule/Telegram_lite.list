@@ -1,19 +1,19 @@
 # AUTHOR: bgp.he.net & Luca
-# DC1
+# DC1 AS59930
 IP-CIDR,91.108.12.0/22,no-resolve
 IP-CIDR,149.154.172.0/22,no-resolve
 IP-CIDR6,2001:b28:f23d::/48,no-resolve
 
-# DC2
+# DC2 AS62041
 IP-CIDR,91.108.20.0/22,no-resolve
 IP-CIDR6,2001:b28:f23c::/48,no-resolve
 
-# DC3
+# DC3 AS59930
 IP-CIDR,91.105.192.0/23,no-resolve
 IP-CIDR,185.76.151.0/24,no-resolve
 IP-CIDR6,2a0a:f280:203::/48,no-resolve
 
-# DC4
+# DC4 AS62041
 IP-CIDR,91.108.4.0/22,no-resolve
 IP-CIDR,91.108.8.0/22,no-resolve
 IP-CIDR,91.108.56.0/22,no-resolve
@@ -21,7 +21,7 @@ IP-CIDR,95.161.64.0/20,no-resolve
 IP-CIDR,149.154.160.0/21,no-resolve
 IP-CIDR6,2001:67c:4e8::/48,no-resolve
 
-# DC5-ASN
+# DC5 AS62014
 IP-CIDR,91.108.16.0/22,no-resolve
 IP-CIDR,91.108.56.0/23,no-resolve
 IP-CIDR,149.154.168.0/22,no-resolve
