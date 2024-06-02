@@ -1,0 +1,10 @@
+#!name=Panels
+#!desc=一个Luca自用的信息面板模块
+
+[Panel]
+# 功能检测
+functionstatus = script-name=functionstatus,title=Surge,content=请刷新,update-interval=60
+
+[Script]
+# 功能检测
+functionstatus = type=generic,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/functionstatus.js
