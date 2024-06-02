@@ -1,5 +1,5 @@
 #!name=Panels
-#!desc=一个Luca自用的信息面板模块
+#!desc=面板项目：Surge功能开关检测、流媒体检测
 
 [Panel]
 # 功能检测
