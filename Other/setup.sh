@@ -15,12 +15,13 @@ echo "更新系统..."
 apt-get update && apt-get full-upgrade -y
 
 # 安装必要的工具
-check_and_install curl
 check_and_install jq
+check_and_install wget
+check_and_install dnsutils
 
 # 安装 Docker
 echo "安装 Docker..."
-curl -fsSL https://get.docker.com | bash -s docker
+wget -qO- https://get.docker.com | bash -s docker
 
 # 开启 TCP Fast Open (TFO)
 echo "开启 TCP Fast Open (TFO)..."
@@ -40,7 +41,7 @@ sudo timedatectl set-timezone Asia/Shanghai
 
 # 路由测试工具
 echo "安装路由测试工具 nexttrace..."
-bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
+bash -c "$(wget -qO- https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
 
 # 开启 tuned 并设置网络性能优化
 echo "开启 tuned 并设置网络性能优化配置..."
@@ -69,5 +70,10 @@ dpkg -i linux-image-*-egoist-cloud_*.deb
 echo "修改 SSH 端口为 9399..."
 sed -i 's/#Port 22/Port 9399/' /etc/ssh/sshd_config
 systemctl restart sshd
+
+# 安装 Node.js 19.x
+echo "安装 Node.js 19.x..."
+curl -fsSL https://deb.nodesource.com/setup_19.x | bash -
+apt-get install -y nodejs
 
 echo "所有步骤完成！"
