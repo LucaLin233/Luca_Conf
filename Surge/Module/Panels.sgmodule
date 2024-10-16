@@ -5,10 +5,10 @@
 # 功能检测
 functionstatus = script-name=functionstatus,title=Surge,content=请刷新,update-interval=60
 # 流媒体解锁检测
-stream-all = script-name=stream-all, title="流媒体解锁检测", content="请刷新面板", update-interval=-1
+# stream-all = script-name=stream-all, title="流媒体解锁检测", content="请刷新面板", update-interval=-1
 
 [Script]
 # 功能检测
 functionstatus = type=generic,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/functionstatus.js
 # 流媒体解锁检测
-stream-all = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream-all.js
+# stream-all = type=generic, timeout=15, script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/stream-all.js
