@@ -48,7 +48,6 @@ echo "开启 tuned 并设置网络性能优化配置..."
 check_and_install tuned
 systemctl enable tuned.service
 systemctl start tuned.service
-tuned-adm profile network-throughput
 
 # 在 /root 目录下创建 kernel 文件夹并进入
 echo "创建 /root/kernel 目录并进入..."
