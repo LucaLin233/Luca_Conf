@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# 更新软件包
+# 更新软件包并安装必需的软件
 dnf update -y
-
-# 安装Docker和Docker Compose
 dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin bind-utils tuned zram-generator
+
+# 启用并立即启动 Docker 和 Tuned 服务
 systemctl enable --now docker
+systemctl enable --now tuned
 
 # 修改时区为上海
 timedatectl set-timezone Asia/Shanghai
@@ -17,13 +18,6 @@ systemctl restart sshd
 
 # 运行NextTrace安装脚本
 bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
-
-# 安装dnsutils
-dnf install -y bind-utils
-
-# 安装tuned
-dnf install tuned -y
-systemctl enable --now tuned
 
 # 检测并开启swap
 if ! swapon --show | grep -q "swap"; then
@@ -40,7 +34,6 @@ curl https://mise.run | sh
 mise use -g python@3.10
 
 # 启用zram
-dnf install zram-generator -y
 echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
 
 # 启动dnsproxy并替换系统dns
