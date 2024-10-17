@@ -18,9 +18,6 @@ systemctl restart sshd
 # 运行NextTrace安装脚本
 bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
 
-# 运行内核调优
-bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
-
 # 安装dnsutils
 dnf install -y bind-utils
 
