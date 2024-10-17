@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# 检测并开启swap
+if ! swapon --show | grep -q "swap"; then
+    swapsize=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') * 2 * 1024 ))
+    fallocate -l ${swapsize} /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 # 更新软件包并安装必需的软件
 dnf update -y
 dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
@@ -18,16 +28,6 @@ systemctl restart sshd
 
 # 运行NextTrace安装脚本
 bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
-
-# 检测并开启swap
-if ! swapon --show | grep -q "swap"; then
-    swapsize=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') * 2 * 1024 ))
-    fallocate -l ${swapsize} /swapfile
-    chmod 600 /swapfile
-    mkswap /swapfile
-    swapon /swapfile
-    echo '/swapfile none swap sw 0 0' >> /etc/fstab
-fi
 
 # 安装Python
 curl https://mise.run | sh
