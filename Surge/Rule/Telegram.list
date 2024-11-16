@@ -1,4 +1,6 @@
 # AUTHOR: blackmatrix7 & DH & Luca
+# 如果会频繁的转圈，可以将以下规则添加
+# IP-CIDR,95.161.76.100/31,REJECT-NO-DROP,no-resolve
 DOMAIN,api.swiftgram.app
 DOMAIN-SUFFIX,comments.app
 DOMAIN-SUFFIX,contest.com
@@ -17,8 +19,6 @@ DOMAIN-SUFFIX,tx.me
 DOMAIN-SUFFIX,usercontent.dev
 DOMAIN-KEYWORD,telegram
 DOMAIN-KEYWORD,nicegram
-# 网络环境差时出站
-IP-CIDR,95.161.76.101/32,no-resolve
 # DC5
 IP-CIDR,91.108.16.0/22,no-resolve
 IP-CIDR,91.108.56.0/23,no-resolve
