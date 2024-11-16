@@ -1,6 +1,6 @@
 # AUTHOR: blackmatrix7 & DH & Luca
 # 如果会频繁的转圈，可以将以下规则添加
-# IP-CIDR,95.161.76.100/31,REJECT-NO-DROP,no-resolve
+# IP-CIDR,95.161.76.100/31,REJECT-NO-DROP,no-resolve,pre-matching
 DOMAIN,api.swiftgram.app
 DOMAIN-SUFFIX,comments.app
 DOMAIN-SUFFIX,contest.com
