@@ -52,4 +52,8 @@ docker compose up -d
 # 执行内核调优
 bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
 
+# 添加定时任务
+(crontab -l 2>/dev/null; echo "1 0 * * * /usr/bin/python3 /root/dnsproxy/rule.py") | crontab -
+(crontab -l 2>/dev/null; echo "5 0 * * * dnf update -y") | crontab -
+
 echo "所有任务完成！"
