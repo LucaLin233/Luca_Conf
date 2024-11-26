@@ -56,4 +56,11 @@ bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/
 (crontab -l 2>/dev/null; echo "1 0 * * * /usr/bin/python3 /root/dnsproxy/rule.py") | crontab -
 (crontab -l 2>/dev/null; echo "5 0 * * * dnf update -y") | crontab -
 
-echo "所有任务完成！"
+# 安装fish
+cd /etc/yum.repos.d/
+wget https://download.opensuse.org/repositories/shells:fish:release:3/CentOS-9_Stream/shells:fish:release:3.repo
+dnf install fish -y
+echo /usr/local/bin/fish | sudo tee -a /etc/shells
+chsh -s $(which fish)
+
+echo "所有任务完成！请重新连接 SSH 以启用 fish shell。"
