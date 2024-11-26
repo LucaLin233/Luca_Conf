@@ -15,7 +15,7 @@ fi
 # 更新软件包并安装必需的软件
 dnf update -y
 dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin bind-utils tuned zram-generator
+dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin bind-utils tuned zram-generator wget util-linux-user
 
 # 启用并立即启动 Docker 和 Tuned 服务
 systemctl enable --now docker
