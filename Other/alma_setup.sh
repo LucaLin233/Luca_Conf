@@ -41,15 +41,15 @@ mise use -g python@3.10
 echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
 
 # 启动dnsproxy并替换系统dns
-cd /root/dnsproxy
-docker compose pull
-docker compose up -d
+cd /root/dnsproxy && docker compose pull && docker compose up -d
 bash <(curl -L -s https://raw.githubusercontent.com/1-stream/1stream-public-utils/main/dns-change.sh) 127.0.0.1
 
 # 启动proxy
-cd /root/proxy
-docker compose pull
-docker compose up -d
+cd /root/proxy && docker compose pull && docker compose up -d
+
+# 启动其他容器
+cd /root/plmxs && docker compose pull && docker compose up -d
+cd /root/beszel && docker compose pull && docker compose up -d
 
 # 执行内核调优
 bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
