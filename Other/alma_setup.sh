@@ -2,7 +2,17 @@
 
 # 检测并开启swap
 if ! swapon --show | grep -q "swap"; then
-    dd if=/dev/zero of=/mnt/swap bs=1M count=$(awk '($1 == "MemTotal:"){print int($2/1024*2)}' /proc/meminfo)
+    RAM_SIZE=$(awk '/MemTotal:/{print int($2/1024)}' /proc/meminfo)
+
+    if [ "$RAM_SIZE" -lt 1024 ]; then
+        # RAM 小于 1G，swap 为 3 倍
+        SWAP_SIZE=$((RAM_SIZE * 3))
+    else
+        # RAM 大于 1G，swap 为 2 倍
+        SWAP_SIZE=$((RAM_SIZE * 2))
+    fi
+
+    dd if=/dev/zero of=/mnt/swap bs=1M count="$SWAP_SIZE"
     chmod 600 /mnt/swap
     mkswap /mnt/swap
     echo "/mnt/swap swap swap defaults 0 0" >> /etc/fstab
