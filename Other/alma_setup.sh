@@ -41,10 +41,6 @@ systemctl restart sshd
 # 运行NextTrace安装脚本
 bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
 
-# 安装Python
-curl https://mise.run | sh
-mise use -g python@3.10
-
 # 启用zram
 echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
 
