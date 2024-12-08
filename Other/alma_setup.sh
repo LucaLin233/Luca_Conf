@@ -53,7 +53,6 @@ cd /root/proxy && docker compose pull && docker compose up -d
 
 # 启动其他容器
 cd /root/plmxs && docker compose pull && docker compose up -d
-cd /root/beszel && docker compose pull && docker compose up -d
 
 # 执行内核调优
 bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
