@@ -44,8 +44,8 @@ bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
 # 启用zram
 echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
 
-# 启动dnsproxy并替换系统dns
-cd /root/dnsproxy && docker compose pull && docker compose up -d
+# 启动mosdns并替换系统dns
+cd /root/mosdns && docker compose pull && docker compose up -d
 bash <(curl -L -s https://raw.githubusercontent.com/1-stream/1stream-public-utils/main/dns-change.sh) 127.0.0.1
 
 # 启动proxy
