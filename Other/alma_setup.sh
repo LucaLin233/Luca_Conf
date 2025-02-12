@@ -4,22 +4,19 @@
 if ! swapon --show | grep -q "swap"; then
     RAM_SIZE=$(awk '/MemTotal:/{print int($2/1024)}' /proc/meminfo)
 
-    if [ "$RAM_SIZE" -lt 1024 ]; then
-        # RAM 小于 1G，swap 为 3 倍
-        SWAP_SIZE=$((RAM_SIZE * 3))
-    else
-        # RAM 大于 1G，swap 为 2 倍
-        SWAP_SIZE=$((RAM_SIZE * 2))
+    if [ "$RAM_SIZE" -lt 2048 ]; then
+        # RAM 小于 2G，swap 为 1 倍
+        SWAP_SIZE=$((RAM_SIZE))
+        
+        dd if=/dev/zero of=/mnt/swap bs=1M count="$SWAP_SIZE"
+        chmod 600 /mnt/swap
+        mkswap /mnt/swap
+        echo "/mnt/swap swap swap defaults 0 0" >> /etc/fstab
+        sed -i '/vm.swappiness/d' /etc/sysctl.conf
+        echo "vm.swappiness = 10" >> /etc/sysctl.conf
+        sysctl -w vm.swappiness=10
+        swapon -a
     fi
-
-    dd if=/dev/zero of=/mnt/swap bs=1M count="$SWAP_SIZE"
-    chmod 600 /mnt/swap
-    mkswap /mnt/swap
-    echo "/mnt/swap swap swap defaults 0 0" >> /etc/fstab
-    sed -i '/vm.swappiness/d' /etc/sysctl.conf
-    echo "vm.swappiness = 25" >> /etc/sysctl.conf
-    sysctl -w vm.swappiness=25
-    swapon -a
 fi
 
 # 更新软件包并安装必需的软件
