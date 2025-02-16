@@ -1,78 +1,127 @@
 #!/bin/bash
 
-# 检测并安装所需的指令
-check_and_install() {
-    if ! command -v $1 &> /dev/null; then
-        echo "$1 未安装，正在安装..."
-        apt-get install -y $1
-    else
-        echo "$1 已安装，跳过安装。"
+# 函数：错误检查
+check_error() {
+    if [ $? -ne 0 ]; then
+        echo "错误: $1 失败"
+        exit 1
     fi
 }
 
-# 更新系统
-echo "更新系统..."
-apt-get update && apt-get full-upgrade -y
+# 检测并开启swap
+if ! swapon --show | grep -q "swap"; then
+    RAM_SIZE=$(awk '/MemTotal:/{print int($2/1024)}' /proc/meminfo)
+    check_error "获取内存大小"
 
-# 安装必要的工具
-check_and_install jq
-check_and_install wget
-check_and_install dnsutils
+    if [ "$RAM_SIZE" -lt 2048 ]; then
+        # RAM 小于 2G，swap 为 1 倍
+        SWAP_SIZE=$((RAM_SIZE))
+        
+        dd if=/dev/zero of=/mnt/swap bs=1M count="$SWAP_SIZE"
+        check_error "创建swap文件"
+        
+        chmod 600 /mnt/swap
+        check_error "设置swap文件权限"
+        
+        mkswap /mnt/swap
+        check_error "格式化swap文件"
+        
+        echo "/mnt/swap swap swap defaults 0 0" >> /etc/fstab
+        check_error "添加swap到fstab"
+        
+        sed -i '/vm.swappiness/d' /etc/sysctl.conf
+        echo "vm.swappiness = 10" >> /etc/sysctl.conf
+        check_error "配置swappiness"
+        
+        sysctl -w vm.swappiness=10
+        check_error "应用swappiness设置"
+        
+        swapon -a
+        check_error "启用swap"
+    fi
+fi
+
+# 执行内核调优
+bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
+check_error "执行内核调优"
+
+# 更新软件包并安装必需的软件
+apt update && apt upgrade -y
+check_error "系统更新"
+
+# 安装必要的包
+apt install -y dnsutils tuned zram-tools wget
+check_error "安装基础软件"
 
 # 安装 Docker
-echo "安装 Docker..."
-wget -qO- https://get.docker.com | bash -s docker
+curl -fsSL https://get.docker.com | bash -s docker
+check_error "安装Docker"
 
-# 开启 TCP Fast Open (TFO)
-echo "开启 TCP Fast Open (TFO)..."
-echo "3" > /proc/sys/net/ipv4/tcp_fastopen
-echo "net.ipv4.tcp_fastopen=3" > /etc/sysctl.d/30-tcp_fastopen.conf
-sysctl --system
+# 启用系统日志持久化
+mkdir -p /var/log/journal
+check_error "创建日志目录"
 
-# 内核调优
-echo "进行内核调优..."
-wget https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh
-chmod +x kernel_optimization.sh
-bash kernel_optimization.sh
+systemd-tmpfiles --create --prefix /var/log/journal
+check_error "配置日志目录"
 
-# 设置时区
-echo "设置时区为 Asia/Shanghai..."
-sudo timedatectl set-timezone Asia/Shanghai
+echo "Storage=persistent" >> /etc/systemd/journald.conf
+check_error "配置持久化日志"
 
-# 路由测试工具
-echo "安装路由测试工具 nexttrace..."
-bash -c "$(wget -qO- https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
+systemctl restart systemd-journald
+check_error "重启journald服务"
 
-# 开启 tuned 并设置网络性能优化
-echo "开启 tuned 并设置网络性能优化配置..."
-check_and_install tuned
-systemctl enable tuned.service
-systemctl start tuned.service
+# 启用并立即启动 Docker 和 Tuned 服务
+systemctl enable --now docker
+check_error "启用Docker服务"
 
-# 在 /root 目录下创建 kernel 文件夹并进入
-echo "创建 /root/kernel 目录并进入..."
-mkdir -p /root/kernel
-cd /root/kernel
+systemctl enable --now tuned
+check_error "启用Tuned服务"
 
-# 下载和安装内核包
-echo "下载内核包..."
-wget -q -O - https://api.github.com/repos/love4taylor/linux-self-use-deb/releases/latest | \
-    jq -r '.assets[] | select(.name | contains ("deb")) | select(.name | contains ("cloud")) | .browser_download_url' | \
-    xargs wget -q --show-progress
+# 修改时区为上海
+timedatectl set-timezone Asia/Shanghai
+check_error "设置时区"
 
-# 安装内核包
-echo "安装内核包..."
-dpkg -i linux-headers-*-egoist-cloud_*.deb
-dpkg -i linux-image-*-egoist-cloud_*.deb
-
-# 修改 SSH 端口为 9399
-echo "修改 SSH 端口为 9399..."
+# 修改SSH端口
 sed -i 's/#Port 22/Port 9399/' /etc/ssh/sshd_config
+check_error "修改SSH端口"
+
 systemctl restart sshd
+check_error "重启SSH服务"
 
-# 安装 Node.js 19.x
-echo "安装 Node.js 19.x..."
-curl -fsSL https://deb.nodesource.com/setup_19.x | bash -
-apt-get install -y nodejs
+# 运行NextTrace安装脚本
+bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
+check_error "安装NextTrace"
 
-echo "所有步骤完成！"
+# 启用zram
+echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
+check_error "配置ZRAM"
+
+# 启动容器
+cd /root && docker compose up -d
+check_error "启动root目录容器"
+
+cd /root/proxy && docker compose pull && docker compose up -d
+check_error "启动proxy容器"
+
+cd /root/vmagent && docker compose pull && docker compose up -d
+check_error "启动vmagent容器"
+
+# 添加定时任务
+(crontab -l 2>/dev/null; echo "5 0 * * * apt update && apt upgrade -y") | crontab -
+check_error "添加定时任务"
+
+# 安装fish
+apt-add-repository ppa:fish-shell/release-3
+check_error "添加fish仓库"
+
+apt update
+apt install -y fish
+check_error "安装fish"
+
+echo /usr/bin/fish | tee -a /etc/shells
+check_error "添加fish到shells"
+
+chsh -s $(which fish)
+check_error "设置默认shell为fish"
+
+echo "所有任务完成！请重新连接 SSH 以启用 fish shell。"
