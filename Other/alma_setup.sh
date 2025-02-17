@@ -123,13 +123,13 @@ echo "配置ZRAM..."
 echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
 check_error "配置ZRAM"
 
-# 8. 启动容器
+# 8. 启动容器和服务
 echo "启动容器..."
 cd /root && docker compose up -d
 check_error "启动root目录容器"
 
-cd /root/proxy && docker compose pull && docker compose up -d
-check_error "启动proxy容器"
+cd /root/proxy && bash sbinstall.sh
+check_error "启动proxy服务"
 
 cd /root/vmagent && docker compose pull && docker compose up -d
 check_error "启动vmagent容器"
