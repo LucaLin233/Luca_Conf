@@ -108,18 +108,6 @@ check_error "创建swappiness配置文件"
 sysctl -w vm.swappiness=10
 check_error "应用swappiness设置"
 
-# 执行内核调优
-echo "执行内核调优..."
-if wget https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh -O /tmp/kernel_optimization.sh; then
-    chmod +x /tmp/kernel_optimization.sh
-    bash /tmp/kernel_optimization.sh
-    check_error "执行内核调优"
-    rm -f /tmp/kernel_optimization.sh
-else
-    echo "错误: 下载内核调优脚本失败"
-    exit 1
-fi
-
 # 4. 安装Docker
 echo "安装Docker..."
 curl -fsSL https://get.docker.com | bash -s docker
