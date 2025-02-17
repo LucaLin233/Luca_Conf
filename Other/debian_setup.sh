@@ -8,17 +8,66 @@ check_error() {
     fi
 }
 
-# 检测并开启swap
-if ! swapon --show | grep -q "swap"; then
-    RAM_SIZE=$(awk '/MemTotal:/{print int($2/1024)}' /proc/meminfo)
-    check_error "获取内存大小"
+echo "开始配置swap..."
 
-    if [ "$RAM_SIZE" -lt 2048 ]; then
-        # RAM 小于 2G，swap 为 1 倍
-        SWAP_SIZE=$((RAM_SIZE))
+# 检查内存和swap状态
+echo "检查内存和swap配置..."
+RAM_SIZE=$(awk '/MemTotal:/{print int($2/1024)}' /proc/meminfo)
+CURRENT_SWAP_SIZE=$(free -m | awk '/Swap:/{print $2}')
+TARGET_SWAP_SIZE=1024  # 固定1GB大小
+
+# 如果内存大于2GB，则清除swap
+if [ "$RAM_SIZE" -gt 2048 ]; then
+    if [ "$CURRENT_SWAP_SIZE" -gt 0 ]; then
+        echo "内存大于2GB，当前swap大小: ${CURRENT_SWAP_SIZE}M，正在清除swap..."
+        # 获取所有swap设备和文件
+        swap_devices=$(swapon --show=NAME --noheadings)
         
-        dd if=/dev/zero of=/mnt/swap bs=1M count="$SWAP_SIZE"
-        check_error "创建swap文件"
+        # 关闭所有swap
+        swapoff -a
+        check_error "关闭swap"
+        
+        # 从fstab中移除所有swap条目
+        sed -i '/\sswap\s/d' /etc/fstab
+        check_error "清理fstab中的swap条目"
+        
+        # 删除swap文件（如果存在）
+        for device in $swap_devices; do
+            if [[ -f "$device" ]]; then
+                rm -f "$device"
+                echo "删除swap文件: $device"
+            fi
+        done
+        
+        echo "swap已成功清除。"
+    else
+        echo "当前未启用swap，无需清除。"
+    fi
+else
+    if [ "$CURRENT_SWAP_SIZE" != "$TARGET_SWAP_SIZE" ]; then
+        echo "当前swap大小: ${CURRENT_SWAP_SIZE}M"
+        echo "目标swap大小: ${TARGET_SWAP_SIZE}M (1GB)"
+        
+        # 关闭所有swap
+        swapoff -a
+        check_error "关闭swap"
+        
+        # 从fstab中移除所有swap条目
+        sed -i '/\sswap\s/d' /etc/fstab
+        check_error "清理fstab中的swap条目"
+        
+        # 创建新的swap文件
+        echo "创建新的swap文件..."
+        # 确保目录存在
+        mkdir -p /mnt
+        
+        # 使用fallocate替代dd（更快）
+        fallocate -l 1G /mnt/swap
+        if [ $? -ne 0 ]; then
+            echo "fallocate失败，尝试使用dd..."
+            dd if=/dev/zero of=/mnt/swap bs=1M count=1024
+            check_error "创建swap文件"
+        fi
         
         chmod 600 /mnt/swap
         check_error "设置swap文件权限"
@@ -26,20 +75,36 @@ if ! swapon --show | grep -q "swap"; then
         mkswap /mnt/swap
         check_error "格式化swap文件"
         
-        echo "/mnt/swap swap swap defaults 0 0" >> /etc/fstab
+        # 添加到fstab
+        echo "/mnt/swap none swap sw 0 0" >> /etc/fstab
         check_error "添加swap到fstab"
         
-        sed -i '/vm.swappiness/d' /etc/sysctl.conf
-        echo "vm.swappiness = 10" >> /etc/sysctl.conf
-        check_error "配置swappiness"
-        
-        sysctl -w vm.swappiness=10
-        check_error "应用swappiness设置"
-        
+        # 启用所有swap
         swapon -a
         check_error "启用swap"
+        
+        echo "swap大小已调整为1GB"
+    else
+        echo "swap大小已经是1GB，无需调整"
     fi
 fi
+
+# 设置swappiness值
+if [ -f /etc/sysctl.d/99-swappiness.conf ]; then
+    rm -f /etc/sysctl.d/99-swappiness.conf
+fi
+echo "vm.swappiness = 10" > /etc/sysctl.d/99-swappiness.conf
+check_error "创建swappiness配置文件"
+
+# 立即应用swappiness设置
+sysctl -w vm.swappiness=10
+check_error "应用swappiness设置"
+
+echo "Swap配置完成！"
+echo "当前swap状态："
+swapon --show
+echo "当前swappiness值："
+cat /proc/sys/vm/swappiness
 
 # 执行内核调优
 bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
