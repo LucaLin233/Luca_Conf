@@ -8,10 +8,19 @@ check_error() {
     fi
 }
 
-echo "开始配置swap..."
+echo "开始系统初始化配置..."
 
-# 检查内存和swap状态
-echo "检查内存和swap配置..."
+# 1. 系统更新和基础软件安装
+echo "更新系统和安装基础软件..."
+apt update && apt upgrade -y
+check_error "系统更新"
+
+# 安装必要的包
+apt install -y dnsutils tuned zram-tools wget curl gpg
+check_error "安装基础软件"
+
+# 2. 检查内存和swap状态
+echo "配置swap..."
 RAM_SIZE=$(awk '/MemTotal:/{print int($2/1024)}' /proc/meminfo)
 CURRENT_SWAP_SIZE=$(free -m | awk '/Swap:/{print $2}')
 TARGET_SWAP_SIZE=1024  # 固定1GB大小
@@ -58,7 +67,6 @@ else
         
         # 创建新的swap文件
         echo "创建新的swap文件..."
-        # 确保目录存在
         mkdir -p /mnt
         
         # 使用fallocate替代dd（更快）
@@ -89,39 +97,32 @@ else
     fi
 fi
 
-# 设置swappiness值
+# 3. 配置系统参数
+# 设置swappiness
 if [ -f /etc/sysctl.d/99-swappiness.conf ]; then
     rm -f /etc/sysctl.d/99-swappiness.conf
 fi
 echo "vm.swappiness = 10" > /etc/sysctl.d/99-swappiness.conf
 check_error "创建swappiness配置文件"
 
-# 立即应用swappiness设置
 sysctl -w vm.swappiness=10
 check_error "应用swappiness设置"
 
-echo "Swap配置完成！"
-echo "当前swap状态："
-swapon --show
-echo "当前swappiness值："
-cat /proc/sys/vm/swappiness
-
 # 执行内核调优
+echo "执行内核调优..."
 bash -c "$(curl -Ls https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Other/kernel_optimization.sh)"
 check_error "执行内核调优"
 
-# 更新软件包并安装必需的软件
-apt update && apt upgrade -y
-check_error "系统更新"
-
-# 安装必要的包
-apt install -y dnsutils tuned zram-tools wget
-check_error "安装基础软件"
-
-# 安装 Docker
+# 4. 安装Docker
+echo "安装Docker..."
 curl -fsSL https://get.docker.com | bash -s docker
 check_error "安装Docker"
 
+systemctl enable --now docker
+check_error "启用Docker服务"
+
+# 5. 配置系统服务
+echo "配置系统服务..."
 # 启用系统日志持久化
 mkdir -p /var/log/journal
 check_error "创建日志目录"
@@ -135,33 +136,35 @@ check_error "配置持久化日志"
 systemctl restart systemd-journald
 check_error "重启journald服务"
 
-# 启用并立即启动 Docker 和 Tuned 服务
-systemctl enable --now docker
-check_error "启用Docker服务"
-
+# 启用Tuned服务
 systemctl enable --now tuned
 check_error "启用Tuned服务"
 
-# 修改时区为上海
+# 6. 系统设置
+echo "配置系统设置..."
+# 设置时区
 timedatectl set-timezone Asia/Shanghai
 check_error "设置时区"
 
-# 修改SSH端口
+# 配置SSH
 sed -i 's/#Port 22/Port 9399/' /etc/ssh/sshd_config
 check_error "修改SSH端口"
 
 systemctl restart sshd
 check_error "重启SSH服务"
 
-# 运行NextTrace安装脚本
+# 7. 安装其他工具
+echo "安装其他工具..."
+# 安装NextTrace
 bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
 check_error "安装NextTrace"
 
-# 启用zram
+# 配置ZRAM
 echo -e "[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd" | tee /etc/systemd/zram-generator.conf
 check_error "配置ZRAM"
 
-# 启动容器
+# 8. 启动容器
+echo "启动容器..."
 cd /root && docker compose up -d
 check_error "启动root目录容器"
 
@@ -171,11 +174,13 @@ check_error "启动proxy容器"
 cd /root/vmagent && docker compose pull && docker compose up -d
 check_error "启动vmagent容器"
 
-# 添加定时任务
+# 9. 配置定时任务
+echo "配置定时任务..."
 (crontab -l 2>/dev/null; echo "5 0 * * * apt update && apt upgrade -y") | crontab -
 check_error "添加定时任务"
 
-# 安装fish
+# 10. 安装fish shell
+echo "安装fish shell..."
 echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_12/ /' | tee /etc/apt/sources.list.d/shells:fish:release:3.list
 check_error "添加fish仓库"
 
