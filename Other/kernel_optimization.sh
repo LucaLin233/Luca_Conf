@@ -1,10 +1,39 @@
 #!/bin/bash
 # Linux Kernel Optimization
-# Supported platforms: CentOS/RedHat 7+, Debian 9+, and Ubuntu 16+
+# Supported platforms: CentOS/RedHat 7+, Debian 9+, Ubuntu 16+, AlmaLinux 9+
+# Check root privileges
 [ "$(id -u)" != "0" ] && { echo "Error: You must be root to run this script"; exit 1; }
 
+# Check system compatibility
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    case "$ID" in
+        debian)
+            [ "${VERSION_ID%%.*}" -ge 12 ] || echo "Warning: This script is tested on Debian 12 and later"
+            ;;
+        almalinux)
+            [ "${VERSION_ID%%.*}" -ge 9 ] || echo "Warning: This script is tested on AlmaLinux 9 and later"
+            ;;
+        *)
+            echo "Warning: Untested distribution: $ID"
+            ;;
+    esac
+fi
+
+# Check required files
+[ ! -f /etc/security/limits.conf ] && { echo "Error: limits.conf not found"; exit 1; }
+[ ! -f /etc/sysctl.conf ] && { echo "Error: sysctl.conf not found"; exit 1; }
+
+# Create backups
+backup_date=$(date +%Y%m%d_%H%M%S)
+cp /etc/sysctl.conf "/etc/sysctl.conf.backup_${backup_date}"
+cp /etc/security/limits.conf "/etc/security/limits.conf.backup_${backup_date}"
+
+# Configure PAM limits
 [ -e /etc/security/limits.d/*nproc.conf ] && rename nproc.conf nproc.conf_bk /etc/security/limits.d/*nproc.conf
 [ -f /etc/pam.d/common-session ] && [ -z "$(grep 'session required pam_limits.so' /etc/pam.d/common-session)" ] && echo "session required pam_limits.so" >> /etc/pam.d/common-session
+
+# Configure limits.conf
 sed -i '/^# End of file/,$d' /etc/security/limits.conf
 cat >> /etc/security/limits.conf <<EOF
 # End of file
@@ -27,47 +56,56 @@ root     hard   memlock   unlimited
 root     soft   memlock   unlimited
 EOF
 
-sed -i '/fs.file-max/d' /etc/sysctl.conf
-sed -i '/fs.inotify.max_user_instances/d' /etc/sysctl.conf
-sed -i '/net.core.somaxconn/d' /etc/sysctl.conf
-sed -i '/net.core.netdev_max_backlog/d' /etc/sysctl.conf
-sed -i '/net.core.rmem_max/d' /etc/sysctl.conf
-sed -i '/net.core.wmem_max/d' /etc/sysctl.conf
-sed -i '/net.ipv4.udp_rmem_min/d' /etc/sysctl.conf
-sed -i '/net.ipv4.udp_wmem_min/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_rmem/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_wmem/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_mem/d' /etc/sysctl.conf
-sed -i '/net.ipv4.udp_mem/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_syncookies/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_fin_timeout/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_tw_reuse/d' /etc/sysctl.conf
-sed -i '/net.ipv4.ip_local_port_range/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_max_syn_backlog/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_max_tw_buckets/d' /etc/sysctl.conf
-sed -i '/net.ipv4.route.gc_timeout/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_syn_retries/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_synack_retries/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_timestamps/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_max_orphans/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_no_metrics_save/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_ecn/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_frto/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_mtu_probing/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_rfc1337/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_sack/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_fack/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_window_scaling/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_adv_win_scale/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_moderate_rcvbuf/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_keepalive_time/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_notsent_lowat/d' /etc/sysctl.conf
-sed -i '/net.ipv4.conf.all.route_localnet/d' /etc/sysctl.conf
-sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf
-sed -i '/net.ipv4.conf.all.forwarding/d' /etc/sysctl.conf
-sed -i '/net.ipv4.conf.default.forwarding/d' /etc/sysctl.conf
-sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
-sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
+# Clean old sysctl settings
+declare -a params=(
+    "fs.file-max"
+    "fs.inotify.max_user_instances"
+    "net.core.somaxconn"
+    "net.core.netdev_max_backlog"
+    "net.core.rmem_max"
+    "net.core.wmem_max"
+    "net.ipv4.udp_rmem_min"
+    "net.ipv4.udp_wmem_min"
+    "net.ipv4.tcp_rmem"
+    "net.ipv4.tcp_wmem"
+    "net.ipv4.tcp_mem"
+    "net.ipv4.udp_mem"
+    "net.ipv4.tcp_syncookies"
+    "net.ipv4.tcp_fin_timeout"
+    "net.ipv4.tcp_tw_reuse"
+    "net.ipv4.ip_local_port_range"
+    "net.ipv4.tcp_max_syn_backlog"
+    "net.ipv4.tcp_max_tw_buckets"
+    "net.ipv4.route.gc_timeout"
+    "net.ipv4.tcp_syn_retries"
+    "net.ipv4.tcp_synack_retries"
+    "net.ipv4.tcp_timestamps"
+    "net.ipv4.tcp_max_orphans"
+    "net.ipv4.tcp_no_metrics_save"
+    "net.ipv4.tcp_ecn"
+    "net.ipv4.tcp_frto"
+    "net.ipv4.tcp_mtu_probing"
+    "net.ipv4.tcp_rfc1337"
+    "net.ipv4.tcp_sack"
+    "net.ipv4.tcp_fack"
+    "net.ipv4.tcp_window_scaling"
+    "net.ipv4.tcp_adv_win_scale"
+    "net.ipv4.tcp_moderate_rcvbuf"
+    "net.ipv4.tcp_keepalive_time"
+    "net.ipv4.tcp_notsent_lowat"
+    "net.ipv4.conf.all.route_localnet"
+    "net.ipv4.ip_forward"
+    "net.ipv4.conf.all.forwarding"
+    "net.ipv4.conf.default.forwarding"
+    "net.core.default_qdisc"
+    "net.ipv4.tcp_congestion_control"
+)
+
+for param in "${params[@]}"; do
+    sed -i "/${param}/d" /etc/sysctl.conf
+done
+
+# Add new sysctl settings
 cat >> /etc/sysctl.conf << EOF
 fs.file-max = 1048576
 fs.inotify.max_user_instances = 8192
@@ -110,10 +148,34 @@ net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
 EOF
 
-modprobe tcp_bbr &>/dev/null
-if grep -wq bbr /proc/sys/net/ipv4/tcp_available_congestion_control; then
-echo "net.core.default_qdisc = fq" >>/etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control = bbr" >>/etc/sysctl.conf
+# Configure BBR
+if ! grep -q "tcp_bbr" /proc/modules; then
+    modprobe tcp_bbr 2>/dev/null || {
+        echo "Warning: Unable to load BBR module"
+    }
 fi
 
-sysctl -p && clear && . ~/.bashrc && echo "Successful kernel optimization - Powered by apad.pro"
+if grep -q "bbr" /proc/sys/net/ipv4/tcp_available_congestion_control; then
+    echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
+else
+    echo "Warning: BBR is not available on this system"
+fi
+
+# Apply changes and verify
+echo "Applying new settings..."
+sysctl -p 2>&1 | grep -i error && {
+    echo "Error: Some sysctl parameters failed to apply"
+    exit 1
+} || echo "Sysctl parameters applied successfully"
+
+# Verify limits
+ulimit -n | grep "1048576" || echo "Warning: File descriptor limits may not be applied until next login"
+
+# Final message
+echo "Kernel optimization completed successfully"
+echo "Backup files created:"
+echo "- /etc/sysctl.conf.backup_${backup_date}"
+echo "- /etc/security/limits.conf.backup_${backup_date}"
+echo "Please reboot your system to ensure all changes take effect"
+echo "Powered by apad.pro"
