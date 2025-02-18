@@ -5,6 +5,44 @@ INSTALL_DIR="/root/proxy"
 SRC_DIR="${INSTALL_DIR}/src"
 BACKUP_DIR="${INSTALL_DIR}/backup"
 
+# 卸载函数
+uninstall_singbox() {
+    echo "开始卸载 sing-box..."
+    
+    # 停止并禁用服务
+    if systemctl is-active sing-box >/dev/null 2>&1; then
+        echo "停止 sing-box 服务..."
+        systemctl stop sing-box
+    fi
+    
+    if systemctl is-enabled sing-box >/dev/null 2>&1; then
+        echo "禁用 sing-box 服务..."
+        systemctl disable sing-box
+    fi
+    
+    # 删除服务文件
+    if [ -f "/etc/systemd/system/sing-box.service" ]; then
+        echo "删除服务文件..."
+        rm -f /etc/systemd/system/sing-box.service
+        systemctl daemon-reload
+    fi
+    
+    # 删除 sing-box 二进制文件和 src 目录
+    if [ -d "${SRC_DIR}" ]; then
+        echo "删除 sing-box 程序文件..."
+        rm -rf "${SRC_DIR}"
+    fi
+    
+    # 如果系统启用了 SELinux，清理相关设置
+    if command -v selinuxenabled >/dev/null 2>&1 && selinuxenabled; then
+        echo "清理 SELinux 设置..."
+        setsebool -P nis_enabled 0 || true
+    fi
+    
+    echo "sing-box 卸载完成"
+    echo "注意: /root/proxy 目录及其配置文件已保留"
+}
+
 # 错误处理函数
 error_exit() {
     echo "错误: $1" >&2
@@ -374,6 +412,21 @@ main() {
         error_exit "请使用 sudo 运行此脚本"
     fi
     
+    # 处理命令行参数
+    case "$1" in
+        uninstall)
+            uninstall_singbox
+            exit 0
+            ;;
+        install|"")
+            # 继续安装流程
+            ;;
+        *)
+            echo "用法: $0 [install|uninstall]"
+            exit 1
+            ;;
+    esac
+    
     # 设置清理陷阱
     trap cleanup EXIT
     
@@ -385,11 +438,11 @@ main() {
     create_directories
     backup_existing
     download_singbox
-    configure_selinux    # 添加这一行
+    configure_selinux
     create_service
     enable_service
     echo "安装完成!"
 }
 
 # 执行主函数
-main
+main "$@"
