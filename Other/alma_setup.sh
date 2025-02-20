@@ -136,7 +136,7 @@ check_error "启动vmagent容器"
 
 # 9. 添加定时任务
 echo "配置定时任务..."
-(crontab -l 2>/dev/null; echo "5 0 * * * dnf update -y") | crontab -
+(crontab -l 2>/dev/null; echo "5 0 * * * dnf upgrade -y") | crontab -
 check_error "添加定时任务"
 
 # 10. 安装fish
