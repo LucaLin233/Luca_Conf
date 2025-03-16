@@ -163,8 +163,8 @@ echo "启动容器..."
 cd /root && docker compose up -d
 check_error "启动root目录容器"
 
-bash <(curl -sL zve.me/singbox) -c /root/proxy/config.json
-check_error "启动proxy服务"
+cd /root/proxy && docker compose up -d
+check_error "启动proxy容器"
 
 cd /root/vmagent && docker compose pull && docker compose up -d
 check_error "启动vmagent容器"
