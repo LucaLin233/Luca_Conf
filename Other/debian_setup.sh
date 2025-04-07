@@ -12,9 +12,9 @@ check_error() {
     fi
 }
 
-# 步骤1: 更新系统并安装基础软件(包括gpg)
+# 步骤1: 更新系统并安装基础软件
 green "步骤1: 更新系统并安装基础软件..."
-apt update && apt upgrade -y && apt install -y dnsutils wget curl gnupg2
+apt update && apt upgrade -y && apt install -y dnsutils wget curl
 check_error "系统更新和安装基础软件"
 
 # 步骤2: 内存检查和SWAP设置
@@ -65,28 +65,18 @@ check_error "设置定时更新"
 
 # 步骤7: 安装Fish和tuned
 green "步骤7: 安装Fish和tuned..."
-# 安装Fish - 使用官方方式添加仓库
-apt-add-repository 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /'
-wget -nv https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key -O Release.key
-apt-key add - < Release.key
-rm Release.key
+# 直接安装Fish和tuned
+apt install -y fish tuned
+check_error "安装Fish和tuned"
 
-# 更新并安装Fish
-apt update
-apt install -y fish
-
-# 安装tuned(先确认包存在)
-if apt-cache show tuned &>/dev/null; then
-    apt install -y tuned
-    systemctl enable --now tuned 2>/dev/null || true
-else
-    red "tuned包不可用，跳过安装"
-fi
+# 启用tuned服务
+systemctl enable --now tuned
+check_error "启用tuned服务"
 
 # 设置Fish为默认shell
-if [ -f "$(which fish)" ]; then
-    fish_path=$(which fish)
-    grep -qxF "$fish_path" /etc/shells || echo "$fish_path" | tee -a /etc/shells
+fish_path=$(which fish)
+if [ -n "$fish_path" ]; then
+    grep -qxF "$fish_path" /etc/shells || echo "$fish_path" >> /etc/shells
     chsh -s "$fish_path"
     check_error "设置Fish为默认shell"
 else
