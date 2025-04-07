@@ -14,7 +14,7 @@ check_error() {
 
 # 步骤1: 更新系统并安装基础软件
 green "步骤1: 更新系统并安装基础软件..."
-apt update && apt upgrade -y && apt install -y dnsutils wget curl
+apt update && apt upgrade -y && apt install -y dnsutils wget curl rsync chrony
 check_error "系统更新和安装基础软件"
 
 # 步骤2: 内存检查和SWAP设置
