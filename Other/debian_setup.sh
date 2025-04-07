@@ -9,12 +9,13 @@ log_file="/root/deployment.log"
 # 记录函数
 log_step() {
     ((step++))
+    echo -e "\033[0;32m执行步骤 $step: $1\033[0m"
     echo "执行步骤 $step: $1" >> $log_file
 }
 
 # 错误处理
 handle_error() {
-    echo "步骤 $step 出错: $1"
+    echo -e "\033[0;31m步骤 $step 出错: $1\033[0m"
     exit 1
 }
 
@@ -95,4 +96,4 @@ echo "$fish_path" | tee -a /etc/shells && chsh -s "$fish_path" || handle_error "
 log_step "安装并启动tuned"
 apt install -y tuned && systemctl enable --now tuned || handle_error "安装或配置tuned失败"
 
-echo "部署成功完成！日志文件位于: $log_file"
+echo -e "\033[0;32m部署成功完成！日志文件位于: $log_file\033[0m"
