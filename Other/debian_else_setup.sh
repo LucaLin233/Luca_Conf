@@ -28,9 +28,9 @@ green "安装fisher插件集..."
 fisher install jhillyerd/plugin-git jorgebucaran/autopair.fish jethrokuan/z edc/bass patrickf1/fzf.fish
 check_error "安装fisher插件"
 
-# 步骤2: 安装starship
+# 步骤2: 安装starship（自动确认）
 green "步骤2: 安装starship..."
-curl -sS https://starship.rs/install.sh | sh
+curl -sS https://starship.rs/install.sh | sh -s -- -y
 check_error "安装starship"
 
 # 配置starship (检查避免重复)
