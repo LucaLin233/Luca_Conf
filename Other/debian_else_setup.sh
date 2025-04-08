@@ -9,6 +9,11 @@ function red
     echo -e "\033[31m$argv\033[0m"
 end
 
+function yellow
+    echo -e "\033[33m$argv\033[0m"
+end
+
+# 错误处理函数
 function check_error
     if test $status -ne 0
         red "错误: $argv 执行失败"
@@ -16,51 +21,139 @@ function check_error
     end
 end
 
+# 命令执行封装
+function run_cmd
+    eval $argv
+    check_error "$argv"
+end
+
+# 检查程序是否已安装
+function is_installed
+    command -v $argv[1] >/dev/null 2>&1
+end
+
+# 检查配置文件中是否包含特定内容
+function config_contains
+    grep -q "$argv[2]" $argv[1] 2>/dev/null
+end
+
+# 获取当前用户
+set current_user (whoami)
+
+# 步骤0: 显示欢迎信息
+green "Fish环境增强部署开始..."
+green "当前用户: $current_user"
+
 # 步骤1: 安装fisher和插件
 green "步骤1: 安装fisher和插件..."
-curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
-check_error "安装fisher"
 
-fisher install jorgebucaran/fisher
-check_error "安装fisher核心插件"
+# 检查fisher是否已安装
+if not functions -q fisher
+    yellow "安装fisher包管理器..."
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    fisher install jorgebucaran/fisher
+    check_error "安装fisher"
+else
+    green "Fisher已安装，跳过安装步骤"
+end
 
-green "安装fisher插件集..."
-fisher install jhillyerd/plugin-git jorgebucaran/autopair.fish jethrokuan/z edc/bass patrickf1/fzf.fish
-check_error "安装fisher插件"
+# 安装fisher插件集
+set required_plugins jhillyerd/plugin-git jorgebucaran/autopair.fish jethrokuan/z edc/bass patrickf1/fzf.fish
+set installed_plugins (fisher list)
+
+green "检查并安装所需fisher插件..."
+for plugin in $required_plugins
+    if not echo $installed_plugins | grep -q $plugin
+        yellow "安装插件: $plugin"
+        fisher install $plugin
+        check_error "安装 $plugin"
+    else
+        green "插件已安装: $plugin"
+    end
+end
 
 # 步骤2: 安装starship（自动确认）
-green "步骤2: 安装starship..."
-curl -sS https://starship.rs/install.sh | sh -s -- -y
-check_error "安装starship"
+green "步骤2: 检查并安装starship..."
+if not is_installed starship
+    yellow "安装starship提示符..."
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    check_error "安装starship"
+else
+    green "Starship已安装，跳过安装步骤"
+end
 
 # 配置starship (检查避免重复)
-if not grep -q "starship init" ~/.config/fish/config.fish
-    echo 'starship init fish | source' >> ~/.config/fish/config.fish
+set config_file ~/.config/fish/config.fish
+if not config_contains $config_file "starship init"
+    yellow "添加starship初始化到fish配置..."
+    echo 'starship init fish | source' >> $config_file
     check_error "配置starship"
+else
+    green "Starship已在fish配置中初始化"
 end
 
 # 步骤3: 安装mise和Python
-green "步骤3: 安装mise和Python..."
-curl https://mise.run | sh
-check_error "安装mise"
+green "步骤3: 检查并安装mise和Python..."
+
+# 检查mise是否已安装
+set mise_path $HOME/.local/bin/mise
+if not test -e $mise_path
+    yellow "安装mise版本管理器..."
+    curl https://mise.run | sh
+    check_error "安装mise"
+else
+    green "Mise已安装，跳过安装步骤"
+end
 
 # 添加mise到fish配置 (检查避免重复)
-if not grep -q "mise activate" ~/.config/fish/config.fish
-    echo "$HOME/.local/bin/mise activate fish | source" >> ~/.config/fish/config.fish
+if not config_contains $config_file "mise activate"
+    yellow "添加mise初始化到fish配置..."
+    echo "$HOME/.local/bin/mise activate fish | source" >> $config_file
     check_error "配置mise到fish"
+else
+    green "Mise已在fish配置中初始化"
 end
 
 # 确保.local/bin在PATH中
-set -gx PATH $HOME/.local/bin $PATH
+if not contains $HOME/.local/bin $PATH
+    set -gx PATH $HOME/.local/bin $PATH
+end
 
-# 安装Python 3.10
-~/.local/bin/mise use -g python@3.10
-check_error "安装Python 3.10"
+# 检查Python 3.10是否已安装
+if not $mise_path list python | grep -q "3.10"
+    yellow "通过mise安装Python 3.10..."
+    $mise_path use -g python@3.10
+    check_error "安装Python 3.10"
+else
+    green "Python 3.10已由mise管理，跳过安装"
+end
 
 # 步骤4: 内核调优
 green "步骤4: 执行内核调优..."
-bash -c "curl -fsSL https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/kernel_optimization.sh | bash"
-check_error "内核调优"
+# 检查是否有sudo权限
+if is_installed sudo
+    # 检查是否已经应用过内核优化
+    if test ! -e /tmp/.kernel_optimization_done
+        yellow "应用内核调优设置..."
+        bash -c "curl -fsSL https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/kernel_optimization.sh | bash"
+        check_error "内核调优"
+        touch /tmp/.kernel_optimization_done
+    else
+        green "内核已优化，跳过调优步骤"
+    end
+else
+    red "警告: 无sudo权限，跳过内核调优。请手动执行或使用root权限运行此步骤。"
+end
 
-green "所有设置已成功完成！"
-green "重新启动终端以应用所有更改，或执行 'source ~/.config/fish/config.fish'"
+# 步骤5: 设置总结
+green "\n====== 部署完成，设置总结 ======="
+echo "Fish版本: "(fish --version)
+echo "Fisher插件: "(fisher list | tr '\n' ' ')
+echo "Starship版本: "(starship --version)
+echo "Mise版本: "($mise_path --version)
+echo "Python版本: "($mise_path exec python -- --version)
+echo "配置文件: "$config_file
+echo "======================================"
+
+green "\n所有设置已成功完成！"
+yellow "提示: 重新启动终端以应用所有更改，或执行 'source ~/.config/fish/config.fish'"
