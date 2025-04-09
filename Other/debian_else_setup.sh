@@ -37,6 +37,20 @@ function config_contains
     grep -q "$argv[2]" $argv[1] 2>/dev/null
 end
 
+# 安全获取版本信息，防止命令失败
+function safe_version
+    set cmd $argv[1]
+    set args $argv[2..-1]
+    
+    if command -v $cmd >/dev/null 2>&1
+        # 命令存在，尝试执行
+        set output (eval "$cmd $args" 2>/dev/null; or echo "命令执行失败")
+        echo $output
+    else
+        echo "未安装或未配置"
+    end
+end
+
 # 获取当前用户
 set current_user (whoami)
 
@@ -160,20 +174,24 @@ green "\n====== 部署完成，设置总结 ======="
 echo "Fish版本: "(fish --version)
 echo "Fisher插件: "(fisher list | tr '\n' ' ')
 
-# 安全获取版本信息，防止命令失败
-function safe_version
-    command -v $argv[1] >/dev/null 2>&1 && $argv[2..-1] 2>/dev/null || echo "未安装或未配置"
+# 简单直接地获取各组件版本
+if command -v starship > /dev/null 2>&1
+    echo "Starship版本: "(starship --version 2>/dev/null || echo "已安装但无法获取版本")
+else
+    echo "Starship版本: 未安装或未配置"
 end
 
-echo "Starship版本: "(safe_version starship --version)
-
-# 检查mise是否正确安装并可用
+# 获取Mise版本
 if test -e $mise_path
-    echo "Mise版本: "(eval $mise_path --version 2>/dev/null || echo "安装但无法获取版本")
+    echo "Mise版本: "($mise_path --version 2>/dev/null || echo "已安装但无法获取版本")
     
-    # 尝试获取Python版本
-    set python_version (eval $mise_path exec python -- --version 2>/dev/null || echo "未配置")
-    echo "Python版本: "$python_version
+    # 尝试获取Python版本，通过直接调用python而不是通过mise
+    if $mise_path which python > /dev/null 2>&1
+        set python_cmd ($mise_path which python)
+        echo "Python版本: "($python_cmd --version 2>&1 || echo "已安装但无法获取版本")
+    else
+        echo "Python版本: 未通过mise安装或配置"
+    end
 else
     echo "Mise状态: 安装路径不存在，请检查安装"
     echo "Python版本: 未通过mise配置"
