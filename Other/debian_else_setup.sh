@@ -119,13 +119,23 @@ if not contains $HOME/.local/bin $PATH
     set -gx PATH $HOME/.local/bin $PATH
 end
 
+# 加载mise到当前shell以便执行Python安装
+if test -e $mise_path
+    eval ($mise_path activate fish)
+end
+
 # 检查Python 3.10是否已安装
-if not $mise_path list python | grep -q "3.10"
-    yellow "通过mise安装Python 3.10..."
-    $mise_path use -g python@3.10
-    check_error "安装Python 3.10"
+if test -e $mise_path
+    if not $mise_path list python 2>/dev/null | grep -q "3.10"
+        yellow "通过mise安装Python 3.10..."
+        # 确保$PATH中包含mise
+        $mise_path use -g python@3.10
+        check_error "安装Python 3.10"
+    else
+        green "Python 3.10已由mise管理，跳过安装"
+    end
 else
-    green "Python 3.10已由mise管理，跳过安装"
+    red "警告: mise未正确安装，跳过Python设置"
 end
 
 # 步骤4: 内核调优
@@ -136,7 +146,7 @@ if is_installed sudo
     if test ! -e /tmp/.kernel_optimization_done
         yellow "应用内核调优设置..."
         bash -c "curl -fsSL https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/kernel_optimization.sh | bash"
-        check_error "内核调优"
+        # 不检查错误，因为某些内核参数可能不支持
         touch /tmp/.kernel_optimization_done
     else
         green "内核已优化，跳过调优步骤"
@@ -149,9 +159,26 @@ end
 green "\n====== 部署完成，设置总结 ======="
 echo "Fish版本: "(fish --version)
 echo "Fisher插件: "(fisher list | tr '\n' ' ')
-echo "Starship版本: "(starship --version)
-echo "Mise版本: "($mise_path --version)
-echo "Python版本: "($mise_path exec python -- --version)
+
+# 安全获取版本信息，防止命令失败
+function safe_version
+    command -v $argv[1] >/dev/null 2>&1 && $argv[2..-1] 2>/dev/null || echo "未安装或未配置"
+end
+
+echo "Starship版本: "(safe_version starship --version)
+
+# 检查mise是否正确安装并可用
+if test -e $mise_path
+    echo "Mise版本: "(eval $mise_path --version 2>/dev/null || echo "安装但无法获取版本")
+    
+    # 尝试获取Python版本
+    set python_version (eval $mise_path exec python -- --version 2>/dev/null || echo "未配置")
+    echo "Python版本: "$python_version
+else
+    echo "Mise状态: 安装路径不存在，请检查安装"
+    echo "Python版本: 未通过mise配置"
+end
+
 echo "配置文件: "$config_file
 echo "======================================"
 
