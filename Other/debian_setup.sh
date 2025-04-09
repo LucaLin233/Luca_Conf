@@ -15,6 +15,12 @@ check_error() {
 
 # 命令执行封装
 run_cmd() {
+    # 特殊处理sysctl命令
+    if [[ "$1" == "sysctl" ]]; then
+        "$@" -e || true
+        return 0
+    fi
+    
     "$@"
     check_error "$*"
 }
@@ -34,7 +40,7 @@ setup_swap() {
     
     if ! grep -q "^vm.swappiness" /etc/sysctl.conf; then
         echo 'vm.swappiness=10' >> /etc/sysctl.conf
-        run_cmd sysctl -p
+        sysctl -p -e || true
     fi
 }
 
@@ -155,8 +161,8 @@ echo "内存情况: $(free -h | grep Mem | awk '{print $2}')"
 echo "SWAP情况: $(free -h | grep Swap | awk '{print $2}')"
 echo "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
 echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')"
-echo "Docker版本: $(docker --version | awk '{print $3}' | tr -d ',')"
-echo "活跃容器数: $(docker ps -q | wc -l)"
+echo "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
+echo "活跃容器数: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
 echo "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
 echo "========================================="
 
