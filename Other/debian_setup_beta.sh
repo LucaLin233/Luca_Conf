@@ -69,7 +69,7 @@ fi
 # 备份SSH配置文件（在最后步骤前准备好）
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
-# 步骤3: 安装Docker和NextTrace（添加明确检测）
+# 步骤3: 检查并安装Docker和NextTrace
 green "步骤3: 检查并安装Docker和NextTrace..."
 if ! command -v docker &>/dev/null; then
     green "Docker未检测到，正在安装..."
@@ -179,7 +179,7 @@ echo "CPU核心数: $(nproc)"
 echo "内存情况: $(free -h | grep Mem | awk '{print $2}')"
 echo "SWAP情况: $(free -h | grep Swap | awk '{print $2}')"
 echo "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
-echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')"
+echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' || echo '未指定 (默认22)')"
 echo "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
 echo "活跃容器数: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
 
