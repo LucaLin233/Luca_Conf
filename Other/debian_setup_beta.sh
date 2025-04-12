@@ -84,15 +84,26 @@ fi
 # 步骤4: 启动容器
 green "步骤4: 启动容器..."
 SUCCESSFUL_STARTS=0  # 计数器，跟踪成功启动的容器
+FAILED_DIRS=""  # 跟踪失败目录
 for dir in /root /root/proxy /root/vmagent; do
     if [ -d "$dir" ]; then
-        green "尝试启动目录 $dir 中的容器..."
-        if cd "$dir" && (docker compose up -d || docker-compose up -d); then
-            green "成功启动容器在 $dir"
-            SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+        green "检查目录 $dir 中的容器..."
+        if [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/compose.yaml" ]; then  # 检查Compose文件
+            green "检测到Compose文件，正在尝试启动目录 $dir 中的容器..."
+            if cd "$dir" && (docker compose up -d || docker-compose up -d); then
+                green "成功启动容器在 $dir"
+                SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+            else
+                red "错误: 在 $dir 中启动容器失败！请检查Docker配置或文件。"
+                FAILED_DIRS="$FAILED_DIRS $dir"  # 添加到失败列表
+            fi
         else
-            red "错误: $dir 中无有效的Docker Compose文件！请检查目录或配置文件。"
+            red "错误: 在 $dir 中未找到有效的Docker Compose文件 (如 docker-compose.yml 或 compose.yaml)！"
+            FAILED_DIRS="$FAILED_DIRS $dir"  # 添加到失败列表
         fi
+    else
+        red "错误: 目录 $dir 不存在，无法启动容器。"
+        FAILED_DIRS="$FAILED_DIRS $dir"  # 添加到失败列表
     fi
 done
 
@@ -150,9 +161,9 @@ echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')"
 echo "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
 echo "活跃容器数: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
 
-# 如果没有成功启动任何容器，添加提醒
-if [ $SUCCESSFUL_STARTS -eq 0 ]; then
-    red "警告: 未成功启动任何容器！请检查相关目录和Docker配置。"
+# 如果有失败目录，添加提醒
+if [ -n "$FAILED_DIRS" ]; then
+    red "警告: 以下目录中的容器未成功启动: $FAILED_DIRS！请检查并手动修复。"
 fi
 
 echo "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
