@@ -114,7 +114,7 @@ done
 
 # 步骤6: 设置定时更新任务
 green "步骤6: 设置定时更新任务..."
-CRON_CMD="5 0 * * * apt-get update && apt-get upgrade -y > /var/log/auto-update.log 2>&1"
+CRON_CMD="5 0 * * 0 apt-get update && apt-get upgrade -y > /var/log/auto-update.log 2>&1"
 if ! (crontab -l 2>/dev/null | grep -q "apt-get update && apt-get upgrade"); then
     (crontab -l 2>/dev/null || echo "") | { cat; echo "$CRON_CMD"; } | crontab -
     green "已添加每天凌晨0:05的自动更新任务"
