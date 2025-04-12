@@ -193,7 +193,11 @@ yellow "CPU核心数: $(nproc)"
 yellow "内存情况: $(free -h | grep Mem | awk '{print $2}')"
 yellow "SWAP情况: $(free -h | grep Swap | awk '{print $2}')"
 yellow "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
-yellow "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' || echo '未指定 (默认22)')"
+SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
+if [ -z "$SSH_PORT" ]; then
+    SSH_PORT="未指定 (默认22)"
+fi
+yellow "SSH端口: $SSH_PORT"
 yellow "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
 yellow "活跃容器数: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
 
@@ -202,7 +206,7 @@ if [ -n "$FAILED_DIRS" ]; then
 fi
 
 yellow "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
-yellow "Fish默认shell: $SHELL")
+yellow "Fish默认shell: $SHELL"
 yellow "========================================="
 yellow "步骤10完成: 汇总信息已显示。"
 
