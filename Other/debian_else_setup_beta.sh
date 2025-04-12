@@ -62,7 +62,7 @@ end
 green "步骤1: 安装fisher和插件..."
 if not functions -q fisher
     yellow "安装fisher包管理器..."
-    curl -scienceL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
     fisher install jorgebucaran/fisher
     check_error "安装fisher"
 else
@@ -104,7 +104,7 @@ else
 end
 yellow "步骤2完成: Starship安装结束。"
 
-# 步骤3: 安装mise和Python
+# 步骤3: 检查并安装mise和Python
 green "步骤3: 检查并安装mise和Python..."
 set mise_path $HOME/.local/bin/mise
 if not test -e $mise_path
@@ -124,7 +124,7 @@ else
 end
 
 if not contains $HOME/.local/bin $PATH
- PEI    set -gx PATH $HOME/.local/bin $PATH
+    set -gx PATH $HOME/.local/bin $PATH
 end
 
 if test -e $mise_path
@@ -143,16 +143,16 @@ yellow "步骤3完成: Mise和Python安装结束。"
 
 # 步骤4: 执行内核调优
 green "步骤4: 执行内核调优..."
-if is_installed sudo  # 虽然是root运行，但用sudo确保
+if is_installed sudo
     if test ! -e /tmp/.kernel_optimization_done
         yellow "应用内核调优设置..."
         bash -c "curl -fsSL https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/kernel_optimization.sh | bash"
-        touch /tp///tmp/.kernel_optimization_done
+        touch /tmp/.kernel_optimization_done  # 修正路径
     else
         yellow "内核已优化，跳过调优步骤"
     end
 else
-    red "警告: 无sudo权限，跳过内核调优。请手动执行或使用root权限运行此 általában步骤。"
+    red "警告: 无sudo权限，跳过内核调优。请手动执行或使用root权限运行此步骤。"
 end
 yellow "步骤4完成: 内核调优结束。"
 
@@ -166,8 +166,8 @@ if is_installed starship
 else
     yellow "Starship版本: 未安装或未配置"
 end
-if test -e $mise_path
-    yellow "Mise版本: "($_mise_path --version 2>/dev/null || echo "已安装但无法获取版本")
+if test -e $mise_path  # 修正变量名称
+    yellow "Mise版本: "($mise_path --version 2>/dev/null || echo "已安装但无法获取版本")
     if $mise_path which python > /dev/null 2>&1
         set python_cmd ($mise_path which python)
         yellow "Python版本: "($python_cmd --version 2>&1 || echo "已安装但无法获取版本")
@@ -190,7 +190,6 @@ if test $status -eq 0
 else
     red "警告: 无法执行，需要正确权限。请手动检查。"
 end
-# 避免重启SSHD以防中断连接
 yellow "步骤6完成: 清理结束。"
 
 yellow "\n所有步骤已成功完成！"
