@@ -83,10 +83,16 @@ fi
 
 # 步骤4: 启动容器
 green "步骤4: 启动容器..."
+SUCCESSFUL_STARTS=0  # 计数器，跟踪成功启动的容器
 for dir in /root /root/proxy /root/vmagent; do
     if [ -d "$dir" ]; then
-        green "启动目录 $dir 中的容器..."
-        (cd "$dir" && (docker compose up -d || docker-compose up -d)) || yellow "警告: $dir 中无有效的Docker Compose文件"
+        green "尝试启动目录 $dir 中的容器..."
+        if cd "$dir" && (docker compose up -d || docker-compose up -d); then
+            green "成功启动容器在 $dir"
+            SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+        else
+            red "错误: $dir 中无有效的Docker Compose文件！请检查目录或配置文件。"
+        fi
     fi
 done
 
@@ -109,25 +115,13 @@ else
     green "tuned服务已在运行"
 fi
 
-# 设置Fish为默认shell
-fish_path=$(which fish)
-if [ -n "$fish_path" ]; then
-    if ! grep -q "$fish_path" /etc/shells; then
-        echo "$fish_path" >> /etc/shells
-    fi
-    
-    if [ "$SHELL" != "$fish_path" ]; then
-        run_cmd chsh -s "$fish_path"
-        green "Fish已设置为默认shell，重新登录后生效"
-    else
-        green "Fish已是默认shell"
-    fi
-else
-    red "Fish未成功安装，跳过设置默认shell"
-fi
+# 步骤7: 设置时区
+green "步骤7: 设置系统时区为上海..."
+run_cmd timedatectl set-timezone Asia/Shanghai
+green "时区已成功设置为上海"
 
-# 步骤7: 修改SSH端口（现在移到最后，并添加用户确认）
-green "步骤7: 修改SSH端口..."
+# 步骤8: 修改SSH端口（添加用户确认）
+green "步骤8: 修改SSH端口..."
 if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
     read -p "您要将SSH端口改为9399吗？ (y/n): " confirm
     if [ "$confirm" = "y" ]; then
@@ -144,7 +138,7 @@ else
     green "SSH端口已是9399，无需修改"
 fi
 
-# 步骤8: 系统信息汇总
+# 步骤9: 系统信息汇总
 green "\n====== 部署完成，系统信息汇总 ======="
 echo "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
 echo "内核版本: $(uname -r)"
@@ -155,6 +149,12 @@ echo "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
 echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')"
 echo "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
 echo "活跃容器数: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
+
+# 如果没有成功启动任何容器，添加提醒
+if [ $SUCCESSFUL_STARTS -eq 0 ]; then
+    red "警告: 未成功启动任何容器！请检查相关目录和Docker配置。"
+fi
+
 echo "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
 echo "========================================="
 
