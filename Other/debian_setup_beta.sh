@@ -66,26 +66,11 @@ else
     green "内存配置满足要求或SWAP已存在，跳过SWAP设置"
 fi
 
-# 步骤3: 设置时区和修改SSH端口
-green "步骤3: 设置时区和SSH端口..."
-run_cmd timedatectl set-timezone Asia/Shanghai
-
-# 备份SSH配置文件
+# 备份SSH配置文件（在最后步骤前准备好）
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
-if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
-    sed -i 's/^#\?Port [0-9]*/Port 9399/' /etc/ssh/sshd_config
-    if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
-        echo "Port 9399" >> /etc/ssh/sshd_config
-    fi
-    run_cmd systemctl restart sshd
-    yellow "SSH端口已更改为9399，请使用新端口连接"
-else
-    green "SSH端口已是9399，无需修改"
-fi
-
-# 步骤4: 安装Docker和NextTrace
-green "步骤4: 安装Docker和NextTrace..."
+# 步骤3: 安装Docker和NextTrace
+green "步骤3: 安装Docker和NextTrace..."
 if ! command -v docker &>/dev/null; then
     green "安装Docker..."
     run_cmd curl -fsSL https://get.docker.com | bash
@@ -96,8 +81,8 @@ if ! command -v nexttrace &>/dev/null; then
     run_cmd bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
 fi
 
-# 步骤5: 启动容器
-green "步骤5: 启动容器..."
+# 步骤4: 启动容器
+green "步骤4: 启动容器..."
 for dir in /root /root/proxy /root/vmagent; do
     if [ -d "$dir" ]; then
         green "启动目录 $dir 中的容器..."
@@ -105,8 +90,8 @@ for dir in /root /root/proxy /root/vmagent; do
     fi
 done
 
-# 步骤6: 设置定时更新任务
-green "步骤6: 设置定时更新任务..."
+# 步骤5: 设置定时更新任务
+green "步骤5: 设置定时更新任务..."
 CRON_CMD="5 0 * * 0 apt update && apt upgrade -y > /var/log/auto-update.log 2>&1"
 if ! (crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"); then
     (crontab -l 2>/dev/null || echo "") | { cat; echo "$CRON_CMD"; } | crontab -
@@ -115,8 +100,8 @@ else
     green "自动更新任务已存在，跳过设置"
 fi
 
-# 步骤7: 启用tuned服务
-green "步骤7: 启用tuned服务..."
+# 步骤6: 启用tuned服务
+green "步骤6: 启用tuned服务..."
 if ! systemctl is-active tuned &>/dev/null; then
     run_cmd systemctl enable --now tuned
     green "tuned服务已启用"
@@ -139,6 +124,24 @@ if [ -n "$fish_path" ]; then
     fi
 else
     red "Fish未成功安装，跳过设置默认shell"
+fi
+
+# 步骤7: 修改SSH端口（现在移到最后，并添加用户确认）
+green "步骤7: 修改SSH端口..."
+if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
+    read -p "您要将SSH端口改为9399吗？ (y/n): " confirm
+    if [ "$confirm" = "y" ]; then
+        sed -i 's/^#\?Port [0-9]*/Port 9399/' /etc/ssh/sshd_config
+        if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
+            echo "Port 9399" >> /etc/ssh/sshd_config
+        fi
+        run_cmd systemctl restart sshd
+        yellow "SSH端口已更改为9399，请使用新端口连接"
+    else
+        yellow "SSH端口修改已取消，保持原端口"
+    fi
+else
+    green "SSH端口已是9399，无需修改"
 fi
 
 # 步骤8: 系统信息汇总
