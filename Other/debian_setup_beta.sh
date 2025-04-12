@@ -186,6 +186,7 @@ yellow "步骤9完成: SSH端口修改结束。"
 
 # 步骤10: 系统信息汇总
 green "步骤10: 系统信息汇总"
+yellow "====== 部署完成，系统信息汇总 ======="
 yellow "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
 yellow "内核版本: $(uname -r)"
 yellow "CPU核心数: $(nproc)"
@@ -201,7 +202,7 @@ if [ -n "$FAILED_DIRS" ]; then
 fi
 
 yellow "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
-yellow "Fish默认shell: $SHELL"
+yellow "Fish默认shell: $SHELL")
 yellow "========================================="
 yellow "步骤10完成: 汇总信息已显示。"
 
