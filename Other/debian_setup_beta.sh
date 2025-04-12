@@ -69,16 +69,20 @@ fi
 # 备份SSH配置文件（在最后步骤前准备好）
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
-# 步骤3: 安装Docker和NextTrace
-green "步骤3: 安装Docker和NextTrace..."
+# 步骤3: 安装Docker和NextTrace（添加明确检测）
+green "步骤3: 检查并安装Docker和NextTrace..."
 if ! command -v docker &>/dev/null; then
-    green "安装Docker..."
+    green "Docker未检测到，正在安装..."
     run_cmd curl -fsSL https://get.docker.com | bash
+else
+    green "Docker已安装，跳过安装步骤。"
 fi
 
 if ! command -v nexttrace &>/dev/null; then
-    green "安装NextTrace..."
+    green "NextTrace未检测到，正在安装..."
     run_cmd bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
+else
+    green "NextTrace已安装，跳过安装步骤。"
 fi
 
 # 步骤4: 启动容器
@@ -126,13 +130,31 @@ else
     green "tuned服务已在运行"
 fi
 
-# 步骤7: 设置时区
-green "步骤7: 设置系统时区为上海..."
+# 步骤7: 设置Fish为默认shell
+green "步骤7: 设置Fish为默认shell..."
+fish_path=$(which fish)
+if [ -n "$fish_path" ]; then
+    if ! grep -q "$fish_path" /etc/shells; then
+        echo "$fish_path" >> /etc/shells
+    fi
+    
+    if [ "$SHELL" != "$fish_path" ]; then
+        run_cmd chsh -s "$fish_path"
+        green "Fish已成功设置为默认shell，重新登录后生效"
+    else
+        green "Fish已是默认shell，无需修改"
+    fi
+else
+    red "Fish未成功安装，跳过设置默认shell"
+fi
+
+# 步骤8: 设置时区
+green "步骤8: 设置系统时区为上海..."
 run_cmd timedatectl set-timezone Asia/Shanghai
 green "时区已成功设置为上海"
 
-# 步骤8: 修改SSH端口（添加用户确认）
-green "步骤8: 修改SSH端口..."
+# 步骤9: 修改SSH端口（添加用户确认）
+green "步骤9: 修改SSH端口..."
 if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
     read -p "您要将SSH端口改为9399吗？ (y/n): " confirm
     if [ "$confirm" = "y" ]; then
@@ -149,7 +171,7 @@ else
     green "SSH端口已是9399，无需修改"
 fi
 
-# 步骤9: 系统信息汇总
+# 步骤10: 系统信息汇总
 green "\n====== 部署完成，系统信息汇总 ======="
 echo "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
 echo "内核版本: $(uname -r)"
@@ -167,6 +189,7 @@ if [ -n "$FAILED_DIRS" ]; then
 fi
 
 echo "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
+echo "Fish默认shell: $SHELL"
 echo "========================================="
 
 green "\n所有步骤已成功完成！"
