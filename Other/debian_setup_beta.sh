@@ -18,13 +18,27 @@ run_cmd() {
     "$@" || { [ "$1" == "sysctl" ] || check_error "$*"; }
 }
 
-# SWAP设置函数
+# SWAP设置函数 (增加错误恢复机制)
 setup_swap() {
     green "创建1G SWAP文件..."
     run_cmd dd if=/dev/zero of=/swapfile bs=1M count=1024 status=progress
+    if [ $? -ne 0 ]; then
+        red "SWAP创建失败，清理残留文件..."
+        swapoff /swapfile 2>/dev/null
+        rm -f /swapfile
+        return 1
+    fi
+    
     run_cmd chmod 600 /swapfile
     run_cmd mkswap /swapfile
     run_cmd swapon /swapfile
+    
+    if [ $? -ne 0 ]; then
+        red "SWAP启用失败，清理残留文件..."
+        swapoff /swapfile 2>/dev/null
+        rm -f /swapfile
+        return 1
+    fi
     
     if ! grep -q "^/swapfile" /etc/fstab; then
         echo '/swapfile none swap sw 0 0' >> /etc/fstab
@@ -41,6 +55,25 @@ if [ "$(id -u)" != "0" ]; then
     red "此脚本必须以root用户运行"
     exit 1
 fi
+
+# 添加网络连通性检测
+green "初始检查: 网络连通性测试..."
+if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && ! ping -c 1 -W 3 114.114.114.114 &>/dev/null; then
+    red "警告: 网络连接不稳定，这可能影响安装过程"
+    read -p "是否继续? (y/n): " continue_install
+    [ "$continue_install" != "y" ] && exit 1
+fi
+yellow "网络连接正常，继续安装..."
+
+# 检查依赖组件
+green "初始检查: 验证必要组件..."
+for cmd in curl wget apt; do
+    if ! command -v $cmd &>/dev/null; then
+        red "缺少必要组件: $cmd 未找到，尝试安装..."
+        apt-get update && apt-get install -y $cmd || { red "安装 $cmd 失败，请手动安装后重试"; exit 1; }
+    fi
+done
+yellow "所有必要组件已就绪..."
 
 # 步骤1: 更新系统并安装所有基础软件
 green "步骤1: 更新系统并安装基础软件..."
@@ -59,7 +92,11 @@ SWAP_TOTAL=$(free -m | grep Swap | awk '{print $2}')
 if [ $MEM_TOTAL -lt 2048 ] && [ $SWAP_TOTAL -lt 100 ]; then
     yellow "内存小于2G且SWAP不足，创建1G SWAP..."
     setup_swap
-    yellow "步骤2完成: SWAP设置已应用。"
+    if [ $? -eq 0 ]; then
+        yellow "步骤2完成: SWAP设置已应用。"
+    else
+        red "步骤2警告: SWAP设置失败，但将继续执行后续步骤。"
+    fi
 else
     yellow "内存配置满足要求或SWAP已存在，跳过SWAP设置。"
 fi
@@ -71,9 +108,28 @@ if ! command -v docker &>/dev/null; then
     yellow "Docker未检测到，正在安装..."
     run_cmd curl -fsSL https://get.docker.com | bash
     run_cmd systemctl enable --now docker
+    
+    # 添加低内存优化
+    if [ $MEM_TOTAL -lt 1024 ]; then
+        yellow "检测到低内存环境，应用Docker内存优化..."
+        mkdir -p /etc/docker
+        echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
+        systemctl restart docker
+    fi
+    
     yellow "Docker安装完成。"
 else
     yellow "Docker已安装，跳过安装步骤。"
+    
+    # 即使Docker已安装，也检查是否需要低内存优化
+    if [ $MEM_TOTAL -lt 1024 ]; then
+        if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
+            yellow "检测到低内存环境，应用Docker内存优化..."
+            mkdir -p /etc/docker
+            echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
+            systemctl restart docker
+        fi
+    fi
 fi
 
 if ! command -v nexttrace &>/dev/null; then
@@ -201,6 +257,7 @@ if [ "$change_port" = "y" ]; then
     if ! grep -q "^Port $new_port" /etc/ssh/sshd_config; then
         echo "Port $new_port" >> /etc/ssh/sshd_config
     fi
+    
     run_cmd systemctl restart sshd
     yellow "SSH端口已更改为 $new_port，请使用新端口连接"
 else
