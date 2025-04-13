@@ -13,15 +13,9 @@ check_error() {
     fi
 }
 
-# 命令执行封装
+# 命令执行封装 (优化版)
 run_cmd() {
-    if [[ "$1" == "sysctl" ]]; then
-        "$@" -e || true
-        return 0
-    fi
-    
-    "$@"
-    check_error "$*"
+    "$@" || { [ "$1" == "sysctl" ] || check_error "$*"; }
 }
 
 # SWAP设置函数
@@ -38,7 +32,7 @@ setup_swap() {
     
     if ! grep -q "^vm.swappiness" /etc/sysctl.conf; then
         echo 'vm.swappiness=10' >> /etc/sysctl.conf
-        sysctl -p -e || true
+        sysctl -p
     fi
 }
 
@@ -61,8 +55,9 @@ green "步骤2: 检查内存和SWAP..."
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
 SWAP_TOTAL=$(free -m | grep Swap | awk '{print $2}')
 
-if [ $MEM_TOTAL -lt 2048 ] && [ $SWAP_TOTAL -eq 0 ]; then
-    yellow "内存小于2G且无SWAP，创建1G SWAP..."
+# 改进: 只在内存小于2G且SWAP小于100M时创建SWAP
+if [ $MEM_TOTAL -lt 2048 ] && [ $SWAP_TOTAL -lt 100 ]; then
+    yellow "内存小于2G且SWAP不足，创建1G SWAP..."
     setup_swap
     yellow "步骤2完成: SWAP设置已应用。"
 else
@@ -70,14 +65,12 @@ else
 fi
 yellow "步骤2完成: 内存检查结束。"
 
-# 备份SSH配置文件（在最后步骤前准备好）
-cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
-
 # 步骤3: 检查并安装Docker和NextTrace
 green "步骤3: 检查并安装Docker和NextTrace..."
 if ! command -v docker &>/dev/null; then
     yellow "Docker未检测到，正在安装..."
     run_cmd curl -fsSL https://get.docker.com | bash
+    run_cmd systemctl enable --now docker
     yellow "Docker安装完成。"
 else
     yellow "Docker已安装，跳过安装步骤。"
@@ -92,32 +85,49 @@ else
 fi
 yellow "步骤3完成: Docker和NextTrace检查结束。"
 
-# 步骤4: 启动容器
+# 步骤4: 启动容器 (改进版)
 green "步骤4: 启动容器..."
-SUCCESSFUL_STARTS=0  # 计数器，跟踪成功启动的容器
-FAILED_DIRS=""  # 跟踪失败目录
-for dir in /root /root/proxy /root/vmagent; do
-    if [ -d "$dir" ]; then
-        yellow "检查目录 $dir 中的容器..."
-        if [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/compose.yaml" ]; then
-            yellow "检测到Compose文件，正在尝试启动目录 $dir 中的容器..."
-            if cd "$dir" && (docker compose up -d || docker-compose up -d); then
-                yellow "成功启动容器在 $dir"
-                SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+SUCCESSFUL_STARTS=0
+FAILED_DIRS=""
+
+# 使用数组存储目录列表
+CONTAINER_DIRS=(/root /root/proxy /root/vmagent)
+
+# 首先检测可用的 compose 命令
+if command -v docker-compose &>/dev/null; then
+    COMPOSE_CMD="docker-compose"
+elif docker compose version &>/dev/null; then
+    COMPOSE_CMD="docker compose"
+else
+    red "未检测到 docker-compose 或 docker compose 命令，跳过容器启动"
+    COMPOSE_CMD=""
+fi
+
+if [ -n "$COMPOSE_CMD" ]; then
+    for dir in "${CONTAINER_DIRS[@]}"; do
+        if [ -d "$dir" ]; then
+            yellow "检查目录 $dir 中的容器..."
+            if [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/compose.yaml" ]; then
+                yellow "检测到Compose文件，正在尝试启动目录 $dir 中的容器..."
+                if cd "$dir" && $COMPOSE_CMD up -d; then
+                    yellow "成功启动容器在 $dir"
+                    SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+                else
+                    red "错误: 在 $dir 中启动容器失败！请检查Docker配置或文件。"
+                    FAILED_DIRS="$FAILED_DIRS $dir"
+                fi
             else
-                red "错误: 在 $dir 中启动容器失败！请检查Docker配置或文件。"
+                red "错误: 在 $dir 中未找到有效的Docker Compose文件 (如 docker-compose.yml 或 compose.yaml)！"
                 FAILED_DIRS="$FAILED_DIRS $dir"
             fi
         else
-            red "错误: 在 $dir 中未找到有效的Docker Compose文件 (如 docker-compose.yml 或 compose.yaml)！"
-            FAILED_DIRS="$FAILED_DIRS $dir"
+            yellow "目录 $dir 不存在，跳过容器启动。"
         fi
-    else
-        red "错误: 目录 $dir 不存在，无法启动容器。"
-        FAILED_DIRS="$FAILED_DIRS $dir"
-    fi
-done
-yellow "步骤4完成: 容器启动检查结束。成功启动: $SUCCESSFUL_STARTS 个。"
+    done
+    yellow "步骤4完成: 容器启动检查结束。成功启动: $SUCCESSFUL_STARTS 个。"
+else
+    yellow "步骤4跳过: 未找到 Docker Compose 工具。"
+fi
 
 # 步骤5: 设置定时更新任务
 green "步骤5: 设置定时更新任务..."
@@ -165,22 +175,36 @@ run_cmd timedatectl set-timezone Asia/Shanghai
 yellow "时区已成功设置为上海"
 yellow "步骤8完成: 时区设置结束。"
 
-# 步骤9: 修改SSH端口
+# 步骤9: 修改SSH端口 (改进版，允许自定义端口)
 green "步骤9: 修改SSH端口..."
-if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
-    read -p "您要将SSH端口改为9399吗？ (y/n): " confirm
-    if [ "$confirm" = "y" ]; then
-        sed -i 's/^#\?Port [0-9]*/Port 9399/' /etc/ssh/sshd_config
-        if ! grep -q "^Port 9399" /etc/ssh/sshd_config; then
-            echo "Port 9399" >> /etc/ssh/sshd_config
-        fi
-        run_cmd systemctl restart sshd
-        yellow "SSH端口已更改为9399，请使用新端口连接"
-    else
-        yellow "SSH端口修改已取消，保持原端口"
+# 备份SSH配置文件 (移到这里更合理)
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+CURRENT_SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
+if [ -z "$CURRENT_SSH_PORT" ]; then
+    CURRENT_SSH_PORT=22
+fi
+
+read -p "当前SSH端口为 $CURRENT_SSH_PORT, 是否需要修改? (y/n): " change_port
+if [ "$change_port" = "y" ]; then
+    read -p "请输入新的SSH端口 [默认9399]: " new_port
+    new_port=${new_port:-9399}  # 如果用户未输入，默认使用9399
+    
+    # 检查端口是否为有效数字且在合理范围内
+    if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
+        red "无效端口号! 使用默认端口9399"
+        new_port=9399
     fi
+    
+    # 修改SSH配置
+    sed -i "s/^#\?Port [0-9]*/Port $new_port/" /etc/ssh/sshd_config
+    if ! grep -q "^Port $new_port" /etc/ssh/sshd_config; then
+        echo "Port $new_port" >> /etc/ssh/sshd_config
+    fi
+    run_cmd systemctl restart sshd
+    yellow "SSH端口已更改为 $new_port，请使用新端口连接"
 else
-    yellow "SSH端口已是9399，无需修改"
+    yellow "SSH端口修改已取消，保持原端口 $CURRENT_SSH_PORT"
 fi
 yellow "步骤9完成: SSH端口修改结束。"
 
@@ -195,7 +219,7 @@ yellow "SWAP情况: $(free -h | grep Swap | awk '{print $2}')"
 yellow "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
 SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
 if [ -z "$SSH_PORT" ]; then
-    SSH_PORT="未指定 (默认22)"
+    SSH_PORT="22 (默认)"
 fi
 yellow "SSH端口: $SSH_PORT"
 yellow "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
@@ -206,9 +230,11 @@ if [ -n "$FAILED_DIRS" ]; then
 fi
 
 yellow "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
-yellow "Fish默认shell: $SHELL"
+yellow "默认shell: $SHELL"
 yellow "========================================="
 yellow "步骤10完成: 汇总信息已显示。"
 
 yellow "\n所有步骤已成功完成！"
-yellow "提示: 如果SSH端口已更改，请使用端口9399连接"
+if [ "$change_port" = "y" ]; then
+    yellow "提示: SSH端口已更改为 $new_port, 请使用新端口连接"
+fi
