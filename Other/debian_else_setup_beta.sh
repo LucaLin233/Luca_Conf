@@ -13,11 +13,14 @@ function red
     echo -e "\033[31m$argv\033[0m"
 end
 
-# 错误处理函数
+# 错误处理函数改进
 function check_error
     if test $status -ne 0
         red "错误: $argv 执行失败"
-        exit 1
+        read -P "是否继续执行? (y/n): " continue_exec
+        if test "$continue_exec" != "y"
+            exit 1
+        end
     end
 end
 
@@ -49,6 +52,19 @@ function safe_version
     end
 end
 
+# 网络连通性检测
+function check_network
+    green "初始检查: 网络连通性测试..."
+    if not ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; and not ping -c 1 -W 3 114.114.114.114 >/dev/null 2>&1
+        red "警告: 网络连接不稳定，这可能影响安装过程"
+        read -P "是否继续? (y/n): " continue_install
+        if test "$continue_install" != "y"
+            exit 1
+        end
+    end
+    yellow "网络连接正常，继续安装..."
+end
+
 # 获取当前用户
 set current_user (whoami)
 
@@ -57,6 +73,28 @@ if test "$current_user" != "root"
     red "此脚本需要以root用户运行"
     exit 1
 end
+
+# 添加动态感知当前shell
+if not echo $SHELL | grep -q "fish"
+    yellow "提示: 您当前未使用fish shell，请在安装后切换到fish shell以应用所有功能"
+end
+
+# 执行网络检查
+check_network
+
+# 检查基本依赖
+green "初始检查: 验证必要组件..."
+for cmd in curl grep sudo
+    if not command -v $cmd >/dev/null 2>&1
+        red "缺少必要组件: $cmd 未找到，尝试安装..."
+        apt-get update && apt-get install -y $cmd
+        if test $status -ne 0
+            red "安装 $cmd 失败，请手动安装后重试"
+            exit 1
+        end
+    end
+end
+yellow "所有必要组件已就绪..."
 
 # 步骤1: 安装fisher和插件
 green "步骤1: 安装fisher和插件..."
@@ -94,7 +132,19 @@ else
 end
 
 set config_file ~/.config/fish/config.fish
-cp $config_file $config_file.bak 2>/dev/null; or yellow "备份配置文件失败，但继续"
+# 确保配置目录存在
+mkdir -p ~/.config/fish
+
+# 备份配置文件，使用条件判断避免显示错误
+if test -e $config_file
+    cp $config_file $config_file.bak 2>/dev/null
+    if test $status -eq 0
+        yellow "已备份现有fish配置"
+    else
+        yellow "备份配置文件失败，但继续"
+    end
+end
+
 if not config_contains $config_file "starship init"
     yellow "添加starship初始化到fish配置..."
     echo 'starship init fish | source' >> $config_file
@@ -107,28 +157,37 @@ yellow "步骤2完成: Starship安装结束。"
 # 步骤3: 检查并安装mise和Python
 green "步骤3: 检查并安装mise和Python..."
 set mise_path $HOME/.local/bin/mise
+
+# 确保.local/bin在PATH中，这样安装后就能立即使用
+if not contains $HOME/.local/bin $PATH
+    set -gx PATH $HOME/.local/bin $PATH
+end
+
 if not test -e $mise_path
     yellow "安装mise版本管理器..."
     curl https://mise.run | sh
     check_error "安装mise"
+    # 确保mise命令立即可用
+    if test -e $mise_path
+        eval ($mise_path activate fish)
+    end
 else
     yellow "Mise已安装，跳过安装步骤"
 end
 
 if not config_contains $config_file "mise activate"
     yellow "添加mise初始化到fish配置..."
-    echo "$HOME/.local/bin/mise activate fish | source" >> $config_file
+    echo "$mise_path activate fish | source" >> $config_file
     check_error "配置mise"
 else
     yellow "Mise已在fish配置中初始化"
 end
 
-if not contains $HOME/.local/bin $PATH
-    set -gx PATH $HOME/.local/bin $PATH
-end
-
 if test -e $mise_path
-    eval ($mise_path activate fish)
+    # 尝试激活mise
+    eval ($mise_path activate fish) >/dev/null 2>&1
+    
+    # 检查Python是否已经由mise管理
     if not $mise_path list python 2>/dev/null | grep -q "3.10"
         yellow "通过mise安装Python 3.10..."
         $mise_path use -g python@3.10
@@ -141,13 +200,14 @@ else
 end
 yellow "步骤3完成: Mise和Python安装结束。"
 
-# 步骤4: 执行内核调优
+# 步骤4: 执行内核调优 (改进持久化检验)
 green "步骤4: 执行内核调优..."
 if is_installed sudo
-    if test ! -e /tmp/.kernel_optimization_done
+    if test ! -e $HOME/.kernel_optimization_done
         yellow "应用内核调优设置..."
         bash -c "curl -fsSL https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/kernel_optimization.sh | bash"
-        touch /tmp/.kernel_optimization_done  # 修正路径
+        # 使用家目录持久化标记，避免重启后丢失
+        touch $HOME/.kernel_optimization_done
     else
         yellow "内核已优化，跳过调优步骤"
     end
@@ -166,7 +226,7 @@ if is_installed starship
 else
     yellow "Starship版本: 未安装或未配置"
 end
-if test -e $mise_path  # 修正变量名称
+if test -e $mise_path
     yellow "Mise版本: "($mise_path --version 2>/dev/null || echo "已安装但无法获取版本")
     if $mise_path which python > /dev/null 2>&1
         set python_cmd ($mise_path which python)
@@ -184,13 +244,26 @@ yellow "步骤5完成: 总结信息已显示。"
 
 # 步骤6: 清理不需要的欢迎信息
 green "步骤6: 清理不需要的欢迎信息..."
-echo "" | sudo tee /etc/motd /etc/issue /etc/issue.net > /dev/null
-if test $status -eq 0
-    yellow "欢迎信息已成功清空。"
+if sudo -n true 2>/dev/null  # 检查是否可以无密码执行sudo
+    echo "" | sudo tee /etc/motd /etc/issue /etc/issue.net > /dev/null
+    if test $status -eq 0
+        yellow "欢迎信息已成功清空。"
+    else
+        red "警告: 无法清空欢迎信息，可能需要正确权限。"
+    end
 else
-    red "警告: 无法执行，需要正确权限。请手动检查。"
+    red "警告: 需要sudo密码，跳过清空欢迎信息。请手动执行。"
 end
 yellow "步骤6完成: 清理结束。"
 
 yellow "\n所有步骤已成功完成！"
-yellow "提示: 重新启动终端以应用所有更改，或执行 'source ~/.config/fish/config.fish'"
+
+# 提示恢复配置的方法
+if test -e $config_file.bak
+    yellow "备注: 如果需要恢复之前的配置，可以使用:"
+    yellow "  cp $config_file.bak $config_file"
+end
+
+yellow "提示: 重新启动终端以应用所有更改，或执行以下命令立即应用:"
+yellow "  exec fish"
+yellow "  source $config_file"
