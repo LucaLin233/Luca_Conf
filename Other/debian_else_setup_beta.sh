@@ -200,24 +200,8 @@ else
 end
 yellow "步骤3完成: Mise和Python安装结束。"
 
-# 步骤4: 执行内核调优 (改进持久化检验)
-green "步骤4: 执行内核调优..."
-if is_installed sudo
-    if test ! -e $HOME/.kernel_optimization_done
-        yellow "应用内核调优设置..."
-        bash -c "curl -fsSL https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/kernel_optimization.sh | bash"
-        # 使用家目录持久化标记，避免重启后丢失
-        touch $HOME/.kernel_optimization_done
-    else
-        yellow "内核已优化，跳过调优步骤"
-    end
-else
-    red "警告: 无sudo权限，跳过内核调优。请手动执行或使用root权限运行此步骤。"
-end
-yellow "步骤4完成: 内核调优结束。"
-
-# 步骤5: 系统信息汇总
-green "步骤5: 系统信息汇总"
+# 步骤4: 系统信息汇总
+green "步骤4: 系统信息汇总"
 yellow "====== 部署完成，设置总结 ======="
 yellow "Fish版本: "(fish --version)
 yellow "Fisher插件: "(fisher list | tr '\n' ' ')
@@ -240,10 +224,10 @@ else
 end
 yellow "配置文件: "$config_file
 yellow "======================================"
-yellow "步骤5完成: 总结信息已显示。"
+yellow "步骤4完成: 总结信息已显示。"
 
-# 步骤6: 清理不需要的欢迎信息
-green "步骤6: 清理不需要的欢迎信息..."
+# 步骤5: 清理不需要的欢迎信息
+green "步骤5: 清理不需要的欢迎信息..."
 if sudo -n true 2>/dev/null  # 检查是否可以无密码执行sudo
     echo "" | sudo tee /etc/motd /etc/issue /etc/issue.net > /dev/null
     if test $status -eq 0
@@ -254,7 +238,7 @@ if sudo -n true 2>/dev/null  # 检查是否可以无密码执行sudo
 else
     red "警告: 需要sudo密码，跳过清空欢迎信息。请手动执行。"
 end
-yellow "步骤6完成: 清理结束。"
+yellow "步骤5完成: 清理结束。"
 
 yellow "\n所有步骤已成功完成！"
 
