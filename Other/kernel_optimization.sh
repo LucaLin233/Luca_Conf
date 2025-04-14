@@ -218,12 +218,13 @@ declare -A sysctl_settings=(
     done
 } >> /etc/sysctl.conf
 
-# 配置 BBR (改进后的检测方法，不依赖bc)
+# 正确的BBR检测代码
 kernel_version=$(uname -r)
 major_version=$(echo "$kernel_version" | cut -d. -f1)
 minor_version=$(echo "$kernel_version" | cut -d. -f2)
 
-if [ "$major_version" -ge 4 ] && [ "$minor_version" -ge 9 ]; then
+# 正确的版本比较
+if [ "$major_version" -gt 4 ] || ([ "$major_version" -eq 4 ] && [ "$minor_version" -ge 9 ]); then
     if lsmod | grep -q "tcp_bbr" || modprobe tcp_bbr 2>/dev/null; then
         echo -e "\n# BBR 拥塞控制" >> /etc/sysctl.conf
         echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
