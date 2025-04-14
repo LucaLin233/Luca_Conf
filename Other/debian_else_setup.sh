@@ -316,8 +316,12 @@ function setup_mise_python
     end
     
     if test -e $mise_path
-        set -l mise_version ($mise_path --version 2>&1 | string split " ")[2]
-        log "Mise已安装 (v$mise_version)" "skip"
+    set -l mise_version (command $mise_path --version 2>&1 | string match -r 'mise ([0-9]+\.[0-9]+\.[0-9]+)' | string sub -s 2)
+    if test -z "$mise_version"
+        set mise_version ($mise_path --version 2>&1 | head -n1 | string split " ")[2]
+        if test -z "$mise_version"; set mise_version "已安装"; end
+    end
+    log "Mise已安装 (v$mise_version)" "skip"
         
         if $RERUN_MODE
             read -l -P "是否更新Mise? (y/n): " update_mise
@@ -427,13 +431,17 @@ function show_system_summary
     # Mise和Python状态  
     set -l mise_path $HOME/.local/bin/mise
     if test -e $mise_path
-        # 安全地获取mise版本
-        set -l mise_version_output ($mise_path --version 2>&1)
-        set -l mise_version "已安装" 
-        
+    # 安全地获取mise版本
+    set -l mise_version_output (command $mise_path --version 2>&1)
+    set -l mise_version (string match -r 'mise ([0-9]+\.[0-9]+\.[0-9]+)' $mise_version_output | string sub -s 2)
+    
+    if test -z "$mise_version"
+        # 如果未找到标准版本格式，尝试提取任何版本信息
+        set mise_version "已安装"
         if string match -q "mise*" -- $mise_version_output
             set mise_version (string split " " -- $mise_version_output)[2]
         end
+    end
         
         log "Mise: $mise_version" "success"
         
@@ -515,8 +523,13 @@ function save_status
     end
     
     if test -e $HOME/.local/bin/mise
-        set mise_status ($HOME/.local/bin/mise --version 2>/dev/null | string split " ")[2]
+    set -l mise_version_output (command $HOME/.local/bin/mise --version 2>&1)
+    set mise_status (string match -r 'mise ([0-9]+\.[0-9]+\.[0-9]+)' $mise_version_output | string sub -s 2)
+    if test -z "$mise_status"
+        set mise_status ($mise_version_output | string split " ")[2]
+        if test -z "$mise_status"; set mise_status "已安装"; end
     end
+end
 
     # 创建状态JSON
     echo '{
