@@ -1,5 +1,5 @@
 #!/bin/bash
-# 从旧优化脚本迁移到新优化的一键脚本
+# 从旧优化脚本迁移到新优化的一键脚本 - 修复版
 
 # 检查root权限
 [ "$(id -u)" != "0" ] && { echo "错误: 需要root权限"; exit 1; }
@@ -115,6 +115,10 @@ declare -A sysctl_settings=(
     ["net.ipv4.conf.default.forwarding"]="1"
 )
 
+# 定义BBR相关参数
+sysctl_settings["net.core.default_qdisc"]="fq"
+sysctl_settings["net.ipv4.tcp_congestion_control"]="bbr"
+
 # 更新sysctl配置
 echo "更新sysctl配置..."
 {
@@ -161,24 +165,58 @@ echo "更新sysctl配置..."
         [ -n "${sysctl_settings[$param]}" ] && echo "${param} = ${sysctl_settings[$param]}"
     done
     
-    # 保留现有的BBR设置
-    if grep -q "tcp_congestion_control = bbr" /etc/sysctl.conf; then
-        echo -e "\n# BBR 拥塞控制"
-        echo "net.core.default_qdisc = fq"
-        echo "net.ipv4.tcp_congestion_control = bbr"
-    else
-        # 检查是否可以启用BBR
-        kernel_version=$(uname -r | cut -d. -f1,2)
-        if [ "$(echo "$kernel_version >= 4.9" | bc)" -eq 1 ]; then
-            if lsmod | grep -q "tcp_bbr" || modprobe tcp_bbr 2>/dev/null; then
-                echo -e "\n# BBR 拥塞控制"
-                echo "net.core.default_qdisc = fq"
-                echo "net.ipv4.tcp_congestion_control = bbr"
-                echo "已启用BBR拥塞控制"
-            fi
+    # 检查是否能启用BBR (不用bc)
+    kernel_version=$(uname -r)
+    major_version=$(echo "$kernel_version" | cut -d. -f1)
+    minor_version=$(echo "$kernel_version" | cut -d. -f2)
+    
+    if [ "$major_version" -ge 4 ] && [ "$minor_version" -ge 9 ]; then
+        # 如果可以加载模块或已加载
+        if lsmod | grep -q "tcp_bbr" || modprobe tcp_bbr 2>/dev/null; then
+            echo -e "\n# BBR 拥塞控制"
+            echo "net.core.default_qdisc = fq"
+            echo "net.ipv4.tcp_congestion_control = bbr"
+            echo "已配置BBR拥塞控制"
+        else
+            echo "# 警告: BBR模块无法加载，但内核版本支持($kernel_version)"
         fi
+    else
+        echo "# 警告: 内核版本($kernel_version)不支持BBR，需要4.9+版本"
     fi
 } > /etc/sysctl.conf
+
+# 确保保留原始脚本中的一些特殊参数
+if grep -q "net.ipv4.tcp_ecn" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_ecn = 0" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.tcp_frto" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_frto = 0" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.tcp_mtu_probing" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_mtu_probing = 0" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.tcp_rfc1337" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_rfc1337 = 0" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.tcp_fack" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_fack = 1" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.tcp_adv_win_scale" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_adv_win_scale = 1" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.tcp_notsent_lowat" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.tcp_notsent_lowat = 16384" >> /etc/sysctl.conf
+fi
+
+if grep -q "net.ipv4.conf.all.route_localnet" "$BACKUP_DIR/sysctl.conf.current_"*; then
+    echo "net.ipv4.conf.all.route_localnet = 1" >> /etc/sysctl.conf
+fi
 
 # 创建新的恢复脚本
 cat > "$BACKUP_DIR/restore.sh" <<EOF
@@ -246,9 +284,43 @@ echo "创建了新的恢复脚本: $BACKUP_DIR/restore.sh"
 
 # 应用新的sysctl设置
 echo "应用新的系统参数..."
-sysctl -p
+if sysctl -p; then
+    echo "所有系统参数应用成功"
+else
+    echo "注意: 部分参数可能未成功应用，请查看上面的错误信息"
+fi
 
-echo "迁移完成!"
+# 验证BBR是否已启用
+if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
+    current_cc=$(cat /proc/sys/net/ipv4/tcp_congestion_control)
+    if [ "$current_cc" = "bbr" ]; then
+        echo "BBR拥塞控制已成功启用"
+    else
+        echo "尝试手动启用BBR..."
+        if modprobe tcp_bbr 2>/dev/null && \
+           echo "fq" > /proc/sys/net/core/default_qdisc && \
+           echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control; then
+            echo "BBR拥塞控制已手动启用"
+        else
+            echo "警告: 无法启用BBR，可能需要更新内核或重启系统"
+        fi
+    fi
+else
+    echo "警告: 无法检测当前的拥塞控制算法"
+fi
+
+# 检查备份目录中的文件数量
+backup_files=$(find "$BACKUP_DIR" -type f | wc -l)
+echo "当前有 $backup_files 个文件在备份目录中"
+
+# 最后显示一些系统参数
+echo -e "\n当前系统参数状态:"
+echo "文件描述符限制: $(ulimit -n)"
+echo "进程数限制: $(ulimit -u)"
+echo "TCP拥塞控制: $(cat /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null || echo '未知')"
+echo "TCP缓冲区大小: $(cat /proc/sys/net/ipv4/tcp_rmem 2>/dev/null || echo '未知')"
+
+echo -e "\n迁移完成!"
 echo "所有备份文件保存在: $BACKUP_DIR"
 echo "如需恢复，请运行: $BACKUP_DIR/restore.sh"
 echo "建议重启系统以确保所有更改生效"
