@@ -161,6 +161,7 @@ step_end 3 "Docker和NextTrace检查完成"
 # 步骤4: 启动容器
 step_start 4 "启动容器"
 SUCCESSFUL_STARTS=0
+TOTAL_CONTAINERS=0
 FAILED_DIRS=""
 CONTAINER_DIRS=(/root /root/proxy /root/vmagent)
 
@@ -188,27 +189,35 @@ else
             done
             
             if [ -n "$COMPOSE_FILE" ]; then
-                if $RERUN_MODE; then
-                    log "目录 $dir: 找到 $COMPOSE_FILE，正在重启容器..." "info"
-                    if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" restart; then
-                        log "✓ 成功重启 $dir 中的容器" "info"
-                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
-                    elif cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
-                        log "✓ 成功启动 $dir 中的容器" "info"
-                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
-                    else
-                        log "✗ 目录 $dir 中容器启动/重启失败" "error"
-                        FAILED_DIRS+=" $dir"
+                # 检查目录中的容器状态
+                cd "$dir"
+                # 获取该目录定义的容器数量
+                DIR_CONTAINER_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps -q 2>/dev/null | wc -l)
+                
+                # 获取预期的容器总数
+                EXPECTED_CONTAINERS=$($COMPOSE_CMD -f "$COMPOSE_FILE" config --services | wc -l)
+                TOTAL_CONTAINERS=$((TOTAL_CONTAINERS + EXPECTED_CONTAINERS))
+                
+                # 如果所有容器都在运行中，则跳过
+                if [ "$DIR_CONTAINER_COUNT" -eq "$EXPECTED_CONTAINERS" ]; then
+                    RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps | grep -i "running" | wc -l)
+                    if [ "$RUNNING_COUNT" -eq "$EXPECTED_CONTAINERS" ]; then
+                        log "目录 $dir: 所有 $EXPECTED_CONTAINERS 个容器已运行，跳过操作" "info"
+                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + EXPECTED_CONTAINERS))
+                        continue
                     fi
+                fi
+                
+                # 否则启动容器
+                log "目录 $dir: 找到 $COMPOSE_FILE，尝试启动容器" "warn"
+                if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
+                    # 启动后计算新的容器数量
+                    NEW_CONTAINER_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps -q | wc -l)
+                    log "✓ 成功启动 $dir 中的容器" "info"
+                    SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + NEW_CONTAINER_COUNT))
                 else
-                    log "目录 $dir: 找到 $COMPOSE_FILE，尝试启动容器" "warn"
-                    if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
-                        log "✓ 成功启动 $dir 中的容器" "info"
-                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
-                    else
-                        log "✗ 目录 $dir 中容器启动失败" "error"
-                        FAILED_DIRS+=" $dir"
-                    fi
+                    log "✗ 目录 $dir 中容器启动失败" "error"
+                    FAILED_DIRS+=" $dir"
                 fi
             else
                 log "目录 $dir: 未找到Compose文件 (docker-compose.yml/compose.yaml)" "warn"
@@ -217,7 +226,10 @@ else
             log "目录 $dir 不存在，已跳过" "warn"
         fi
     done
-    log "容器启动结果: 成功 $SUCCESSFUL_STARTS 个" "warn"
+    
+    # 获取实际运行的全部容器数量
+    ACTUAL_RUNNING_CONTAINERS=$(docker ps -q | wc -l)
+    log "容器启动结果: 实际运行 $ACTUAL_RUNNING_CONTAINERS 个，处理成功 $SUCCESSFUL_STARTS 个" "warn"
     [ -n "$FAILED_DIRS" ] && log "失败目录: $FAILED_DIRS" "error"
 fi
 step_end 4 "容器启动检查完成"
