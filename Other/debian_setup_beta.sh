@@ -1,12 +1,21 @@
 #!/bin/bash
 
-# 日志函数
-log() { local color="\033[0;32m"; [[ "$2" == "warn" ]] && color="\033[0;33m"; [[ "$2" == "error" ]] && color="\033[0;31m"; echo -e "${color}$1\033[0m"; }
+# 日志函数 - 增强版
+log() { 
+    local color="\033[0;32m"  # 默认绿色
+    case "$2" in
+        "warn") color="\033[0;33m" ;;   # 黄色
+        "error") color="\033[0;31m" ;;  # 红色
+        "info") color="\033[0;36m" ;;   # 青色
+        "title") color="\033[1;35m" ;;  # 紫色加粗
+    esac
+    echo -e "${color}$1\033[0m"
+}
 
 # 步骤管理
-step_start() { log "步骤$1: $2..." "info"; }
-step_end() { log "步骤$1完成: $2" "warn"; }
-step_fail() { log "步骤$1失败: $2" "error"; exit 1; }
+step_start() { log "▶ 步骤$1: $2..." "title"; }
+step_end() { log "✓ 步骤$1完成: $2" "info"; echo; }
+step_fail() { log "✗ 步骤$1失败: $2" "error"; exit 1; }
 
 # 命令执行器
 run_cmd() {
@@ -114,6 +123,7 @@ fi
 if [ -z "$COMPOSE_CMD" ]; then
     log "跳过容器启动: 未找到Docker Compose" "warn"
 else
+    log "检查所有目录的Compose配置..." "warn"
     for dir in "${CONTAINER_DIRS[@]}"; do
         if [ -d "$dir" ]; then
             # 检查compose文件
@@ -126,18 +136,23 @@ else
             done
             
             if [ -n "$COMPOSE_FILE" ]; then
-                log "正在启动 $dir 中的容器..." "warn"
+                log "目录 $dir: 找到 $COMPOSE_FILE，尝试启动容器" "warn"
                 if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
+                    log "✓ 成功启动 $dir 中的容器" "info"
                     SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
                 else
+                    log "✗ 目录 $dir 中容器启动失败" "error"
                     FAILED_DIRS+=" $dir"
                 fi
             else
-                log "目录 $dir 中无Compose文件" "warn"
+                log "目录 $dir: 未找到Compose文件 (docker-compose.yml/compose.yaml)" "warn"
             fi
+        else
+            log "目录 $dir 不存在，已跳过" "warn"
         fi
     done
-    log "成功启动容器: $SUCCESSFUL_STARTS 个" "warn"
+    log "容器启动结果: 成功 $SUCCESSFUL_STARTS 个" "warn"
+    [ -n "$FAILED_DIRS" ] && log "失败目录: $FAILED_DIRS" "error"
 fi
 step_end 4 "容器启动检查完成"
 
@@ -153,9 +168,15 @@ step_end 5 "定时任务已设置"
 # 步骤6: 启用进阶服务
 step_start 6 "系统服务优化"
 # Tuned
-if ! systemctl is-active tuned &>/dev/null; then
-    systemctl enable --now tuned
-    log "tuned服务已启用" "warn"
+if systemctl is-active tuned &>/dev/null; then
+    log "✓ Tuned服务已经在运行" "info"
+else
+    log "启用Tuned服务..." "warn"
+    if systemctl enable --now tuned; then
+        log "✓ Tuned服务启动成功" "info"
+    else
+        log "✗ Tuned服务启动失败" "error"
+    fi
 fi
 
 # Fish
@@ -163,49 +184,75 @@ fish_path=$(which fish)
 if [ -n "$fish_path" ]; then
     if ! grep -q "$fish_path" /etc/shells; then
         echo "$fish_path" >> /etc/shells
+        log "已将Fish添加到支持的shell列表" "warn"
     fi
     
     if [ "$SHELL" != "$fish_path" ]; then
-        chsh -s "$fish_path"
-        log "Fish设为默认shell，重新登录后生效" "warn"
+        if chsh -s "$fish_path"; then
+            log "Fish已设为默认shell，重新登录后生效" "warn"
+        else
+            log "Fish设置为默认shell失败" "error"
+        fi
+    else
+        log "✓ Fish已是默认shell" "info"
     fi
+else
+    log "✗ Fish未安装成功，无法设置为默认shell" "error"
 fi
 
 # 时区
-timedatectl set-timezone Asia/Shanghai
-log "时区已设置为上海" "warn"
+if timedatectl set-timezone Asia/Shanghai; then
+    log "✓ 时区已设置为上海" "info"
+else
+    log "✗ 时区设置失败" "error"
+fi
 step_end 6 "系统服务优化完成"
 
 # 步骤7: 网络优化
 step_start 7 "网络优化设置"
 # 检查内核是否支持BBR
-if ! grep -q "bbr" /proc/sys/net/ipv4/tcp_available_congestion_control 2>/dev/null; then
-    log "当前系统不支持BBR" "warn"
+if ! sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr"; then
+    log "✗ 当前系统没有开启BBR支持，检查原因..." "error"
+    # 检查内核模块
+    if ! lsmod | grep -q "tcp_bbr"; then
+        log "尝试加载BBR模块..." "warn"
+        modprobe tcp_bbr && \
+        echo "tcp_bbr" >> /etc/modules-load.d/modules.conf && \
+        log "✓ BBR模块加载成功" "info" || \
+        log "✗ BBR模块加载失败" "error"
+    fi
+fi
+
+# 备份配置
+cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
+
+# 配置网络优化
+if ! grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    log "添加BBR拥塞控制设置" "warn"
+fi
+
+if ! grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
+    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+    log "添加FQ队列调度设置" "warn"
+fi
+
+# 应用设置
+log "应用网络优化设置..." "warn"
+sysctl -p
+
+# 验证
+CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
+CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
+
+if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq" ]; then
+    log "✓ BBR和FQ设置成功" "info"
+elif [ "$CURR_CC" = "bbr" ]; then
+    log "部分成功: BBR已启用，但FQ未成功设置($CURR_QDISC)" "warn"
+elif [ "$CURR_QDISC" = "fq" ]; then
+    log "部分成功: FQ已启用，但BBR未成功设置($CURR_CC)" "warn"
 else
-    # 备份配置
-    cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
-    
-    # 配置网络优化
-    if ! grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-    fi
-    
-    if ! grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
-        echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-    fi
-    
-    # 应用设置
-    sysctl -p
-    
-    # 验证
-    CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control)
-    CURR_QDISC=$(sysctl -n net.core.default_qdisc)
-    
-    if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq" ]; then
-        log "BBR和FQ设置成功" "warn"
-    else
-        log "BBR/FQ设置可能不完整: $CURR_CC/$CURR_QDISC" "warn"
-    fi
+    log "✗ BBR和FQ设置均未成功: 当前CC=$CURR_CC, QDISC=$CURR_QDISC" "error"
 fi
 step_end 7 "网络优化设置完成"
 
@@ -220,7 +267,8 @@ if [ -z "$CURRENT_SSH_PORT" ]; then
     CURRENT_SSH_PORT=22
 fi
 
-read -p "当前SSH端口为 $CURRENT_SSH_PORT, 是否修改? (y/n): " change_port
+log "当前SSH端口为 $CURRENT_SSH_PORT" "warn"
+read -p "是否需要修改SSH端口? (y/n): " change_port
 if [ "$change_port" = "y" ]; then
     read -p "请输入新的SSH端口 [默认9399]: " new_port
     new_port=${new_port:-9399}
@@ -248,35 +296,70 @@ if [ "$change_port" = "y" ]; then
     fi
     
     # 重启服务
-    run_cmd systemctl restart sshd
-    log "SSH端口已更改为 $new_port，请使用新端口连接" "warn"
+    log "重启SSH服务以应用新端口..." "warn"
+    if systemctl restart sshd; then
+        log "✓ SSH端口已更改为 $new_port" "info"
+    else
+        log "✗ SSH重启失败！端口更改可能未生效" "error"
+    fi
 else
-    log "SSH端口未修改，保持 $CURRENT_SSH_PORT" "warn"
+    log "SSH端口保持为当前设置: $CURRENT_SSH_PORT" "warn"
 fi
 step_end 8 "SSH安全设置完成"
 
 # 步骤9: 系统信息汇总
 step_start 9 "系统信息汇总"
-log "====== 系统部署完成 =======" "warn"
-{
-    echo "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
-    echo "内核版本: $(uname -r)"
-    echo "CPU核心: $(nproc)"
-    echo "内存大小: $(free -h | grep Mem | awk '{print $2}')"
-    echo "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
-    echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1 || echo "22 (默认)")"
-    echo "Docker: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
-    echo "容器数量: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
-    echo "网络优化: BBR($(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")), FQ($(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置"))"
-    echo "时区: $(timedatectl | grep "Time zone" | awk '{print $3}')"
-    echo "默认Shell: $SHELL"
-    [ -n "$FAILED_DIRS" ] && echo "警告: 下列容器启动失败: $FAILED_DIRS"
-} | while read line; do log "$line" "warn"; done
-log "=============================" "warn"
+log "\n╔═════════════════════════════════╗" "title"
+log "║       系统部署完成摘要          ║" "title"
+log "╚═════════════════════════════════╝" "title"
+
+# 使用函数统一格式化输出
+show_info() {
+    log " • $1: $2" "info"
+}
+
+show_info "系统版本" "$(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
+show_info "内核版本" "$(uname -r)"
+show_info "CPU核心数" "$(nproc)"
+show_info "内存大小" "$(free -h | grep Mem | awk '{print $2}')"
+show_info "磁盘使用" "$(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
+
+SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
+if [ -z "$SSH_PORT" ]; then
+    SSH_PORT="22 (默认)"
+fi
+show_info "SSH端口" "$SSH_PORT"
+
+show_info "Docker版本" "$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
+show_info "活跃容器数" "$(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
+
+CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
+CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
+show_info "网络优化" "BBR($CURR_CC), FQ($CURR_QDISC)"
+show_info "时区设置" "$(timedatectl | grep "Time zone" | awk '{print $3}')"
+show_info "默认shell" "$SHELL"
+
+# 显示容器启动结果
+if [ "$SUCCESSFUL_STARTS" -gt 0 ]; then
+    show_info "容器启动" "成功启动 $SUCCESSFUL_STARTS 个"
+else
+    log " • 容器启动: 没有容器被启动" "error"
+fi
+
+# 显示失败信息
+if [ -n "$FAILED_DIRS" ]; then
+    log " • 启动失败目录: $FAILED_DIRS" "error"
+fi
+
+log "\n──────────────────────────────────" "title"
+log " 部署完成时间: $(date '+%Y-%m-%d %H:%M:%S')" "info"
+log "──────────────────────────────────\n" "title"
+
 step_end 9 "系统信息汇总完成"
 
-log "\n所有步骤已执行完毕！" "warn"
+# 最后的提示
+log "✅ 所有配置步骤已执行完毕！" "title"
 if [ "$change_port" = "y" ]; then
-    log "重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
-    log "示例: ssh -p $new_port user@your-server-ip" "warn"
+    log "⚠️  重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
+    log "   示例: ssh -p $new_port 用户名@服务器IP" "warn"
 fi
