@@ -1,178 +1,164 @@
 #!/bin/bash
 
-# 彩色输出函数
-green() { echo -e "\033[32m$1\033[0m"; }  # 绿色用于步骤公告
-yellow() { echo -e "\033[33m$1\033[0m"; }  # 黄色用于结果消息
-red() { echo -e "\033[31m$1\033[0m"; }     # 红色用于错误
+# 日志函数
+log() { local color="\033[0;32m"; [[ "$2" == "warn" ]] && color="\033[0;33m"; [[ "$2" == "error" ]] && color="\033[0;31m"; echo -e "${color}$1\033[0m"; }
 
-# 错误处理函数
-check_error() {
-    if [ $? -ne 0 ]; then
-        red "错误: $1 执行失败"
-        exit 1
-    fi
-}
+# 步骤管理
+step_start() { log "步骤$1: $2..." "info"; }
+step_end() { log "步骤$1完成: $2" "warn"; }
+step_fail() { log "步骤$1失败: $2" "error"; exit 1; }
 
-# 命令执行封装 (修正版)
+# 命令执行器
 run_cmd() {
     "$@"
-    local status=$?
-    if [ $status -ne 0 ] && [ "$1" != "sysctl" ]; then
-        check_error "$*"
+    if [ $? -ne 0 ] && [ "$1" != "sysctl" ]; then
+        log "错误: 执行 '$*' 失败" "error"
+        return 1
     fi
-    return $status
+    return 0
 }
 
-# 步骤0: 检查是否为root用户
+# 检查是否为root
 if [ "$(id -u)" != "0" ]; then
-    red "此脚本必须以root用户运行"
+    log "此脚本必须以root用户运行" "error"
     exit 1
 fi
 
-# 添加网络连通性检测
-green "初始检查: 网络连通性测试..."
-if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && ! ping -c 1 -W 3 114.114.114.114 &>/dev/null; then
-    red "警告: 网络连接不稳定，这可能影响安装过程"
+# 检查系统版本
+if [ ! -f /etc/debian_version ]; then
+    log "此脚本仅适用于Debian系统" "error"
+    exit 1
+fi
+
+debian_version=$(cat /etc/debian_version | cut -d. -f1)
+if [ "$debian_version" -lt 12 ]; then
+    log "警告: 此脚本为Debian 12优化，当前版本 $(cat /etc/debian_version)" "warn"
     read -p "是否继续? (y/n): " continue_install
     [ "$continue_install" != "y" ] && exit 1
 fi
-yellow "网络连接正常，继续安装..."
 
-# 检查依赖组件
-green "初始检查: 验证必要组件..."
+# 步骤1: 网络检查
+step_start 1 "网络连通性测试"
+if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && ! ping -c 1 -W 3 114.114.114.114 &>/dev/null; then
+    log "警告: 网络连接不稳定，这可能影响安装过程" "warn"
+    read -p "是否继续? (y/n): " continue_install
+    [ "$continue_install" != "y" ] && exit 1
+fi
+
+# 检查基础工具
 for cmd in curl wget apt; do
     if ! command -v $cmd &>/dev/null; then
-        red "缺少必要组件: $cmd 未找到，尝试安装..."
-        apt-get update && apt-get install -y $cmd || { red "安装 $cmd 失败，请手动安装后重试"; exit 1; }
+        log "安装必要工具: $cmd" "warn"
+        apt-get update -qq && apt-get install -y -qq $cmd || { log "安装 $cmd 失败" "error"; exit 1; }
     fi
 done
-yellow "所有必要组件已就绪..."
+step_end 1 "网络正常，必要工具已就绪"
 
-# 步骤1: 更新系统并安装所有基础软件
-green "步骤1: 更新系统并安装基础软件..."
-yellow "开始执行更新和安装..."
-run_cmd apt update
-run_cmd apt upgrade -y
-run_cmd apt install -y dnsutils wget curl rsync chrony cron fish tuned
-yellow "步骤1完成: 更新和安装成功。"
+# 步骤2: 系统更新与安装
+step_start 2 "更新系统并安装基础软件"
+run_cmd apt update && run_cmd apt upgrade -y && \
+run_cmd apt install -y dnsutils wget curl rsync chrony cron fish tuned || step_fail 2 "基础软件安装失败"
+step_end 2 "系统已更新，基础软件安装成功"
 
-# 步骤2: 检查并安装Docker和NextTrace
-green "步骤2: 检查并安装Docker和NextTrace..."
+# 步骤3: 安装Docker和NextTrace
+step_start 3 "安装Docker和NextTrace"
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
 
+# Docker安装
 if ! command -v docker &>/dev/null; then
-    yellow "Docker未检测到，正在安装..."
-    run_cmd curl -fsSL https://get.docker.com | bash
-    run_cmd systemctl enable --now docker
+    log "Docker未检测到，正在安装..." "warn"
+    if ! curl -fsSL https://get.docker.com | bash; then
+        log "Docker安装失败" "error"
+    else
+        systemctl enable --now docker
     
-    # 添加低内存优化
-    if [ $MEM_TOTAL -lt 1024 ]; then
-        yellow "检测到低内存环境，应用Docker内存优化..."
-        mkdir -p /etc/docker
-        echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
-        systemctl restart docker
-    fi
-    
-    yellow "Docker安装完成。"
-else
-    yellow "Docker已安装，跳过安装步骤。"
-    
-    # 即使Docker已安装，也检查是否需要低内存优化
-    if [ $MEM_TOTAL -lt 1024 ]; then
-        if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
-            yellow "检测到低内存环境，应用Docker内存优化..."
+        # 低内存优化
+        if [ $MEM_TOTAL -lt 1024 ]; then
+            log "低内存环境，应用Docker优化" "warn"
             mkdir -p /etc/docker
             echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
             systemctl restart docker
         fi
     fi
+elif [ $MEM_TOTAL -lt 1024 ]; then
+    # 检查已有Docker是否需要优化
+    if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
+        log "低内存环境，应用Docker优化" "warn"
+        mkdir -p /etc/docker
+        echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
+        systemctl restart docker
+    fi
 fi
 
+# NextTrace安装
 if ! command -v nexttrace &>/dev/null; then
-    yellow "NextTrace未检测到，正在安装..."
-    run_cmd bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
-    yellow "NextTrace安装完成。"
-else
-    yellow "NextTrace已安装，跳过安装步骤。"
+    log "安装NextTrace..." "warn"
+    bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)" || log "NextTrace安装失败" "error"
 fi
-yellow "步骤2完成: Docker和NextTrace检查结束。"
+step_end 3 "Docker和NextTrace检查完成"
 
-# 步骤3: 启动容器 (改进版 - 修正了多compose文件处理)
-green "步骤3: 启动容器..."
+# 步骤4: 启动容器
+step_start 4 "启动容器"
 SUCCESSFUL_STARTS=0
 FAILED_DIRS=""
-
-# 使用数组存储目录列表
 CONTAINER_DIRS=(/root /root/proxy /root/vmagent)
 
-# 首先检测可用的 compose 命令
+# 检测compose命令
+COMPOSE_CMD=""
 if command -v docker-compose &>/dev/null; then
     COMPOSE_CMD="docker-compose"
 elif docker compose version &>/dev/null; then
     COMPOSE_CMD="docker compose"
-else
-    red "未检测到 docker-compose 或 docker compose 命令，跳过容器启动"
-    COMPOSE_CMD=""
 fi
 
-if [ -n "$COMPOSE_CMD" ]; then
+if [ -z "$COMPOSE_CMD" ]; then
+    log "跳过容器启动: 未找到Docker Compose" "warn"
+else
     for dir in "${CONTAINER_DIRS[@]}"; do
         if [ -d "$dir" ]; then
-            yellow "检查目录 $dir 中的容器..."
-            
-            # 优先查找 docker-compose.yml，其次是 compose.yaml
+            # 检查compose文件
             COMPOSE_FILE=""
-            if [ -f "$dir/docker-compose.yml" ]; then
-                COMPOSE_FILE="docker-compose.yml"
-            elif [ -f "$dir/compose.yaml" ]; then
-                COMPOSE_FILE="compose.yaml"
-            fi
+            for file in docker-compose.yml compose.yaml; do
+                if [ -f "$dir/$file" ]; then
+                    COMPOSE_FILE="$file"
+                    break
+                fi
+            done
             
             if [ -n "$COMPOSE_FILE" ]; then
-                yellow "检测到Compose文件 $COMPOSE_FILE，正在尝试启动目录 $dir 中的容器..."
+                log "正在启动 $dir 中的容器..." "warn"
                 if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
-                    yellow "成功启动容器在 $dir"
                     SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
                 else
-                    red "错误: 在 $dir 中启动容器失败！请检查Docker配置或文件。"
-                    FAILED_DIRS="$FAILED_DIRS $dir"
+                    FAILED_DIRS+=" $dir"
                 fi
             else
-                red "错误: 在 $dir 中未找到有效的Docker Compose文件 (如 docker-compose.yml 或 compose.yaml)！"
-                FAILED_DIRS="$FAILED_DIRS $dir"
+                log "目录 $dir 中无Compose文件" "warn"
             fi
-        else
-            yellow "目录 $dir 不存在，跳过容器启动。"
         fi
     done
-    yellow "步骤3完成: 容器启动检查结束。成功启动: $SUCCESSFUL_STARTS 个。"
-else
-    yellow "步骤3跳过: 未找到 Docker Compose 工具。"
+    log "成功启动容器: $SUCCESSFUL_STARTS 个" "warn"
 fi
+step_end 4 "容器启动检查完成"
 
-# 步骤4: 设置定时更新任务
-green "步骤4: 设置定时更新任务..."
+# 步骤5: 设置定时任务
+step_start 5 "设置定时更新任务"
 CRON_CMD="5 0 * * 0 apt update && apt upgrade -y > /var/log/auto-update.log 2>&1"
 if ! (crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"); then
     (crontab -l 2>/dev/null || echo "") | { cat; echo "$CRON_CMD"; } | crontab -
-    yellow "已添加每周日凌晨0:05的自动更新任务"
-else
-    yellow "自动更新任务已存在，跳过设置"
+    log "已添加每周日凌晨0:05的自动更新任务" "warn" 
 fi
-yellow "步骤4完成: 定时任务设置结束。"
+step_end 5 "定时任务已设置"
 
-# 步骤5: 启用tuned服务
-green "步骤5: 启用tuned服务..."
+# 步骤6: 启用进阶服务
+step_start 6 "系统服务优化"
+# Tuned
 if ! systemctl is-active tuned &>/dev/null; then
-    run_cmd systemctl enable --now tuned
-    yellow "tuned服务已启用"
-else
-    yellow "tuned服务已在运行"
+    systemctl enable --now tuned
+    log "tuned服务已启用" "warn"
 fi
-yellow "步骤5完成: tuned服务状态更新。"
 
-# 步骤6: 设置Fish为默认shell
-green "步骤6: 设置Fish为默认shell..."
+# Fish
 fish_path=$(which fish)
 if [ -n "$fish_path" ]; then
     if ! grep -q "$fish_path" /etc/shells; then
@@ -180,137 +166,117 @@ if [ -n "$fish_path" ]; then
     fi
     
     if [ "$SHELL" != "$fish_path" ]; then
-        run_cmd chsh -s "$fish_path"
-        yellow "Fish已成功设置为默认shell，重新登录后生效"
-    else
-        yellow "Fish已是默认shell，无需修改"
+        chsh -s "$fish_path"
+        log "Fish设为默认shell，重新登录后生效" "warn"
     fi
+fi
+
+# 时区
+timedatectl set-timezone Asia/Shanghai
+log "时区已设置为上海" "warn"
+step_end 6 "系统服务优化完成"
+
+# 步骤7: 网络优化
+step_start 7 "网络优化设置"
+# 检查内核是否支持BBR
+if ! grep -q "bbr" /proc/sys/net/ipv4/tcp_available_congestion_control 2>/dev/null; then
+    log "当前系统不支持BBR" "warn"
 else
-    red "Fish未成功安装，跳过设置默认shell"
-fi
-yellow "步骤6完成: Fish shell设置结束。"
-
-# 步骤7: 设置时区
-green "步骤7: 设置系统时区为上海..."
-run_cmd timedatectl set-timezone Asia/Shanghai
-yellow "时区已成功设置为上海"
-yellow "步骤7完成: 时区设置结束。"
-
-# 步骤8: 设置BBR和FQ (新增步骤)
-green "步骤8: 检查并设置BBR和FQ..."
-BBR_ENABLED=0
-FQ_ENABLED=0
-
-# 检查是否已启用BBR
-if grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
-    BBR_ENABLED=1
-fi
-
-# 检查是否已启用FQ
-if grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
-    FQ_ENABLED=1
-fi
-
-if [ $BBR_ENABLED -eq 0 ] || [ $FQ_ENABLED -eq 0 ]; then
-    yellow "BBR或FQ未完全配置，正在设置..."
+    # 备份配置
+    cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
     
-    # 备份配置文件
-    cp /etc/sysctl.conf /etc/sysctl.conf.bak
-    
-    # 添加BBR配置
-    if [ $BBR_ENABLED -eq 0 ]; then
+    # 配置网络优化
+    if ! grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
         echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
     fi
     
-    # 添加FQ配置
-    if [ $FQ_ENABLED -eq 0 ]; then
+    if ! grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
         echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
     fi
     
-    # 应用修改
+    # 应用设置
     sysctl -p
     
-    # 验证设置结果
+    # 验证
     CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control)
     CURR_QDISC=$(sysctl -n net.core.default_qdisc)
     
     if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq" ]; then
-        yellow "BBR和FQ设置成功！"
+        log "BBR和FQ设置成功" "warn"
     else
-        yellow "警告: BBR或FQ设置可能不完整。当前设置:"
-        yellow "- 拥塞控制算法: $CURR_CC (应为bbr)"
-        yellow "- 默认队列调度: $CURR_QDISC (应为fq)"
+        log "BBR/FQ设置可能不完整: $CURR_CC/$CURR_QDISC" "warn"
     fi
-else
-    yellow "BBR和FQ已配置，无需修改"
 fi
-yellow "步骤8完成: BBR和FQ检查与设置结束。"
+step_end 7 "网络优化设置完成"
 
-# 步骤9: 修改SSH端口 (改进版，允许自定义端口)
-green "步骤9: 修改SSH端口..."
-# 备份SSH配置文件 (移到这里更合理)
-cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+# 步骤8: SSH安全设置
+step_start 8 "SSH安全设置"
+# 备份配置
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%Y%m%d)
 
+# 获取当前端口
 CURRENT_SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
 if [ -z "$CURRENT_SSH_PORT" ]; then
     CURRENT_SSH_PORT=22
 fi
 
-read -p "当前SSH端口为 $CURRENT_SSH_PORT, 是否需要修改? (y/n): " change_port
+read -p "当前SSH端口为 $CURRENT_SSH_PORT, 是否修改? (y/n): " change_port
 if [ "$change_port" = "y" ]; then
     read -p "请输入新的SSH端口 [默认9399]: " new_port
-    new_port=${new_port:-9399}  # 如果用户未输入，默认使用9399
+    new_port=${new_port:-9399}
     
-    # 检查端口是否为有效数字且在合理范围内
+    # 验证端口
     if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
-        red "无效端口号! 使用默认端口9399"
+        log "端口无效，使用默认9399" "warn"
         new_port=9399
     fi
     
-    # 修改SSH配置
+    # 检查端口是否被占用
+    if ss -tuln | grep -q ":$new_port "; then
+        log "端口 $new_port 已被使用，请选择其他端口" "error"
+        read -p "请输入新的SSH端口: " new_port
+        if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
+            log "端口无效，使用默认9399" "warn"
+            new_port=9399
+        fi
+    fi
+    
+    # 修改配置
     sed -i "s/^#\?Port [0-9]*/Port $new_port/" /etc/ssh/sshd_config
     if ! grep -q "^Port $new_port" /etc/ssh/sshd_config; then
         echo "Port $new_port" >> /etc/ssh/sshd_config
     fi
     
+    # 重启服务
     run_cmd systemctl restart sshd
-    yellow "SSH端口已更改为 $new_port，请使用新端口连接"
+    log "SSH端口已更改为 $new_port，请使用新端口连接" "warn"
 else
-    yellow "SSH端口修改已取消，保持原端口 $CURRENT_SSH_PORT"
+    log "SSH端口未修改，保持 $CURRENT_SSH_PORT" "warn"
 fi
-yellow "步骤9完成: SSH端口修改结束。"
+step_end 8 "SSH安全设置完成"
 
-# 步骤10: 系统信息汇总
-green "步骤10: 系统信息汇总"
-yellow "====== 部署完成，系统信息汇总 ======="
-yellow "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
-yellow "内核版本: $(uname -r)"
-yellow "CPU核心数: $(nproc)"
-yellow "内存情况: $(free -h | grep Mem | awk '{print $2}')"
-yellow "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
-SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
-if [ -z "$SSH_PORT" ]; then
-    SSH_PORT="22 (默认)"
-fi
-yellow "SSH端口: $SSH_PORT"
-yellow "Docker版本: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
-yellow "活跃容器数: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
+# 步骤9: 系统信息汇总
+step_start 9 "系统信息汇总"
+log "====== 系统部署完成 =======" "warn"
+{
+    echo "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
+    echo "内核版本: $(uname -r)"
+    echo "CPU核心: $(nproc)"
+    echo "内存大小: $(free -h | grep Mem | awk '{print $2}')"
+    echo "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
+    echo "SSH端口: $(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1 || echo "22 (默认)")"
+    echo "Docker: $(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未安装')"
+    echo "容器数量: $(docker ps -q 2>/dev/null | wc -l || echo '未检测到Docker')"
+    echo "网络优化: BBR($(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")), FQ($(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置"))"
+    echo "时区: $(timedatectl | grep "Time zone" | awk '{print $3}')"
+    echo "默认Shell: $SHELL"
+    [ -n "$FAILED_DIRS" ] && echo "警告: 下列容器启动失败: $FAILED_DIRS"
+} | while read line; do log "$line" "warn"; done
+log "=============================" "warn"
+step_end 9 "系统信息汇总完成"
 
-# 显示BBR和FQ状态
-CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
-CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
-yellow "网络优化: BBR($CURR_CC), FQ($CURR_QDISC)"
-
-if [ -n "$FAILED_DIRS" ]; then
-    red "警告: 以下目录中的容器未成功启动: $FAILED_DIRS！请检查并手动修复。"
-fi
-
-yellow "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
-yellow "默认shell: $SHELL"
-yellow "========================================="
-yellow "步骤10完成: 汇总信息已显示。"
-
-yellow "\n所有步骤已成功完成！"
+log "\n所有步骤已执行完毕！" "warn"
 if [ "$change_port" = "y" ]; then
-    yellow "提示: SSH端口已更改为 $new_port, 请使用新端口连接"
+    log "重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
+    log "示例: ssh -p $new_port user@your-server-ip" "warn"
 fi
