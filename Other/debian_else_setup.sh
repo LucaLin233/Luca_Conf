@@ -356,8 +356,8 @@ function setup_mise_python
     # 设置Python
     if test -e $mise_path
         if $mise_path list python 2>/dev/null | grep -q "3.10"
-            set -l py_status ($mise_path status python 2>/dev/null)
-            log "Python 3.10已配置，当前状态: $py_status" "skip"
+            set -l py_status "$mise_path status python"
+            log "Python 3.10已配置" "skip"
             
             if $RERUN_MODE
                 read -l -P "是否更新Python配置? (y/n): " update_python
@@ -431,19 +431,8 @@ function show_system_summary
     # Mise和Python状态  
     set -l mise_path $HOME/.local/bin/mise
     if test -e $mise_path
-        # 安全地获取mise版本
-        set -l mise_version_output (command $mise_path --version 2>&1)
-        set -l mise_version (string match -r 'mise ([0-9]+\.[0-9]+\.[0-9]+)' $mise_version_output | string sub -s 2)
-    
-        if test -z "$mise_version"
-            # 如果未找到标准版本格式，尝试提取任何版本信息
-            set mise_version "已安装"
-            if string match -q "mise*" -- $mise_version_output
-                set mise_version (string split " " -- $mise_version_output)[2]
-            end
-        end
-        
-        log "Mise: $mise_version" "success"
+        # 简化版本显示，避免解析错误
+        log "Mise: 已安装" "success"
         
         # 检查Python
         if $mise_path list 2>/dev/null | grep -q "python"
@@ -519,27 +508,32 @@ function save_status
     end
     
     if is_installed starship
-        set starship_status (starship --version 2>/dev/null | string split " ")[1]
+        set -l starship_version (starship --version 2>/dev/null)
+        if test $status -eq 0
+            set starship_status "$starship_version" 
+        else
+            set starship_status "已安装"
+        end
     end
     
     if test -e $HOME/.local/bin/mise
-        set -l mise_version_output (command $HOME/.local/bin/mise --version 2>&1)
-        set mise_status (string match -r 'mise ([0-9]+\.[0-9]+\.[0-9]+)' $mise_version_output | string sub -s 2)
-        if test -z "$mise_status"
-            set mise_status ($mise_version_output | string split " ")[2]
-            if test -z "$mise_status"; set mise_status "已安装"; end
+        set mise_status "已安装"
+        # 安全地尝试获取版本
+        set -l version_output (eval "$HOME/.local/bin/mise --version" 2>/dev/null)
+        if test $status -eq 0
+            set mise_status "$version_output" 
         end
     end
 
-    # 创建状态JSON
+    # 创建状态JSON - 使用更安全的方式
     echo '{
   "version": "'$SCRIPT_VERSION'",
   "timestamp": "'$current_timestamp'",
   "components": {
     "fish_version": "'(string split " " (fish --version))[3]'",
     "fisher": "'$fisher_status'",
-    "starship": "'$starship_status'",
-    "mise": "'$mise_status'"
+    "starship": "已安装",
+    "mise": "已安装"
   }
 }' > $STATUS_FILE
 
