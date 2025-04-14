@@ -111,6 +111,27 @@ function append_to_config
     end
 end
 
+# 安全获取命令版本
+function get_version
+    set -l cmd $argv[1]
+    set -l args $argv[2..-1]
+    
+    if not command -v $cmd >/dev/null 2>&1
+        echo "未安装"
+        return 1
+    end
+    
+    # 执行命令获取版本
+    set -l output (eval "$cmd $args 2>&1" | string collect)
+    if test $status -ne 0
+        echo "无法获取版本"
+        return 1
+    end
+    
+    echo $output
+    return 0
+end
+
 # 简短环境验证
 function verify_environment
     # 检查是否为fish shell
@@ -147,7 +168,7 @@ function setup_fisher
     end
     
     set -l required_plugins jhillyerd/plugin-git jorgebucaran/autopair.fish jethrokuan/z edc/bass patrickf1/fzf.fish
-    set -l installed_plugins (fisher list ^/dev/null | string collect)
+    set -l installed_plugins (fisher list 2>/dev/null | string collect)
     
     for plugin in $required_plugins
         set -l plugin_name (string split "/" $plugin)[2]
@@ -221,14 +242,14 @@ function setup_mise_python
         if curl https://mise.run | sh
             log "Mise安装成功" "success"
             # 确保mise命令立即可用
-            eval ($mise_path activate fish) ^/dev/null
+            eval ($mise_path activate fish) 2>/dev/null
         else
             handle_error "安装Mise失败"
         end
     else
         log "Mise已安装，跳过安装步骤" "success"
         # 激活mise
-        eval ($mise_path activate fish) ^/dev/null
+        eval ($mise_path activate fish) 2>/dev/null
     end
     
     # 添加到配置
@@ -261,34 +282,67 @@ function show_system_summary
     log "║      Fish Shell 增强配置        ║" "title"
     log "╚═════════════════════════════════╝" "title"
     
+    # 基本信息
     log "当前Shell: $SHELL" "info"
-    log "Fish版本: "(fish --version | string split ' ')[3] "info"
+    log "Fish版本: "(string split " " (fish --version))[3] "info"
     
     # Fisher插件
-    set -l plugins_count (fisher list ^/dev/null | wc -l)
+    set -l plugins_list (fisher list 2>/dev/null)
+    set -l plugins_count (count $plugins_list)
+    
     if test $plugins_count -gt 0
         log "Fisher插件: $plugins_count 个已安装" "success"
+        # 可选：列出所有插件
+        # for plugin in $plugins_list
+        #    log "  • $plugin" "info"
+        # end
     else
-        log "Fisher插件: 未安装" "warning"
+        log "Fisher插件: 未找到" "warning"
     end
     
-    # Starship
+    # Starship状态
     if is_installed starship
-        set -l version (starship --version 2>/dev/null | string split ' ')[1]
-        log "Starship: $version" "success"
+        # 安全地获取starship版本
+        set -l starship_version_output (starship --version 2>&1)
+        set -l starship_version "未知"
+        
+        if string match -q "starship*" -- $starship_version_output
+            set starship_version (string match -r "v([0-9.]+)" -- $starship_version_output; or echo $starship_version_output)
+        end
+        
+        log "Starship: $starship_version" "success"
     else
         log "Starship: 未安装" "warning"
     end
     
-    # Mise和Python
+    # Mise和Python状态  
     set -l mise_path $HOME/.local/bin/mise
     if test -e $mise_path
-        set -l version ($mise_path --version 2>/dev/null | string split ' ')[2]
-        log "Mise: $version" "success"
+        # 安全地获取mise版本
+        set -l mise_version_output ($mise_path --version 2>&1)
+        set -l mise_version "已安装" 
         
-        if $mise_path list | grep -q python
-            set -l py_version ($mise_path which python | xargs -I{} {} --version 2>&1 | cut -d' ' -f2)
-            log "Python (mise): $py_version" "success"
+        if string match -q "mise*" -- $mise_version_output
+            set mise_version (string split " " -- $mise_version_output)[2]
+        end
+        
+        log "Mise: $mise_version" "success"
+        
+        # 检查Python
+        if $mise_path list 2>/dev/null | grep -q "python"
+            # 尝试获取Python版本
+            set -l py_cmd ($mise_path which python 2>/dev/null)
+            
+            if test -n "$py_cmd"
+                set -l py_version ($py_cmd --version 2>&1)
+                if string match -q "Python*" -- $py_version
+                    log "Python (mise): $py_version" "success"
+                else 
+                    log "Python (mise): 已安装但版本未知" "success"
+                end
+            else
+                log "Python (mise): 已配置但无法访问" "warning"
+            end
         else
             log "Python: 未通过mise配置" "warning"
         end
@@ -310,7 +364,7 @@ function show_system_summary
     step_end 4 "配置汇总完成"
 end
 
-# 步骤5: 提供清理欢迎信息提示 (不再自动执行)
+# 步骤5: 提供清理欢迎信息提示
 function suggest_cleanup
     step_start 5 "后续步骤建议"
     
@@ -321,7 +375,7 @@ function suggest_cleanup
     log "  source ~/.config/fish/config.fish" "info"
     
     log "要恢复到默认提示符 (禁用starship):" "info"
-    log "  函数 fish_prompt; 函数 fish_right_prompt" "info"
+    log "  functions fish_prompt; functions fish_right_prompt" "info"
     
     set -l config_file ~/.config/fish/config.fish
     set -l latest_backup (ls -t $config_file.bak* 2>/dev/null | head -n1)
