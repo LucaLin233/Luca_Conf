@@ -170,7 +170,8 @@ echo "更新sysctl配置..."
     major_version=$(echo "$kernel_version" | cut -d. -f1)
     minor_version=$(echo "$kernel_version" | cut -d. -f2)
     
-    if [ "$major_version" -ge 4 ] && [ "$minor_version" -ge 9 ]; then
+    # 正确的版本比较
+    if [ "$major_version" -gt 4 ] || ([ "$major_version" -eq 4 ] && [ "$minor_version" -ge 9 ]); then
         # 如果可以加载模块或已加载
         if lsmod | grep -q "tcp_bbr" || modprobe tcp_bbr 2>/dev/null; then
             echo -e "\n# BBR 拥塞控制"
@@ -297,12 +298,23 @@ if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
         echo "BBR拥塞控制已成功启用"
     else
         echo "尝试手动启用BBR..."
-        if modprobe tcp_bbr 2>/dev/null && \
-           echo "fq" > /proc/sys/net/core/default_qdisc && \
-           echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control; then
-            echo "BBR拥塞控制已手动启用"
+        
+        # 检查内核版本
+        kernel_version=$(uname -r)
+        major_version=$(echo "$kernel_version" | cut -d. -f1)
+        minor_version=$(echo "$kernel_version" | cut -d. -f2)
+        
+        # 正确的版本比较
+        if [ "$major_version" -gt 4 ] || ([ "$major_version" -eq 4 ] && [ "$minor_version" -ge 9 ]); then
+            if modprobe tcp_bbr 2>/dev/null && \
+               echo "fq" > /proc/sys/net/core/default_qdisc && \
+               echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control; then
+                echo "BBR拥塞控制已手动启用"
+            else
+                echo "警告: 无法启用BBR，可能需要更新内核或重启系统"
+            fi
         else
-            echo "警告: 无法启用BBR，可能需要更新内核或重启系统"
+            echo "警告: 内核版本($kernel_version)不支持BBR，需要4.9+版本"
         fi
     fi
 else
@@ -323,4 +335,5 @@ echo "TCP缓冲区大小: $(cat /proc/sys/net/ipv4/tcp_rmem 2>/dev/null || echo 
 echo -e "\n迁移完成!"
 echo "所有备份文件保存在: $BACKUP_DIR"
 echo "如需恢复，请运行: $BACKUP_DIR/restore.sh"
+echo "建议重启系统以确保所有更改生效"
 echo "建议重启系统以确保所有更改生效"
