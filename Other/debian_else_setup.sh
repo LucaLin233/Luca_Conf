@@ -531,7 +531,7 @@ function save_status
 }' > $STATUS_FILE
 
     log "已保存配置状态到 $STATUS_FILE" "info"
-}
+end
 
 # 主函数
 function main
