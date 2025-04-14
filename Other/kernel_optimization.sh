@@ -145,14 +145,22 @@ declare -A sysctl_settings=(
     ["net.ipv4.tcp_no_metrics_save"]="1"
     
     # TCP 性能
+    ["net.ipv4.tcp_ecn"]="0"
+    ["net.ipv4.tcp_frto"]="0" 
+    ["net.ipv4.tcp_mtu_probing"]="0"
+    ["net.ipv4.tcp_rfc1337"]="0"
     ["net.ipv4.tcp_sack"]="1"
+    ["net.ipv4.tcp_fack"]="1"
     ["net.ipv4.tcp_window_scaling"]="1"
+    ["net.ipv4.tcp_adv_win_scale"]="1"
     ["net.ipv4.tcp_moderate_rcvbuf"]="1"
     ["net.ipv4.tcp_keepalive_time"]="600"
     ["net.ipv4.tcp_keepalive_intvl"]="60"  # 新增
     ["net.ipv4.tcp_keepalive_probes"]="3"  # 新增
+    ["net.ipv4.tcp_notsent_lowat"]="16384"
     
     # 网络转发
+    ["net.ipv4.conf.all.route_localnet"]="1"
     ["net.ipv4.ip_forward"]="1"
     ["net.ipv4.conf.all.forwarding"]="1"
     ["net.ipv4.conf.default.forwarding"]="1"
@@ -194,22 +202,28 @@ declare -A sysctl_settings=(
     done
 
     echo -e "\n# TCP 性能优化"
-    for param in net.ipv4.tcp_sack net.ipv4.tcp_window_scaling \
+    for param in net.ipv4.tcp_ecn net.ipv4.tcp_frto net.ipv4.tcp_mtu_probing \
+                 net.ipv4.tcp_rfc1337 net.ipv4.tcp_sack net.ipv4.tcp_fack \
+                 net.ipv4.tcp_window_scaling net.ipv4.tcp_adv_win_scale \
                  net.ipv4.tcp_moderate_rcvbuf net.ipv4.tcp_keepalive_time \
-                 net.ipv4.tcp_keepalive_intvl net.ipv4.tcp_keepalive_probes; do
+                 net.ipv4.tcp_keepalive_intvl net.ipv4.tcp_keepalive_probes \
+                 net.ipv4.tcp_notsent_lowat; do
         [ -n "${sysctl_settings[$param]}" ] && echo "${param} = ${sysctl_settings[$param]}"
     done
 
     echo -e "\n# 网络转发设置"
-    for param in net.ipv4.ip_forward \
+    for param in net.ipv4.conf.all.route_localnet net.ipv4.ip_forward \
                  net.ipv4.conf.all.forwarding net.ipv4.conf.default.forwarding; do
         [ -n "${sysctl_settings[$param]}" ] && echo "${param} = ${sysctl_settings[$param]}"
     done
 } >> /etc/sysctl.conf
 
-# 配置 BBR
-kernel_version=$(uname -r | cut -d. -f1,2)
-if [ "$(echo "$kernel_version >= 4.9" | bc)" -eq 1 ]; then
+# 配置 BBR (改进后的检测方法，不依赖bc)
+kernel_version=$(uname -r)
+major_version=$(echo "$kernel_version" | cut -d. -f1)
+minor_version=$(echo "$kernel_version" | cut -d. -f2)
+
+if [ "$major_version" -ge 4 ] && [ "$minor_version" -ge 9 ]; then
     if lsmod | grep -q "tcp_bbr" || modprobe tcp_bbr 2>/dev/null; then
         echo -e "\n# BBR 拥塞控制" >> /etc/sysctl.conf
         echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
@@ -232,6 +246,25 @@ else
     echo "系统参数应用成功"
 fi
 
+# 验证BBR是否已启用
+if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
+    current_cc=$(cat /proc/sys/net/ipv4/tcp_congestion_control)
+    if [ "$current_cc" = "bbr" ]; then
+        echo "BBR拥塞控制已成功启用"
+    else
+        echo "尝试手动启用BBR..."
+        if modprobe tcp_bbr 2>/dev/null && \
+           echo "fq" > /proc/sys/net/core/default_qdisc && \
+           echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control; then
+            echo "BBR拥塞控制已手动启用"
+        else
+            echo "警告: 无法启用BBR，可能需要更新内核或重启系统"
+        fi
+    fi
+else
+    echo "警告: 无法检测当前的拥塞控制算法"
+fi
+
 # 创建恢复脚本
 cat > "$BACKUP_DIR/restore.sh" <<EOF
 #!/bin/bash
@@ -239,6 +272,17 @@ cat > "$BACKUP_DIR/restore.sh" <<EOF
 
 # 检查root权限
 [ "\$(id -u)" != "0" ] && { echo "错误: 需要root权限"; exit 1; }
+
+# 显示可用备份
+echo "可用备份文件:"
+ls -l "$BACKUP_DIR"/*.backup_* 2>/dev/null || { echo "未找到备份文件"; exit 1; }
+
+# 询问用户是否继续
+read -p "是否继续恢复 (y/n)? " answer
+if [[ "\$answer" != "y" && "\$answer" != "Y" ]]; then
+    echo "操作已取消"
+    exit 0
+fi
 
 # 恢复文件的函数
 restore_file() {
@@ -248,39 +292,64 @@ restore_file() {
     if [ -f "\$backup" ]; then
         cp "\$backup" "\$target"
         echo "已恢复: \$backup → \$target"
+        return 0
     else
         echo "警告: 备份文件 \$backup 不存在"
+        return 1
     fi
 }
 
-# 恢复备份的配置文件
-for backup in "$BACKUP_DIR"/*.backup_*; do
-    if [ -f "\$backup" ]; then
-        filename=\$(basename "\$backup" | sed 's/\.backup_[0-9_]*//')
-        case "\$filename" in
-            limits.conf)
-                restore_file "\$backup" "/etc/security/limits.conf"
-                ;;
-            sysctl.conf)
-                restore_file "\$backup" "/etc/sysctl.conf"
-                ;;
-            common-session)
-                restore_file "\$backup" "/etc/pam.d/common-session"
-                ;;
-            login)
-                restore_file "\$backup" "/etc/pam.d/login"
-                ;;
-        esac
+# 寻找最近的备份文件
+SYSCTL_BACKUP=\$(ls -t "$BACKUP_DIR"/sysctl.conf.backup_* 2>/dev/null | head -1)
+LIMITS_BACKUP=\$(ls -t "$BACKUP_DIR"/limits.conf.backup_* 2>/dev/null | head -1)
+COMMON_SESSION_BACKUP=\$(ls -t "$BACKUP_DIR"/common-session.backup_* 2>/dev/null | head -1)
+LOGIN_BACKUP=\$(ls -t "$BACKUP_DIR"/login.backup_* 2>/dev/null | head -1)
+
+# 恢复系统配置文件
+if [ -n "\$SYSCTL_BACKUP" ]; then
+    restore_file "\$SYSCTL_BACKUP" "/etc/sysctl.conf"
+    sysctl_restored=true
+else
+    echo "警告: 未找到 sysctl.conf 备份"
+fi
+
+if [ -n "\$LIMITS_BACKUP" ]; then
+    restore_file "\$LIMITS_BACKUP" "/etc/security/limits.conf"
+    limits_restored=true
+else
+    echo "警告: 未找到 limits.conf 备份"
+fi
+
+if [ -n "\$COMMON_SESSION_BACKUP" ]; then
+    restore_file "\$COMMON_SESSION_BACKUP" "/etc/pam.d/common-session"
+fi
+
+if [ -n "\$LOGIN_BACKUP" ]; then
+    restore_file "\$LOGIN_BACKUP" "/etc/pam.d/login"
+fi
+
+# 恢复limits.d下的配置
+for nproc_conf_bk in /etc/security/limits.d/*nproc.conf_bk; do
+    if [ -f "\$nproc_conf_bk" ]; then
+        restored_name=\$(echo "\$nproc_conf_bk" | sed 's/_bk\$//')
+        mv "\$nproc_conf_bk" "\$restored_name"
+        echo "已恢复: \$nproc_conf_bk → \$restored_name"
     fi
 done
 
-# 应用恢复后的sysctl设置
-if [ -f "/etc/sysctl.conf" ]; then
+# 应用配置
+if [ "\$sysctl_restored" = true ]; then
+    echo "正在应用恢复的系统参数..."
     sysctl -p
-    echo "已应用恢复后的系统参数"
 fi
 
-echo "系统恢复完成。请重启系统以确保所有更改生效。"
+# 完成信息
+if [ "\$sysctl_restored" = true ] || [ "\$limits_restored" = true ]; then
+    echo "系统配置恢复完成"
+    echo "请重启系统以确保所有更改生效"
+else
+    echo "警告: 未能恢复任何配置文件"
+fi
 EOF
 
 chmod +x "$BACKUP_DIR/restore.sh"
