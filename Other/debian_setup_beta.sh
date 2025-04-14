@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# 脚本版本和重运行检测
+SCRIPT_VERSION="1.1"
+RERUN_MODE=false
+if [ -f "/var/lib/system-deploy-status.json" ]; then
+    RERUN_MODE=true
+    echo "检测到之前的部署记录，进入更新模式"
+fi
+
 # 日志函数 - 增强版
 log() { 
     local color="\033[0;32m"  # 默认绿色
@@ -16,6 +24,7 @@ log() {
 step_start() { log "▶ 步骤$1: $2..." "title"; }
 step_end() { log "✓ 步骤$1完成: $2" "info"; echo; }
 step_fail() { log "✗ 步骤$1失败: $2" "error"; exit 1; }
+step_skip() { log "⏭ 步骤$1跳过: $2" "warn"; echo; }
 
 # 命令执行器
 run_cmd() {
@@ -65,8 +74,30 @@ step_end 1 "网络正常，必要工具已就绪"
 
 # 步骤2: 系统更新与安装
 step_start 2 "更新系统并安装基础软件"
-run_cmd apt update && run_cmd apt upgrade -y && \
-run_cmd apt install -y dnsutils wget curl rsync chrony cron fish tuned || step_fail 2 "基础软件安装失败"
+# 系统更新总是执行
+run_cmd apt update
+if $RERUN_MODE; then
+    log "更新模式: 仅更新软件包，不进行完整升级" "info"
+    run_cmd apt upgrade -y
+else
+    log "首次运行: 执行完整系统更新" "info"
+    run_cmd apt upgrade -y
+fi
+
+# 检查基础软件安装状态
+PKGS_TO_INSTALL=""
+for pkg in dnsutils wget curl rsync chrony cron fish tuned; do
+    if ! dpkg -l | grep -q "^ii\s*$pkg\s"; then
+        PKGS_TO_INSTALL="$PKGS_TO_INSTALL $pkg"
+    fi
+done
+
+if [ -n "$PKGS_TO_INSTALL" ]; then
+    log "安装缺少的软件包:$PKGS_TO_INSTALL" "info"
+    run_cmd apt install -y $PKGS_TO_INSTALL || step_fail 2 "基础软件安装失败"
+else
+    log "所有基础软件包已安装" "info"
+fi
 step_end 2 "系统已更新，基础软件安装成功"
 
 # 步骤3: 安装Docker和NextTrace
@@ -74,7 +105,29 @@ step_start 3 "安装Docker和NextTrace"
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
 
 # Docker安装
-if ! command -v docker &>/dev/null; then
+if command -v docker &>/dev/null; then
+    DOCKER_VERSION=$(docker --version | awk '{print $3}' | tr -d ',')
+    log "Docker已安装 (版本: $DOCKER_VERSION)" "info"
+    
+    # Docker运行状态检查
+    if ! systemctl is-active docker &>/dev/null; then
+        log "Docker服务未运行，尝试启动..." "warn"
+        systemctl start docker
+        systemctl enable docker
+    fi
+    
+    # 低内存优化检查
+    if [ $MEM_TOTAL -lt 1024 ]; then
+        if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
+            log "低内存环境，应用Docker优化" "warn"
+            mkdir -p /etc/docker
+            echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
+            systemctl restart docker
+        else
+            log "Docker低内存优化已应用" "info"
+        fi
+    fi
+else
     log "Docker未检测到，正在安装..." "warn"
     if ! curl -fsSL https://get.docker.com | bash; then
         log "Docker安装失败" "error"
@@ -89,18 +142,17 @@ if ! command -v docker &>/dev/null; then
             systemctl restart docker
         fi
     fi
-elif [ $MEM_TOTAL -lt 1024 ]; then
-    # 检查已有Docker是否需要优化
-    if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
-        log "低内存环境，应用Docker优化" "warn"
-        mkdir -p /etc/docker
-        echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
-        systemctl restart docker
-    fi
 fi
 
 # NextTrace安装
-if ! command -v nexttrace &>/dev/null; then
+if command -v nexttrace &>/dev/null; then
+    log "NextTrace已安装" "info"
+    # 可选：检查更新逻辑
+    if $RERUN_MODE; then
+        log "检查NextTrace更新..." "info"
+        bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"
+    fi
+else
     log "安装NextTrace..." "warn"
     bash -c "$(curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)" || log "NextTrace安装失败" "error"
 fi
@@ -136,13 +188,27 @@ else
             done
             
             if [ -n "$COMPOSE_FILE" ]; then
-                log "目录 $dir: 找到 $COMPOSE_FILE，尝试启动容器" "warn"
-                if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
-                    log "✓ 成功启动 $dir 中的容器" "info"
-                    SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+                if $RERUN_MODE; then
+                    log "目录 $dir: 找到 $COMPOSE_FILE，正在重启容器..." "info"
+                    if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" restart; then
+                        log "✓ 成功重启 $dir 中的容器" "info"
+                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+                    elif cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
+                        log "✓ 成功启动 $dir 中的容器" "info"
+                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+                    else
+                        log "✗ 目录 $dir 中容器启动/重启失败" "error"
+                        FAILED_DIRS+=" $dir"
+                    fi
                 else
-                    log "✗ 目录 $dir 中容器启动失败" "error"
-                    FAILED_DIRS+=" $dir"
+                    log "目录 $dir: 找到 $COMPOSE_FILE，尝试启动容器" "warn"
+                    if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
+                        log "✓ 成功启动 $dir 中的容器" "info"
+                        SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + 1))
+                    else
+                        log "✗ 目录 $dir 中容器启动失败" "error"
+                        FAILED_DIRS+=" $dir"
+                    fi
                 fi
             else
                 log "目录 $dir: 未找到Compose文件 (docker-compose.yml/compose.yaml)" "warn"
@@ -159,12 +225,17 @@ step_end 4 "容器启动检查完成"
 # 步骤5: 设置定时任务
 step_start 5 "设置定时更新任务"
 CRON_CMD="5 0 * * 0 apt update && apt upgrade -y > /var/log/auto-update.log 2>&1"
-if ! (crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"); then
+
+if crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"; then
+    log "定时更新任务已存在" "info"
+else
+    if $RERUN_MODE; then
+        log "添加缺少的定时更新任务" "warn"
+    fi
     (crontab -l 2>/dev/null || echo "") | { cat; echo "$CRON_CMD"; } | crontab -
-    log "已添加每周日凌晨0:05的自动更新任务" "warn" 
+    log "已添加每周日凌晨0:05的自动更新任务" "warn"
 fi
 step_end 5 "定时任务已设置"
-
 # 步骤6: 启用进阶服务
 step_start 6 "系统服务优化"
 # Tuned
@@ -185,13 +256,27 @@ if [ -n "$fish_path" ]; then
     if ! grep -q "$fish_path" /etc/shells; then
         echo "$fish_path" >> /etc/shells
         log "已将Fish添加到支持的shell列表" "warn"
+    else
+        log "Fish已在支持的shell列表中" "info"
     fi
     
     if [ "$SHELL" != "$fish_path" ]; then
-        if chsh -s "$fish_path"; then
-            log "Fish已设为默认shell，重新登录后生效" "warn"
+        if $RERUN_MODE; then
+            log "检测到重新运行，不自动修改默认shell" "warn"
+            read -p "是否设置Fish为默认shell? (y/n): " change_shell
+            if [ "$change_shell" = "y" ]; then
+                if chsh -s "$fish_path"; then
+                    log "Fish已设为默认shell，重新登录后生效" "warn"
+                else
+                    log "Fish设置为默认shell失败" "error"
+                fi
+            fi
         else
-            log "Fish设置为默认shell失败" "error"
+            if chsh -s "$fish_path"; then
+                log "Fish已设为默认shell，重新登录后生效" "warn"
+            else
+                log "Fish设置为默认shell失败" "error"
+            fi
         fi
     else
         log "✓ Fish已是默认shell" "info"
@@ -201,17 +286,27 @@ else
 fi
 
 # 时区
-if timedatectl set-timezone Asia/Shanghai; then
-    log "✓ 时区已设置为上海" "info"
+CURRENT_TZ=$(timedatectl | grep "Time zone" | awk '{print $3}')
+if [ "$CURRENT_TZ" = "Asia/Shanghai" ]; then
+    log "✓ 时区已是上海" "info"
 else
-    log "✗ 时区设置失败" "error"
+    log "设置时区为上海..." "warn"
+    if timedatectl set-timezone Asia/Shanghai; then
+        log "✓ 时区已设置为上海" "info"
+    else
+        log "✗ 时区设置失败" "error"
+    fi
 fi
 step_end 6 "系统服务优化完成"
 
 # 步骤7: 网络优化
 step_start 7 "网络优化设置"
 # 检查内核是否支持BBR
-if ! sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr"; then
+BBR_AVAILABLE=false
+if sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr"; then
+    BBR_AVAILABLE=true
+    log "✓ 系统支持BBR" "info"
+else
     log "✗ 当前系统没有开启BBR支持，检查原因..." "error"
     # 检查内核模块
     if ! lsmod | grep -q "tcp_bbr"; then
@@ -223,18 +318,55 @@ if ! sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr
     fi
 fi
 
-# 备份配置
-cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
+# 检查当前配置
+CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
+CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
 
-# 配置网络优化
-if ! grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
-    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-    log "添加BBR拥塞控制设置" "warn"
-fi
+if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq" ]; then
+    log "✓ BBR和FQ已配置" "info"
+else
+    # 备份配置
+    if ! $RERUN_MODE || [ ! -f /etc/sysctl.conf.bak.orig ]; then
+        cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
+        if ! $RERUN_MODE; then
+            cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig
+        fi
+    fi
 
-if ! grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
-    echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-    log "添加FQ队列调度设置" "warn"
+    # 配置网络优化
+    BBR_CONFIGURED=false
+    FQ_CONFIGURED=false
+    
+    if grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+        BBR_CONFIGURED=true
+        log "BBR配置已存在" "info"
+    fi
+    if grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
+        FQ_CONFIGURED=true
+        log "FQ配置已存在" "info"
+    fi
+
+    if ! $BBR_CONFIGURED; then
+        # 检查是否有被注释的配置
+        if grep -q "^#\s*net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+            sed -i 's/^#\s*net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=bbr/' /etc/sysctl.conf
+            log "启用已存在但被注释的BBR配置" "warn"
+        else
+            echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+            log "添加BBR拥塞控制设置" "warn"
+        fi
+    fi
+
+    if ! $FQ_CONFIGURED; then
+        # 检查是否有被注释的配置
+        if grep -q "^#\s*net.core.default_qdisc=fq" /etc/sysctl.conf; then
+            sed -i 's/^#\s*net.core.default_qdisc=fq/net.core.default_qdisc=fq/' /etc/sysctl.conf
+            log "启用已存在但被注释的FQ配置" "warn"
+        else
+            echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+            log "添加FQ队列调度设置" "warn"
+        fi
+    fi
 fi
 
 # 应用设置
@@ -258,8 +390,13 @@ step_end 7 "网络优化设置完成"
 
 # 步骤8: SSH安全设置
 step_start 8 "SSH安全设置"
-# 备份配置
-cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%Y%m%d)
+# 检查是否有原始备份
+if ! $RERUN_MODE || [ ! -f /etc/ssh/sshd_config.bak.orig ]; then
+    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%Y%m%d)
+    if ! $RERUN_MODE; then
+        cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig
+    fi
+fi
 
 # 获取当前端口
 CURRENT_SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
@@ -268,7 +405,13 @@ if [ -z "$CURRENT_SSH_PORT" ]; then
 fi
 
 log "当前SSH端口为 $CURRENT_SSH_PORT" "warn"
-read -p "是否需要修改SSH端口? (y/n): " change_port
+
+if $RERUN_MODE; then
+    read -p "SSH端口是否需要修改? 当前为 $CURRENT_SSH_PORT (y/n): " change_port
+else
+    read -p "是否需要修改SSH端口? (y/n): " change_port
+fi
+
 if [ "$change_port" = "y" ]; then
     read -p "请输入新的SSH端口 [默认9399]: " new_port
     new_port=${new_port:-9399}
@@ -318,6 +461,8 @@ show_info() {
     log " • $1: $2" "info"
 }
 
+show_info "部署模式" "$(if $RERUN_MODE; then echo "重运行/更新"; else echo "首次运行"; fi)"
+show_info "脚本版本" "$SCRIPT_VERSION"
 show_info "系统版本" "$(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
 show_info "内核版本" "$(uname -r)"
 show_info "CPU核心数" "$(nproc)"
@@ -357,9 +502,28 @@ log "─────────────────────────
 
 step_end 9 "系统信息汇总完成"
 
+# 保存状态以支持重新运行
+echo '{
+  "script_version": "'$SCRIPT_VERSION'",
+  "last_run": "'$(date '+%Y-%m-%d %H:%M:%S')'",
+  "ssh_port": "'$SSH_PORT'",
+  "system": "Debian '$(cat /etc/debian_version)'",
+  "container_status": {
+    "successful": '$SUCCESSFUL_STARTS',
+    "failed_dirs": "'$FAILED_DIRS'"
+  }
+}' > /var/lib/system-deploy-status.json
+
 # 最后的提示
 log "✅ 所有配置步骤已执行完毕！" "title"
 if [ "$change_port" = "y" ]; then
     log "⚠️  重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
     log "   示例: ssh -p $new_port 用户名@服务器IP" "warn"
 fi
+if $RERUN_MODE; then
+    log "📝 这是脚本的重复运行，已更新或跳过已配置项目" "info"
+else
+    log "🎉 初始部署完成！下次运行会自动进入更新模式" "info"
+fi
+
+log "🔄 可随时重新运行此脚本进行维护或更新" "info"
