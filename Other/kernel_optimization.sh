@@ -165,7 +165,6 @@ declare -A sysctl_settings=(
     ["net.ipv4.conf.all.forwarding"]="1"
     ["net.ipv4.conf.default.forwarding"]="1"
 )
-
 # 清理现有配置
 > /etc/sysctl.conf
 
@@ -218,7 +217,7 @@ declare -A sysctl_settings=(
     done
 } >> /etc/sysctl.conf
 
-# 正确的BBR检测代码
+# 配置 BBR (改进后的检测方法，不依赖bc)
 kernel_version=$(uname -r)
 major_version=$(echo "$kernel_version" | cut -d. -f1)
 minor_version=$(echo "$kernel_version" | cut -d. -f2)
@@ -253,13 +252,23 @@ if [ -f /proc/sys/net/ipv4/tcp_congestion_control ]; then
     if [ "$current_cc" = "bbr" ]; then
         echo "BBR拥塞控制已成功启用"
     else
-        echo "尝试手动启用BBR..."
-        if modprobe tcp_bbr 2>/dev/null && \
-           echo "fq" > /proc/sys/net/core/default_qdisc && \
-           echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control; then
-            echo "BBR拥塞控制已手动启用"
+        # 在尝试手动启用前检查内核版本
+        kernel_version=$(uname -r)
+        major_version=$(echo "$kernel_version" | cut -d. -f1)
+        minor_version=$(echo "$kernel_version" | cut -d. -f2)
+        
+        # 正确的版本比较
+        if [ "$major_version" -gt 4 ] || ([ "$major_version" -eq 4 ] && [ "$minor_version" -ge 9 ]); then
+            echo "尝试手动启用BBR..."
+            if modprobe tcp_bbr 2>/dev/null && \
+               echo "fq" > /proc/sys/net/core/default_qdisc && \
+               echo "bbr" > /proc/sys/net/ipv4/tcp_congestion_control; then
+                echo "BBR拥塞控制已手动启用"
+            else
+                echo "警告: 无法启用BBR，可能需要更新内核或重启系统"
+            fi
         else
-            echo "警告: 无法启用BBR，可能需要更新内核或重启系统"
+            echo "警告: 内核版本($kernel_version)不支持BBR，需要4.9+版本"
         fi
     fi
 else
