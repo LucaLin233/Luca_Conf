@@ -184,10 +184,11 @@ function setup_fisher
     if functions -q fisher
         set fisher_installed true
         log "Fisher已安装，跳过安装步骤" "skip"
-        
+    
         if $RERUN_MODE
-            log "更新Fisher..." "info"
-            fisher update fisher
+            # Fisher不能更新自身，所以跳过这部分
+            # log "更新Fisher..." "info"
+            # fisher update fisher
         end
     else
         log "安装Fisher包管理器..." "info"
@@ -316,12 +317,8 @@ function setup_mise_python
     end
     
     if test -e $mise_path
-        set -l mise_version (command $mise_path --version 2>&1 | string match -r 'mise ([0-9]+\.[0-9]+\.[0-9]+)' | string sub -s 2)
-        if test -z "$mise_version"
-            set mise_version ($mise_path --version 2>&1 | head -n1 | string split " ")[2]
-            if test -z "$mise_version"; set mise_version "已安装"; end
-        end
-        log "Mise已安装 (v$mise_version)" "skip"
+        # 不尝试展示具体版本，避免解析问题
+        log "Mise已安装" "skip"
         
         if $RERUN_MODE
             read -l -P "是否更新Mise? (y/n): " update_mise
