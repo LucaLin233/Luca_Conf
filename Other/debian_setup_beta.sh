@@ -23,38 +23,6 @@ run_cmd() {
     return $status
 }
 
-# SWAP设置函数 (增加错误恢复机制)
-setup_swap() {
-    green "创建1G SWAP文件..."
-    run_cmd dd if=/dev/zero of=/swapfile bs=1M count=1024 status=progress
-    if [ $? -ne 0 ]; then
-        red "SWAP创建失败，清理残留文件..."
-        swapoff /swapfile 2>/dev/null
-        rm -f /swapfile
-        return 1
-    fi
-    
-    run_cmd chmod 600 /swapfile
-    run_cmd mkswap /swapfile
-    run_cmd swapon /swapfile
-    
-    if [ $? -ne 0 ]; then
-        red "SWAP启用失败，清理残留文件..."
-        swapoff /swapfile 2>/dev/null
-        rm -f /swapfile
-        return 1
-    fi
-    
-    if ! grep -q "^/swapfile" /etc/fstab; then
-        echo '/swapfile none swap sw 0 0' >> /etc/fstab
-    fi
-    
-    if ! grep -q "^vm.swappiness" /etc/sysctl.conf; then
-        echo 'vm.swappiness=10' >> /etc/sysctl.conf
-        sysctl -p
-    fi
-}
-
 # 步骤0: 检查是否为root用户
 if [ "$(id -u)" != "0" ]; then
     red "此脚本必须以root用户运行"
@@ -88,27 +56,10 @@ run_cmd apt upgrade -y
 run_cmd apt install -y dnsutils wget curl rsync chrony cron fish tuned
 yellow "步骤1完成: 更新和安装成功。"
 
-# 步骤2: 内存检查和SWAP设置
-green "步骤2: 检查内存和SWAP..."
+# 步骤2: 检查并安装Docker和NextTrace
+green "步骤2: 检查并安装Docker和NextTrace..."
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
-SWAP_TOTAL=$(free -m | grep Swap | awk '{print $2}')
 
-# 改进: 只在内存小于2G且SWAP小于100M时创建SWAP
-if [ $MEM_TOTAL -lt 2048 ] && [ $SWAP_TOTAL -lt 100 ]; then
-    yellow "内存小于2G且SWAP不足，创建1G SWAP..."
-    setup_swap
-    if [ $? -eq 0 ]; then
-        yellow "步骤2完成: SWAP设置已应用。"
-    else
-        red "步骤2警告: SWAP设置失败，但将继续执行后续步骤。"
-    fi
-else
-    yellow "内存配置满足要求或SWAP已存在，跳过SWAP设置。"
-fi
-yellow "步骤2完成: 内存检查结束。"
-
-# 步骤3: 检查并安装Docker和NextTrace
-green "步骤3: 检查并安装Docker和NextTrace..."
 if ! command -v docker &>/dev/null; then
     yellow "Docker未检测到，正在安装..."
     run_cmd curl -fsSL https://get.docker.com | bash
@@ -144,10 +95,10 @@ if ! command -v nexttrace &>/dev/null; then
 else
     yellow "NextTrace已安装，跳过安装步骤。"
 fi
-yellow "步骤3完成: Docker和NextTrace检查结束。"
+yellow "步骤2完成: Docker和NextTrace检查结束。"
 
-# 步骤4: 启动容器 (改进版 - 修正了多compose文件处理)
-green "步骤4: 启动容器..."
+# 步骤3: 启动容器 (改进版 - 修正了多compose文件处理)
+green "步骤3: 启动容器..."
 SUCCESSFUL_STARTS=0
 FAILED_DIRS=""
 
@@ -194,13 +145,13 @@ if [ -n "$COMPOSE_CMD" ]; then
             yellow "目录 $dir 不存在，跳过容器启动。"
         fi
     done
-    yellow "步骤4完成: 容器启动检查结束。成功启动: $SUCCESSFUL_STARTS 个。"
+    yellow "步骤3完成: 容器启动检查结束。成功启动: $SUCCESSFUL_STARTS 个。"
 else
-    yellow "步骤4跳过: 未找到 Docker Compose 工具。"
+    yellow "步骤3跳过: 未找到 Docker Compose 工具。"
 fi
 
-# 步骤5: 设置定时更新任务
-green "步骤5: 设置定时更新任务..."
+# 步骤4: 设置定时更新任务
+green "步骤4: 设置定时更新任务..."
 CRON_CMD="5 0 * * 0 apt update && apt upgrade -y > /var/log/auto-update.log 2>&1"
 if ! (crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"); then
     (crontab -l 2>/dev/null || echo "") | { cat; echo "$CRON_CMD"; } | crontab -
@@ -208,20 +159,20 @@ if ! (crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"); then
 else
     yellow "自动更新任务已存在，跳过设置"
 fi
-yellow "步骤5完成: 定时任务设置结束。"
+yellow "步骤4完成: 定时任务设置结束。"
 
-# 步骤6: 启用tuned服务
-green "步骤6: 启用tuned服务..."
+# 步骤5: 启用tuned服务
+green "步骤5: 启用tuned服务..."
 if ! systemctl is-active tuned &>/dev/null; then
     run_cmd systemctl enable --now tuned
     yellow "tuned服务已启用"
 else
     yellow "tuned服务已在运行"
 fi
-yellow "步骤6完成: tuned服务状态更新。"
+yellow "步骤5完成: tuned服务状态更新。"
 
-# 步骤7: 设置Fish为默认shell
-green "步骤7: 设置Fish为默认shell..."
+# 步骤6: 设置Fish为默认shell
+green "步骤6: 设置Fish为默认shell..."
 fish_path=$(which fish)
 if [ -n "$fish_path" ]; then
     if ! grep -q "$fish_path" /etc/shells; then
@@ -237,16 +188,16 @@ if [ -n "$fish_path" ]; then
 else
     red "Fish未成功安装，跳过设置默认shell"
 fi
-yellow "步骤7完成: Fish shell设置结束。"
+yellow "步骤6完成: Fish shell设置结束。"
 
-# 步骤8: 设置时区
-green "步骤8: 设置系统时区为上海..."
+# 步骤7: 设置时区
+green "步骤7: 设置系统时区为上海..."
 run_cmd timedatectl set-timezone Asia/Shanghai
 yellow "时区已成功设置为上海"
-yellow "步骤8完成: 时区设置结束。"
+yellow "步骤7完成: 时区设置结束。"
 
-# 步骤9: 设置BBR和FQ (新增步骤)
-green "步骤9: 检查并设置BBR和FQ..."
+# 步骤8: 设置BBR和FQ (新增步骤)
+green "步骤8: 检查并设置BBR和FQ..."
 BBR_ENABLED=0
 FQ_ENABLED=0
 
@@ -293,10 +244,10 @@ if [ $BBR_ENABLED -eq 0 ] || [ $FQ_ENABLED -eq 0 ]; then
 else
     yellow "BBR和FQ已配置，无需修改"
 fi
-yellow "步骤9完成: BBR和FQ检查与设置结束。"
+yellow "步骤8完成: BBR和FQ检查与设置结束。"
 
-# 步骤10: 修改SSH端口 (改进版，允许自定义端口)
-green "步骤10: 修改SSH端口..."
+# 步骤9: 修改SSH端口 (改进版，允许自定义端口)
+green "步骤9: 修改SSH端口..."
 # 备份SSH配置文件 (移到这里更合理)
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
 
@@ -327,16 +278,15 @@ if [ "$change_port" = "y" ]; then
 else
     yellow "SSH端口修改已取消，保持原端口 $CURRENT_SSH_PORT"
 fi
-yellow "步骤10完成: SSH端口修改结束。"
+yellow "步骤9完成: SSH端口修改结束。"
 
-# 步骤11: 系统信息汇总
-green "步骤11: 系统信息汇总"
+# 步骤10: 系统信息汇总
+green "步骤10: 系统信息汇总"
 yellow "====== 部署完成，系统信息汇总 ======="
 yellow "系统版本: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d= -f2 | tr -d '"')"
 yellow "内核版本: $(uname -r)"
 yellow "CPU核心数: $(nproc)"
 yellow "内存情况: $(free -h | grep Mem | awk '{print $2}')"
-yellow "SWAP情况: $(free -h | grep Swap | awk '{print $2}')"
 yellow "磁盘使用: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
 SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
 if [ -z "$SSH_PORT" ]; then
@@ -358,7 +308,7 @@ fi
 yellow "时区设置: $(timedatectl | grep "Time zone" | awk '{print $3}')"
 yellow "默认shell: $SHELL"
 yellow "========================================="
-yellow "步骤11完成: 汇总信息已显示。"
+yellow "步骤10完成: 汇总信息已显示。"
 
 yellow "\n所有步骤已成功完成！"
 if [ "$change_port" = "y" ]; then
