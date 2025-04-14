@@ -9,9 +9,24 @@ BACKUP_DIR="/root/kernel_tuning_backup"
 
 # 检查备份目录是否存在
 if [ ! -d "$BACKUP_DIR" ]; then
-    echo "错误: 备份目录 $BACKUP_DIR 不存在"
-    echo "请指定正确的备份目录或运行内核调优脚本创建备份"
-    exit 1
+    # 尝试查找旧版本的备份
+    OLD_SYSCTL_BACKUP=$(ls -t /etc/sysctl.conf.backup_* 2>/dev/null | head -1)
+    OLD_LIMITS_BACKUP=$(ls -t /etc/security/limits.conf.backup_* 2>/dev/null | head -1)
+    
+    if [ -n "$OLD_SYSCTL_BACKUP" ] || [ -n "$OLD_LIMITS_BACKUP" ]; then
+        echo "找到旧版本备份文件，但备份目录不存在"
+        echo "创建备份目录并迁移备份..."
+        mkdir -p "$BACKUP_DIR"
+        
+        [ -n "$OLD_SYSCTL_BACKUP" ] && cp "$OLD_SYSCTL_BACKUP" "$BACKUP_DIR/"
+        [ -n "$OLD_LIMITS_BACKUP" ] && cp "$OLD_LIMITS_BACKUP" "$BACKUP_DIR/"
+        
+        echo "备份文件已迁移到: $BACKUP_DIR"
+    else
+        echo "错误: 备份目录 $BACKUP_DIR 不存在且找不到旧版本备份"
+        echo "请指定正确的备份目录或运行内核调优脚本创建备份"
+        exit 1
+    fi
 fi
 
 # 显示可用备份
@@ -54,14 +69,28 @@ if [ -n "$SYSCTL_BACKUP" ]; then
     restore_file "$SYSCTL_BACKUP" "/etc/sysctl.conf"
     sysctl_restored=true
 else
-    echo "警告: 未找到 sysctl.conf 备份"
+    # 尝试查找旧版本的备份
+    OLD_SYSCTL_BACKUP=$(ls -t /etc/sysctl.conf.backup_* 2>/dev/null | head -1)
+    if [ -n "$OLD_SYSCTL_BACKUP" ]; then
+        restore_file "$OLD_SYSCTL_BACKUP" "/etc/sysctl.conf"
+        sysctl_restored=true
+    else
+        echo "警告: 未找到 sysctl.conf 备份"
+    fi
 fi
 
 if [ -n "$LIMITS_BACKUP" ]; then
     restore_file "$LIMITS_BACKUP" "/etc/security/limits.conf"
     limits_restored=true
 else
-    echo "警告: 未找到 limits.conf 备份"
+    # 尝试查找旧版本的备份
+    OLD_LIMITS_BACKUP=$(ls -t /etc/security/limits.conf.backup_* 2>/dev/null | head -1)
+    if [ -n "$OLD_LIMITS_BACKUP" ]; then
+        restore_file "$OLD_LIMITS_BACKUP" "/etc/security/limits.conf"
+        limits_restored=true
+    else
+        echo "警告: 未找到 limits.conf 备份"
+    fi
 fi
 
 if [ -n "$COMMON_SESSION_BACKUP" ]; then
