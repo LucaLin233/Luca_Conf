@@ -1,5 +1,5 @@
 #!/bin/bash
-# Linux 内核优化脚本（推荐档案参数，1C1G~8C8G云服务器友好，适用大多数代理/运维轻量服务）
+# Linux 内核优化脚本：只备份一次原始配置，支持1C1G~8C8G云服务器，适用于常见代理/轻量服务场景
 
 [ "$(id -u)" != "0" ] && { echo "错误: 必须使用 root 权限运行此脚本"; exit 1; }
 
@@ -10,7 +10,11 @@ backup_file() {
     local file="$1"
     local bak="$BACKUP_DIR/$(basename "$file").bak"
     if [ -f "$file" ]; then
-        cp "$file" "$bak" && echo "已备份: $file → $bak"
+        if [ ! -f "$bak" ]; then
+            cp "$file" "$bak" && echo "已备份: $file → $bak"
+        else
+            echo "首次已备份，跳过: $bak"
+        fi
     else
         echo "警告: 文件 $file 不存在，跳过备份"
     fi
@@ -43,7 +47,13 @@ echo "备份完成: $(date)" > "$BACKUP_DIR/backup_info.log"
 # limits.d nproc特殊文件备份&冻结
 if [ -d /etc/security/limits.d ]; then
     for nproc_conf in /etc/security/limits.d/*nproc.conf; do
-        [ -f "$nproc_conf" ] && mv "$nproc_conf" "${nproc_conf}.bak" && echo "已备份并禁用: $nproc_conf"
+        if [ -f "$nproc_conf" ]; then
+            if [ ! -f "${nproc_conf}.bak" ]; then
+                mv "$nproc_conf" "${nproc_conf}.bak" && echo "已备份并禁用: $nproc_conf"
+            else
+                echo "首次已备份nproc，跳过: ${nproc_conf}.bak"
+            fi
+        fi
     done
 fi
 
@@ -55,7 +65,12 @@ for pam_file in /etc/pam.d/common-session /etc/pam.d/login; do
 done
 
 # ----------- limits.conf 优化档位（先删后追加） -----------
-sed -i '/^[* ].*nofile/d;/^[* ].*nproc/d;/^[* ].*memlock/d;/^[* ].*core/d/' /etc/security/limits.conf
+
+sed -i '/^[* ].*nofile/d' /etc/security/limits.conf
+sed -i '/^[* ].*nproc/d' /etc/security/limits.conf
+sed -i '/^[* ].*memlock/d' /etc/security/limits.conf
+sed -i '/^[* ].*core/d' /etc/security/limits.conf
+
 cat >> /etc/security/limits.conf <<EOF
 # 由内核优化脚本生成 - $(date)
 *     soft   nofile    65536
