@@ -236,9 +236,9 @@ step_end 4 "容器启动检查完成"
 
 # 步骤5: 设置定时任务
 step_start 5 "设置定时更新任务"
-CRON_CMD="5 0 * * 0 apt update && apt upgrade -y > /var/log/auto-update.log 2>&1"
+CRON_CMD="5 0 * * 0 apt update -y > /var/log/auto-update.log 2>&1"
 
-if crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"; then
+if crontab -l 2>/dev/null | grep -q "apt update"; then
     log "定时更新任务已存在" "info"
 else
     if $RERUN_MODE; then
