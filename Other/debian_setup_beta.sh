@@ -12,10 +12,10 @@ fi
 log() { 
     local color="\033[0;32m"  # 默认绿色
     case "$2" in
-        "warn") color="\033[0;33m" ;;   # 黄色
-        "error") color="\033[0;31m" ;;  # 红色
-        "info") color="\033[0;36m" ;;   # 青色
-        "title") color="\033[1;35m" ;;  # 紫色加粗
+        "warn") color="\033[0;33m" ;;
+        "error") color="\033[0;31m" ;;
+        "info") color="\033[0;36m" ;;
+        "title") color="\033[1;35m" ;;
     esac
     echo -e "${color}$1\033[0m"
 }
@@ -74,7 +74,6 @@ step_end 1 "网络正常，必要工具已就绪"
 
 # 步骤2: 系统更新与安装
 step_start 2 "更新系统并安装基础软件"
-# 系统更新总是执行
 run_cmd apt update
 if $RERUN_MODE; then
     log "更新模式: 仅更新软件包，不进行完整升级" "info"
@@ -84,7 +83,6 @@ else
     run_cmd apt upgrade -y
 fi
 
-# 检查基础软件安装状态
 PKGS_TO_INSTALL=""
 for pkg in dnsutils wget curl rsync chrony cron fish tuned; do
     if ! dpkg -l | grep -q "^ii\s*$pkg\s"; then
@@ -108,15 +106,11 @@ MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
 if command -v docker &>/dev/null; then
     DOCKER_VERSION=$(docker --version | awk '{print $3}' | tr -d ',')
     log "Docker已安装 (版本: $DOCKER_VERSION)" "info"
-    
-    # Docker运行状态检查
     if ! systemctl is-active docker &>/dev/null; then
         log "Docker服务未运行，尝试启动..." "warn"
         systemctl start docker
         systemctl enable docker
     fi
-    
-    # 低内存优化检查
     if [ $MEM_TOTAL -lt 1024 ]; then
         if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
             log "低内存环境，应用Docker优化" "warn"
@@ -133,8 +127,6 @@ else
         log "Docker安装失败" "error"
     else
         systemctl enable --now docker
-    
-        # 低内存优化
         if [ $MEM_TOTAL -lt 1024 ]; then
             log "低内存环境，应用Docker优化" "warn"
             mkdir -p /etc/docker
@@ -165,7 +157,6 @@ TOTAL_CONTAINERS=0
 FAILED_DIRS=""
 CONTAINER_DIRS=(/root /root/proxy /root/vmagent)
 
-# 检测compose命令
 COMPOSE_CMD=""
 if command -v docker-compose &>/dev/null; then
     COMPOSE_CMD="docker-compose"
@@ -179,7 +170,6 @@ else
     log "检查所有目录的Compose配置..." "warn"
     for dir in "${CONTAINER_DIRS[@]}"; do
         if [ -d "$dir" ]; then
-            # 检查compose文件
             COMPOSE_FILE=""
             for file in docker-compose.yml compose.yaml; do
                 if [ -f "$dir/$file" ]; then
@@ -187,18 +177,11 @@ else
                     break
                 fi
             done
-            
             if [ -n "$COMPOSE_FILE" ]; then
-                # 检查目录中的容器状态
                 cd "$dir"
-                # 获取该目录定义的容器数量
                 DIR_CONTAINER_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps -q 2>/dev/null | wc -l)
-                
-                # 获取预期的容器总数
                 EXPECTED_CONTAINERS=$($COMPOSE_CMD -f "$COMPOSE_FILE" config --services | wc -l)
                 TOTAL_CONTAINERS=$((TOTAL_CONTAINERS + EXPECTED_CONTAINERS))
-                
-                # 如果所有容器都在运行中，则跳过
                 if [ "$DIR_CONTAINER_COUNT" -eq "$EXPECTED_CONTAINERS" ]; then
                     RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps | grep -i "running" | wc -l)
                     if [ "$RUNNING_COUNT" -eq "$EXPECTED_CONTAINERS" ]; then
@@ -207,11 +190,8 @@ else
                         continue
                     fi
                 fi
-                
-                # 否则启动容器
                 log "目录 $dir: 找到 $COMPOSE_FILE，尝试启动容器" "warn"
                 if cd "$dir" && $COMPOSE_CMD -f "$COMPOSE_FILE" up -d; then
-                    # 启动后计算新的容器数量
                     NEW_CONTAINER_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps -q | wc -l)
                     log "✓ 成功启动 $dir 中的容器" "info"
                     SUCCESSFUL_STARTS=$((SUCCESSFUL_STARTS + NEW_CONTAINER_COUNT))
@@ -226,8 +206,6 @@ else
             log "目录 $dir 不存在，已跳过" "warn"
         fi
     done
-    
-    # 获取实际运行的全部容器数量
     ACTUAL_RUNNING_CONTAINERS=$(docker ps -q | wc -l)
     log "容器启动结果: 实际运行 $ACTUAL_RUNNING_CONTAINERS 个，处理成功 $SUCCESSFUL_STARTS 个" "warn"
     [ -n "$FAILED_DIRS" ] && log "失败目录: $FAILED_DIRS" "error"
@@ -236,9 +214,8 @@ step_end 4 "容器启动检查完成"
 
 # 步骤5: 设置定时任务
 step_start 5 "设置定时更新任务"
-CRON_CMD="5 0 * * 0 apt update && apt upgrade -y > /var/log/auto-update.log 2>&1"
-
-if crontab -l 2>/dev/null | grep -q "apt update && apt upgrade"; then
+CRON_CMD="5 0 * * 0 apt update -y > /var/log/auto-update.log 2>&1"
+if crontab -l 2>/dev/null | grep -q "apt update"; then
     log "定时更新任务已存在" "info"
 else
     if $RERUN_MODE; then
@@ -248,18 +225,25 @@ else
     log "已添加每周日凌晨0:05的自动更新任务" "warn"
 fi
 step_end 5 "定时任务已设置"
+
 # 步骤6: 启用进阶服务
 step_start 6 "系统服务优化"
-# Tuned
-if systemctl is-active tuned &>/dev/null; then
-    log "✓ Tuned服务已经在运行" "info"
-else
-    log "启用Tuned服务..." "warn"
-    if systemctl enable --now tuned; then
-        log "✓ Tuned服务启动成功" "info"
+# Tuned 优化：强制profile
+if systemctl enable --now tuned; then
+    log "✓ Tuned服务启动成功" "info"
+    # 检查当前profile
+    CURR_PROFILE=$(tuned-adm active | grep 'Current active profile:' | awk -F': ' '{print $2}')
+    if [ "$CURR_PROFILE" != "latency-performance" ]; then
+        if tuned-adm profile latency-performance; then
+            log "Tuned已切换到 latency-performance profile" "warn"
+        else
+            log "✗ 切换 tuned profile到 latency-performance 失败" "error"
+        fi
     else
-        log "✗ Tuned服务启动失败" "error"
+        log "✓ 当前已是 latency-performance profile" "info"
     fi
+else
+    log "✗ Tuned服务启动失败" "error"
 fi
 
 # Fish
@@ -271,7 +255,6 @@ if [ -n "$fish_path" ]; then
     else
         log "Fish已在支持的shell列表中" "info"
     fi
-    
     if [ "$SHELL" != "$fish_path" ]; then
         if $RERUN_MODE; then
             log "检测到重新运行，不自动修改默认shell" "warn"
@@ -313,6 +296,8 @@ step_end 6 "系统服务优化完成"
 
 # 步骤7: 网络优化
 step_start 7 "网络优化设置"
+QDISC_TYPE="fq_codel"  # 只需改这里就切qdisc类型
+
 # 检查内核是否支持BBR
 BBR_AVAILABLE=false
 if sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr"; then
@@ -320,7 +305,6 @@ if sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr";
     log "✓ 系统支持BBR" "info"
 else
     log "✗ 当前系统没有开启BBR支持，检查原因..." "error"
-    # 检查内核模块
     if ! lsmod | grep -q "tcp_bbr"; then
         log "尝试加载BBR模块..." "warn"
         modprobe tcp_bbr && \
@@ -330,36 +314,29 @@ else
     fi
 fi
 
-# 检查当前配置
 CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
 CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
 
-if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq" ]; then
-    log "✓ BBR和FQ已配置" "info"
+if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
+    log "✓ BBR和$QDISC_TYPE已配置" "info"
 else
-    # 备份配置
     if ! $RERUN_MODE || [ ! -f /etc/sysctl.conf.bak.orig ]; then
         cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
         if ! $RERUN_MODE; then
             cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig
         fi
     fi
-
-    # 配置网络优化
     BBR_CONFIGURED=false
-    FQ_CONFIGURED=false
-    
+    QDISC_CONFIGURED=false
     if grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
         BBR_CONFIGURED=true
         log "BBR配置已存在" "info"
     fi
-    if grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf; then
-        FQ_CONFIGURED=true
-        log "FQ配置已存在" "info"
+    if grep -q "^net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf; then
+        QDISC_CONFIGURED=true
+        log "$QDISC_TYPE 配置已存在" "info"
     fi
-
     if ! $BBR_CONFIGURED; then
-        # 检查是否有被注释的配置
         if grep -q "^#\s*net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
             sed -i 's/^#\s*net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=bbr/' /etc/sysctl.conf
             log "启用已存在但被注释的BBR配置" "warn"
@@ -368,15 +345,13 @@ else
             log "添加BBR拥塞控制设置" "warn"
         fi
     fi
-
-    if ! $FQ_CONFIGURED; then
-        # 检查是否有被注释的配置
-        if grep -q "^#\s*net.core.default_qdisc=fq" /etc/sysctl.conf; then
-            sed -i 's/^#\s*net.core.default_qdisc=fq/net.core.default_qdisc=fq/' /etc/sysctl.conf
-            log "启用已存在但被注释的FQ配置" "warn"
+    if ! $QDISC_CONFIGURED; then
+        if grep -q "^#\s*net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf; then
+            sed -i "s/^#\s*net.core.default_qdisc=$QDISC_TYPE/net.core.default_qdisc=$QDISC_TYPE/" /etc/sysctl.conf
+            log "启用已存在但被注释的$QDISC_TYPE配置" "warn"
         else
-            echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-            log "添加FQ队列调度设置" "warn"
+            echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
+            log "添加$QDISC_TYPE队列调度设置" "warn"
         fi
     fi
 fi
@@ -385,24 +360,22 @@ fi
 log "应用网络优化设置..." "warn"
 sysctl -p
 
-# 验证
 CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
 CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
 
-if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq" ]; then
-    log "✓ BBR和FQ设置成功" "info"
+if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
+    log "✓ BBR和$QDISC_TYPE设置成功" "info"
 elif [ "$CURR_CC" = "bbr" ]; then
-    log "部分成功: BBR已启用，但FQ未成功设置($CURR_QDISC)" "warn"
-elif [ "$CURR_QDISC" = "fq" ]; then
-    log "部分成功: FQ已启用，但BBR未成功设置($CURR_CC)" "warn"
+    log "部分成功: BBR已启用，但$QDISC_TYPE未成功设置($CURR_QDISC)" "warn"
+elif [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
+    log "部分成功: $QDISC_TYPE已启用，但BBR未成功设置($CURR_CC)" "warn"
 else
-    log "✗ BBR和FQ设置均未成功: 当前CC=$CURR_CC, QDISC=$CURR_QDISC" "error"
+    log "✗ BBR和$QDISC_TYPE设置均未成功: 当前CC=$CURR_CC, QDISC=$CURR_QDISC" "error"
 fi
 step_end 7 "网络优化设置完成"
 
 # 步骤8: SSH安全设置
 step_start 8 "SSH安全设置"
-# 检查是否有原始备份
 if ! $RERUN_MODE || [ ! -f /etc/ssh/sshd_config.bak.orig ]; then
     cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%Y%m%d)
     if ! $RERUN_MODE; then
@@ -410,7 +383,6 @@ if ! $RERUN_MODE || [ ! -f /etc/ssh/sshd_config.bak.orig ]; then
     fi
 fi
 
-# 获取当前端口
 CURRENT_SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
 if [ -z "$CURRENT_SSH_PORT" ]; then
     CURRENT_SSH_PORT=22
@@ -427,14 +399,10 @@ fi
 if [ "$change_port" = "y" ]; then
     read -p "请输入新的SSH端口 [默认9399]: " new_port
     new_port=${new_port:-9399}
-    
-    # 验证端口
     if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
         log "端口无效，使用默认9399" "warn"
         new_port=9399
     fi
-    
-    # 检查端口是否被占用
     if ss -tuln | grep -q ":$new_port "; then
         log "端口 $new_port 已被使用，请选择其他端口" "error"
         read -p "请输入新的SSH端口: " new_port
@@ -443,14 +411,10 @@ if [ "$change_port" = "y" ]; then
             new_port=9399
         fi
     fi
-    
-    # 修改配置
     sed -i "s/^#\?Port [0-9]*/Port $new_port/" /etc/ssh/sshd_config
     if ! grep -q "^Port $new_port" /etc/ssh/sshd_config; then
         echo "Port $new_port" >> /etc/ssh/sshd_config
     fi
-    
-    # 重启服务
     log "重启SSH服务以应用新端口..." "warn"
     if systemctl restart sshd; then
         log "✓ SSH端口已更改为 $new_port" "info"
@@ -468,7 +432,6 @@ log "\n╔═══════════════════════�
 log "║       系统部署完成摘要          ║" "title"
 log "╚═════════════════════════════════╝" "title"
 
-# 使用函数统一格式化输出
 show_info() {
     log " • $1: $2" "info"
 }
@@ -492,18 +455,24 @@ show_info "活跃容器数" "$(docker ps -q 2>/dev/null | wc -l || echo '未检�
 
 CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
 CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
-show_info "网络优化" "BBR($CURR_CC), FQ($CURR_QDISC)"
+show_info "网络优化" "BBR($CURR_CC), Qdisc($CURR_QDISC)"
+
 show_info "时区设置" "$(timedatectl | grep "Time zone" | awk '{print $3}')"
 show_info "默认shell" "$SHELL"
 
-# 显示容器启动结果
+# 增加 tuned 的 active profile 展示
+TUNED_PROFILE_SUMMARY=$(tuned-adm active | grep 'Current active profile:' | awk -F': ' '{print $2}')
+if [ -z "$TUNED_PROFILE_SUMMARY" ]; then
+    TUNED_PROFILE_SUMMARY="(未检测到)"
+fi
+show_info "Tuned Profile" "$TUNED_PROFILE_SUMMARY"
+
 if [ "$SUCCESSFUL_STARTS" -gt 0 ]; then
     show_info "容器启动" "成功启动 $SUCCESSFUL_STARTS 个"
 else
     log " • 容器启动: 没有容器被启动" "error"
 fi
 
-# 显示失败信息
 if [ -n "$FAILED_DIRS" ]; then
     log " • 启动失败目录: $FAILED_DIRS" "error"
 fi
@@ -511,7 +480,6 @@ fi
 log "\n──────────────────────────────────" "title"
 log " 部署完成时间: $(date '+%Y-%m-%d %H:%M:%S')" "info"
 log "──────────────────────────────────\n" "title"
-
 step_end 9 "系统信息汇总完成"
 
 # 保存状态以支持重新运行
