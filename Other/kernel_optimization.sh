@@ -129,7 +129,7 @@ declare -A sysctl_settings=(
     ["net.ipv4.conf.all.forwarding"]="1"
     ["net.ipv4.conf.default.forwarding"]="1"
 
-    ["net.core.default_qdisc"]="fq"
+    ["net.core.default_qdisc"]="fq_codel"
     ["net.ipv4.tcp_congestion_control"]="bbr"
 
     ["net.ipv4.tcp_ecn"]="0"
@@ -191,7 +191,7 @@ net.ipv4.conf.all.route_localnet = 1
 net.ipv4.conf.all.forwarding = 1
 net.ipv4.conf.default.forwarding = 1
 
-net.core.default_qdisc = fq
+net.core.default_qdisc = fq_codel
 net.ipv4.tcp_congestion_control = bbr
 
 net.ipv4.tcp_ecn = 0
@@ -237,7 +237,7 @@ check_param() {
 check_param fs.file-max "262144"
 check_param net.core.somaxconn "4096"
 check_param net.ipv4.tcp_congestion_control "bbr"
-check_param net.core.default_qdisc "fq"
+check_param net.core.default_qdisc "fq_codel"
 check_param net.ipv4.ip_forward "1"
 check_param net.ipv4.tcp_syncookies "1"
 check_param net.ipv4.tcp_fin_timeout "15"
