@@ -84,7 +84,7 @@ else
 fi
 
 PKGS_TO_INSTALL=""
-for pkg in dnsutils wget curl rsync chrony cron fish tuned; do
+for pkg in dnsutils wget curl rsync chrony cron tuned; do
     if ! dpkg -l | grep -q "^ii\s*$pkg\s"; then
         PKGS_TO_INSTALL="$PKGS_TO_INSTALL $pkg"
     fi
@@ -97,6 +97,45 @@ else
     log "所有基础软件包已安装" "info"
 fi
 step_end 2 "系统已更新，基础软件安装成功"
+
+# =================== Fish 安装替换版 ===================
+step_start 2.5 "检测并安装最新Fish Shell"
+
+# 检查是否已安装fish
+if command -v fish >/dev/null 2>&1; then
+    fish_version=$(fish --version | awk '{print $3}')
+    log "Fish已安装 (版本: $fish_version)" "info"
+else
+    log "Fish未安装，开始配置官方源并安装..." "warn"
+    FISH_SRC_LIST="/etc/apt/sources.list.d/shells:fish:release:4.list"
+    FISH_GPG="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
+    FISH_APT_LINE="deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
+    FISH_KEY_URL="https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key"
+
+    # 检查是否已经存在Fish source
+    if ! grep -qs "^${FISH_APT_LINE}" "$FISH_SRC_LIST" 2>/dev/null; then
+        echo "$FISH_APT_LINE" > "$FISH_SRC_LIST" || step_fail 2.5 "写入fish源失败"
+        log "已写入Fish官方APT源" "info"
+    else
+        log "Fish APT源已存在，跳过写入" "info"
+    fi
+
+    # 添加GPG密钥(如没有)
+    if [ ! -s "$FISH_GPG" ]; then
+        curl -fsSL "$FISH_KEY_URL" | gpg --dearmor > "$FISH_GPG" || step_fail 2.5 "导入Fish GPG密钥失败"
+        log "已导入Fish官方GPG密钥" "info"
+    else
+        log "Fish GPG密钥已存在，跳过导入" "info"
+    fi
+
+    # 安装Fish
+    run_cmd apt update -y
+    run_cmd apt install -y fish || step_fail 2.5 "Fish安装失败"
+    log "Fish安装完成" "info"
+fi
+step_end 2.5 "Fish Shell检测与安装"
+
+# =================== Fish 安装段结束 ===================
 
 # 步骤3: 安装Docker和NextTrace
 step_start 3 "安装Docker和NextTrace"
@@ -246,7 +285,7 @@ else
     log "✗ Tuned服务启动失败" "error"
 fi
 
-# Fish
+# Fish shell配置
 fish_path=$(which fish)
 if [ -n "$fish_path" ]; then
     if ! grep -q "$fish_path" /etc/shells; then
