@@ -250,19 +250,9 @@ step_end 5 "定时维护任务配置完成"
 
 # 步骤6 — 进阶服务优化（Tuned、时区与Fish默认shell）
 step_start 6 "服务与性能优化"
-# Tuned性能优化
+# Tuned仅安装并启用，不调整profile
 if systemctl enable --now tuned; then
-    log "Tuned服务已启动" "info"
-    CURR_PROFILE=$(tuned-adm active | grep 'Current active profile:' | awk -F': ' '{print $2}')
-    if [ "$CURR_PROFILE" != "latency-performance" ]; then
-        if tuned-adm profile latency-performance; then
-            log "Tuned已切换到 latency-performance profile" "warn"
-        else
-            log "切换至 latency-performance profile 失败" "error"
-        fi
-    else
-        log "已处于 latency-performance profile" "info"
-    fi
+    log "Tuned服务已启动（未调整Profile，由系统自动检测/保持默认）" "info"
 else
     log "Tuned服务启动失败" "error"
 fi
