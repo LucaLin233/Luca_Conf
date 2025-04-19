@@ -1,13 +1,12 @@
 #!/bin/bash
 # ---------------------------------------------------------
-# 系统一键部署与优化脚本（极简&实用 历史任务清理&维护逻辑）
-# 适用环境：Debian 12（兼容低版本但提示）
-# 功能涵盖：基础环境、Fish、Docker、NextTrace、网络优化、SSH安全、周期自动升级&内核更新自动重启
+# 系统一键部署与优化脚本
+# 适用环境：Debian 12
 # 完全幂等、配置首份备份、所有cron任务自动去重只留新任务
 # 作者：LucaLin233 & 优化 by Linux AI Buddy
 # ---------------------------------------------------------
 
-SCRIPT_VERSION="1.4"
+SCRIPT_VERSION="1.5"
 
 STATUS_FILE="/var/lib/system-deploy-status.json"
 FISH_SRC_LIST="/etc/apt/sources.list.d/shells:fish:release:4.list"
@@ -249,7 +248,41 @@ else
 fi
 step_end 7 "网络性能参数配置完成"
 
-step_start 8 "部署自动升级（带内核重启）脚本及定时任务"
+step_start 8 "SSH安全端口管理"
+[ ! -f /etc/ssh/sshd_config.bak.orig ] && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig
+CURRENT_SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
+[ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT=22
+log "当前SSH端口为 $CURRENT_SSH_PORT" "warn"
+if $RERUN_MODE; then
+    read -p "SSH端口是否需要修改? 当前为 $CURRENT_SSH_PORT (y/n): " change_port
+else
+    read -p "是否需要修改SSH端口? (y/n): " change_port
+fi
+if [ "$change_port" = "y" ]; then
+    read -p "请输入新的SSH端口（1024~65535，仅数字）: " new_port
+    if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
+        log "端口无效，未修改SSH端口，请回头手动配置！" "error"
+    elif ss -tuln | grep -q ":$new_port "; then
+        log "端口 $new_port 已被占用，请手动选择其它端口并在sshd_config中自行修改。" "error"
+    else
+        if grep -q "^Port " /etc/ssh/sshd_config; then
+            sed -i "0,/^Port /s/^Port .*/Port $new_port/" /etc/ssh/sshd_config
+        else
+            echo "Port $new_port" >> /etc/ssh/sshd_config
+        fi
+        log "重启SSH服务以应用新端口…" "warn"
+        if systemctl restart sshd; then
+            log "SSH端口更改为 $new_port" "info"
+        else
+            log "SSH重启失败，端口变更可能未生效" "error"
+        fi
+    fi
+else
+    log "SSH端口保持为 $CURRENT_SSH_PORT" "warn"
+fi
+step_end 8 "SSH端口加固完成"
+
+step_start 9 "部署自动升级（带内核重启）脚本及定时任务"
 UPDATE_SCRIPT="/root/auto-update.sh"
 cat > "$UPDATE_SCRIPT" <<'EOF'
 #!/bin/bash
@@ -268,11 +301,10 @@ fi
 EOF
 chmod +x "$UPDATE_SCRIPT"
 CRON_CMD="5 0 * * 0 $UPDATE_SCRIPT"
-# 去除所有包含auto-update.log及历史auto-update.sh的cron，只留1条新任务
 crontab -l 2>/dev/null | grep -v "$UPDATE_SCRIPT" | grep -v "auto-update.log" | { cat; echo "$CRON_CMD"; } | crontab -
-step_end 8 "自动升级+内核重启脚本部署完成，定时任务已唯一保留"
+step_end 9 "自动升级+内核重启脚本部署完成，定时任务已唯一保留"
 
-step_start 9 "系统部署信息摘要"
+step_start 10 "系统部署信息摘要"
 log "\n╔═════════════════════════════════╗" "title"
 log "║       系统部署完成摘要          ║" "title"
 log "╚═════════════════════════════════╝" "title"
@@ -304,7 +336,7 @@ show_info "Tuned Profile" "$TUNED_PROFILE_SUMMARY"
 log "\n──────────────────────────────────" "title"
 log " 部署完成时间: $(date '+%Y-%m-%d %H:%M:%S')" "info"
 log "──────────────────────────────────\n" "title"
-step_end 9 "信息汇总完成"
+step_end 10 "信息汇总完成"
 
 echo '{
   "script_version": "'$SCRIPT_VERSION'",
