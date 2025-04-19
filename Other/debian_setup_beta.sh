@@ -128,22 +128,21 @@ if command -v fish >/dev/null 2>&1; then
 else
     log "Fish未安装，将配置OpenSUSE官方源并自动安装…" "warn"
     FISH_SRC_LIST="/etc/apt/sources.list.d/shells:fish:release:4.list"
-    FISH_GPG="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
-    FISH_APT_LINE="deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
+    FISH_GPG="/usr/share/keyrings/fish.gpg"
+    FISH_APT_LINE="deb [signed-by=$FISH_GPG] http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
     FISH_KEY_URL="https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key"
     mkdir -p /etc/apt/sources.list.d/
-    if ! grep -qs "^${FISH_APT_LINE}" "$FISH_SRC_LIST" 2>/dev/null; then
-        echo "$FISH_APT_LINE" > "$FISH_SRC_LIST" || step_fail 2.5 "写入Fish源失败"
-        log "已写入Fish官方APT源" "info"
-    else
-        log "Fish APT源已存在，跳过写入" "info"
-    fi
+    # 写入APT源 (无论什么情况都覆盖为带 signed-by 参数的格式)
+    echo "$FISH_APT_LINE" > "$FISH_SRC_LIST" || step_fail 2.5 "写入Fish源失败"
+    log "已写入Fish官方APT源，并指定keyring" "info"
+    # 导入Fish GPG密钥（如尚未存在）
     if [ ! -s "$FISH_GPG" ]; then
-        curl -fsSL "$FISH_KEY_URL" | gpg --dearmor > "$FISH_GPG" || step_fail 2.5 "导入Fish GPG密钥失败"
+        curl -fsSL "$FISH_KEY_URL" | sudo gpg --dearmor -o "$FISH_GPG" || step_fail 2.5 "导入Fish GPG密钥失败"
         log "已导入Fish官方GPG密钥" "info"
     else
         log "Fish GPG密钥已存在，跳过导入" "info"
     fi
+    # 安装Fish
     run_cmd apt update
     run_cmd apt install -y fish || step_fail 2.5 "Fish安装失败"
     log "Fish安装完成" "info"
