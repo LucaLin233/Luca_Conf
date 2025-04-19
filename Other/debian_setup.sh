@@ -311,74 +311,81 @@ else
 fi
 step_end 6 "服务与系统性能优化完成"
 
-# 步骤7 — 网络优化与BBR
+# 步骤7 — 网络优化与BBR（新增交互选择启用）
 step_start 7 "TCP性能与Qdisc网络优化"
 QDISC_TYPE="fq_codel"
 BBR_AVAILABLE=false
-if sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr"; then
-    BBR_AVAILABLE=true
-    log "系统已支持BBR" "info"
-else
-    log "内核尚未启用BBR，尝试加载…" "error"
-    if ! lsmod | grep -q "tcp_bbr"; then
-        log "加载BBR模块…" "warn"
-        modprobe tcp_bbr && \
-        echo "tcp_bbr" >> /etc/modules-load.d/modules.conf && \
-        log "BBR模块加载成功" "info" || \
-        log "BBR模块加载失败" "error"
-    fi
-fi
-CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
-CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
-if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
-    log "BBR与$QDISC_TYPE已配置，无需操作" "info"
-else
-    if ! $RERUN_MODE || [ ! -f /etc/sysctl.conf.bak.orig ]; then
-        cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
-        if ! $RERUN_MODE; then
-            cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig
+
+# 新增：用户选择是否启用BBR + fq_codel
+read -p "是否启用 BBR + $QDISC_TYPE 网络拥塞控制优化? (y/n): " bbr_choice
+if [ "$bbr_choice" = "y" ]; then
+    if sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr"; then
+        BBR_AVAILABLE=true
+        log "系统已支持BBR" "info"
+    else
+        log "内核尚未启用BBR，尝试加载…" "warn"
+        if ! lsmod | grep -q "tcp_bbr"; then
+            log "加载BBR模块…" "warn"
+            modprobe tcp_bbr && \
+            echo "tcp_bbr" >> /etc/modules-load.d/modules.conf && \
+            log "BBR模块加载成功" "info" || \
+            log "BBR模块加载失败" "error"
         fi
     fi
-    BBR_CONFIGURED=false
-    QDISC_CONFIGURED=false
-    grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf && BBR_CONFIGURED=true
-    grep -q "^net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf && QDISC_CONFIGURED=true
-    if ! $BBR_CONFIGURED; then
-        if grep -q "^#\s*net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
-            sed -i 's/^#\s*net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=bbr/' /etc/sysctl.conf
-            log "解除注释BBR配置" "warn"
-        else
-            echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-            log "追加BBR配置" "warn"
+    CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
+    CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
+    if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
+        log "BBR与$QDISC_TYPE已配置，无需操作" "info"
+    else
+        if ! $RERUN_MODE || [ ! -f /etc/sysctl.conf.bak.orig ]; then
+            cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%Y%m%d)
+            if ! $RERUN_MODE; then
+                cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig
+            fi
+        fi
+        BBR_CONFIGURED=false
+        QDISC_CONFIGURED=false
+        grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf && BBR_CONFIGURED=true
+        grep -q "^net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf && QDISC_CONFIGURED=true
+        if ! $BBR_CONFIGURED; then
+            if grep -q "^#\s*net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf; then
+                sed -i 's/^#\s*net.ipv4.tcp_congestion_control=bbr/net.ipv4.tcp_congestion_control=bbr/' /etc/sysctl.conf
+                log "解除注释BBR配置" "warn"
+            else
+                echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+                log "追加BBR配置" "warn"
+            fi
+        fi
+        if ! $QDISC_CONFIGURED; then
+            if grep -q "^#\s*net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf; then
+                sed -i "s/^#\s*net.core.default_qdisc=$QDISC_TYPE/net.core.default_qdisc=$QDISC_TYPE/" /etc/sysctl.conf
+                log "解除注释$QDISC_TYPE配置" "warn"
+            else
+                echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
+                log "追加$QDISC_TYPE配置" "warn"
+            fi
         fi
     fi
-    if ! $QDISC_CONFIGURED; then
-        if grep -q "^#\s*net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf; then
-            sed -i "s/^#\s*net.core.default_qdisc=$QDISC_TYPE/net.core.default_qdisc=$QDISC_TYPE/" /etc/sysctl.conf
-            log "解除注释$QDISC_TYPE配置" "warn"
-        else
-            echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
-            log "追加$QDISC_TYPE配置" "warn"
-        fi
+    # 应用内核参数
+    log "应用网络内核tcp优化…" "warn"
+    sysctl -p
+    CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
+    CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
+    if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
+        log "BBR与$QDISC_TYPE配置成功" "info"
+    elif [ "$CURR_CC" = "bbr" ]; then
+        log "BBR已启用，Qdisc未完全生效（$CURR_QDISC）" "warn"
+    elif [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
+        log "$QDISC_TYPE已启用，BBR未完全生效（$CURR_CC）" "warn"
+    else
+        log "BBR和$QDISC_TYPE均未生效: CC=$CURR_CC, QDISC=$CURR_QDISC" "error"
     fi
-fi
-# 应用内核参数
-log "应用网络内核tcp优化…" "warn"
-sysctl -p
-CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
-CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未设置")
-if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
-    log "BBR与$QDISC_TYPE配置成功" "info"
-elif [ "$CURR_CC" = "bbr" ]; then
-    log "BBR已启用，Qdisc未完全生效（$CURR_QDISC）" "warn"
-elif [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
-    log "$QDISC_TYPE已启用，BBR未完全生效（$CURR_CC）" "warn"
 else
-    log "BBR和$QDISC_TYPE均未生效: CC=$CURR_CC, QDISC=$CURR_QDISC" "error"
+    log "跳过 BBR + $QDISC_TYPE 配置，根据用户选择未做任何拥塞控制优化操作" "warn"
 fi
 step_end 7 "网络性能参数配置完成"
 
-# 步骤8 — SSH安全加固
+# 步骤8 — SSH安全加固 (修正: 仅根据用户输入修改端口，不提供默认)
 step_start 8 "SSH安全端口管理"
 if ! $RERUN_MODE || [ ! -f /etc/ssh/sshd_config.bak.orig ]; then
     cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%Y%m%d)
@@ -395,27 +402,20 @@ else
     read -p "是否需要修改SSH端口? (y/n): " change_port
 fi
 if [ "$change_port" = "y" ]; then
-    read -p "请输入新的SSH端口 [默认9399]: " new_port
-    new_port=${new_port:-9399}
+    read -p "请输入新的SSH端口（1024~65535，仅数字）: " new_port
     if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
-        log "端口无效，使用默认9399" "warn"
-        new_port=9399
-    fi
-    if ss -tuln | grep -q ":$new_port "; then
-        log "端口 $new_port 已使用，选择其它端口" "error"
-        read -p "再次输入SSH端口: " new_port
-        if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
-            log "端口无效，继续用9399" "warn"
-            new_port=9399
-        fi
-    fi
-    sed -i "s/^#\?Port [0-9]*/Port $new_port/" /etc/ssh/sshd_config
-    grep -q "^Port $new_port" /etc/ssh/sshd_config || echo "Port $new_port" >> /etc/ssh/sshd_config
-    log "重启SSH服务以应用新端口…" "warn"
-    if systemctl restart sshd; then
-        log "SSH端口更改为 $new_port" "info"
+        log "端口无效，未修改SSH端口，请回头手动配置！" "error"
+    elif ss -tuln | grep -q ":$new_port "; then
+        log "端口 $new_port 已被占用，请手动选择其它端口并在sshd_config中自行修改。" "error"
     else
-        log "SSH重启失败，端口变更可能未生效" "error"
+        sed -i "s/^#\?Port [0-9]*/Port $new_port/" /etc/ssh/sshd_config
+        grep -q "^Port $new_port" /etc/ssh/sshd_config || echo "Port $new_port" >> /etc/ssh/sshd_config
+        log "重启SSH服务以应用新端口…" "warn"
+        if systemctl restart sshd; then
+            log "SSH端口更改为 $new_port" "info"
+        else
+            log "SSH重启失败，端口变更可能未生效" "error"
+        fi
     fi
 else
     log "SSH端口保持为 $CURRENT_SSH_PORT" "warn"
@@ -470,8 +470,10 @@ echo '{
 # 结尾提示区
 log "✅ 所有配置步骤已执行完毕！" "title"
 if [ "$change_port" = "y" ]; then
-    log "⚠️  重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
-    log "   示例: ssh -p $new_port 用户名@服务器IP" "warn"
+    if [[ "$new_port" =~ ^[0-9]+$ ]] && [ "$new_port" -ge 1024 ] && [ "$new_port" -le 65535 ]; then
+        log "⚠️  重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
+        log "   示例: ssh -p $new_port 用户名@服务器IP" "warn"
+    fi
 fi
 if $RERUN_MODE; then
     log "📝 本脚本为重复执行，已自动跳过/更新已部署项" "info"
