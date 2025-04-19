@@ -1,12 +1,12 @@
 #!/bin/bash
 # ---------------------------------------------------------
-# 系统一键部署与优化脚本
-# 适用环境：Debian 12
-# 完全幂等、配置首份备份、所有cron任务自动去重只留新任务
+# 系统一键部署与优化脚本 v1.6
+# 适用Debian 12，含Fish、Docker、网络优化、SSH安全、自动升级
+# 幂等可重复，Crontab定时任务唯一化
 # 作者：LucaLin233 & 优化 by Linux AI Buddy
 # ---------------------------------------------------------
 
-SCRIPT_VERSION="1.5"
+SCRIPT_VERSION="1.6"
 
 STATUS_FILE="/var/lib/system-deploy-status.json"
 FISH_SRC_LIST="/etc/apt/sources.list.d/shells:fish:release:4.list"
@@ -221,15 +221,27 @@ step_end 6 "服务与系统性能优化完成"
 
 step_start 7 "TCP性能与Qdisc网络优化"
 QDISC_TYPE="fq_codel"
-read -p "是否启用 BBR + $QDISC_TYPE 网络拥塞控制? (y/n): " bbr_choice
-if [ "$bbr_choice" = "y" ]; then
+# read 默认“y” → 只按n/no/N才跳过，其它为空或y都是选择y
+read -p "是否启用 BBR + $QDISC_TYPE 网络拥塞控制? (Y/n): " bbr_choice
+bbr_choice="${bbr_choice:-y}"
+if [[ ! "$bbr_choice" =~ ^[nN] ]]; then
     sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q "bbr" || {
         log "加载BBR模块…" "warn"
         modprobe tcp_bbr && echo "tcp_bbr" >> /etc/modules-load.d/modules.conf && log "BBR模块加载成功" "info"
     }
     [ ! -f /etc/sysctl.conf.bak.orig ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig
-    grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf || echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-    grep -q "^net.core.default_qdisc=$QDISC_TYPE" /etc/sysctl.conf || echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
+    # 优化为只允许唯一一条有效配置
+    if grep -q "^net.ipv4.tcp_congestion_control=" /etc/sysctl.conf; then
+        sed -i "s|^net.ipv4.tcp_congestion_control=.*|net.ipv4.tcp_congestion_control=bbr|" /etc/sysctl.conf
+    else
+        echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    fi
+    if grep -q "^net.core.default_qdisc=" /etc/sysctl.conf; then
+        sed -i "s|^net.core.default_qdisc=.*|net.core.default_qdisc=$QDISC_TYPE|" /etc/sysctl.conf
+    else
+        echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
+    fi
+
     log "应用网络内核tcp优化…" "warn"
     sysctl -p
     CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未设置")
@@ -254,11 +266,12 @@ CURRENT_SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
 [ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT=22
 log "当前SSH端口为 $CURRENT_SSH_PORT" "warn"
 if $RERUN_MODE; then
-    read -p "SSH端口是否需要修改? 当前为 $CURRENT_SSH_PORT (y/n): " change_port
+    read -p "SSH端口是否需要修改? 当前为 $CURRENT_SSH_PORT (y/N): " change_port
 else
-    read -p "是否需要修改SSH端口? (y/n): " change_port
+    read -p "是否需要修改SSH端口? (y/N): " change_port
 fi
-if [ "$change_port" = "y" ]; then
+change_port="${change_port:-n}"
+if [[ "$change_port" =~ ^[yY]$ ]]; then
     read -p "请输入新的SSH端口（1024~65535，仅数字）: " new_port
     if ! [[ "$new_port" =~ ^[0-9]+$ ]] || [ "$new_port" -lt 1024 ] || [ "$new_port" -gt 65535 ]; then
         log "端口无效，未修改SSH端口，请回头手动配置！" "error"
@@ -350,7 +363,7 @@ echo '{
 }' > "$STATUS_FILE"
 
 log "✅ 所有配置步骤已执行完毕！" "title"
-if [ "$change_port" = "y" ]; then
+if [[ "$change_port" =~ ^[yY]$ ]]; then
     if [[ "$new_port" =~ ^[0-9]+$ ]] && [ "$new_port" -ge 1024 ] && [ "$new_port" -le 65535 ]; then
         log "⚠️  重要提示: 请使用新SSH端口 $new_port 连接服务器" "warn"
         log "   示例: ssh -p $new_port 用户名@服务器IP" "warn"
