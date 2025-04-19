@@ -221,7 +221,6 @@ step_end 6 "服务与系统性能优化完成"
 
 step_start 7 "TCP性能与Qdisc网络优化"
 QDISC_TYPE="fq_codel"
-# read 默认“y” → 只按n/no/N才跳过，其它为空或y都是选择y
 read -p "是否启用 BBR + $QDISC_TYPE 网络拥塞控制? (Y/n): " bbr_choice
 bbr_choice="${bbr_choice:-y}"
 if [[ ! "$bbr_choice" =~ ^[nN] ]]; then
@@ -230,17 +229,13 @@ if [[ ! "$bbr_choice" =~ ^[nN] ]]; then
         modprobe tcp_bbr && echo "tcp_bbr" >> /etc/modules-load.d/modules.conf && log "BBR模块加载成功" "info"
     }
     [ ! -f /etc/sysctl.conf.bak.orig ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig
-    # 优化为只允许唯一一条有效配置
-    if grep -q "^net.ipv4.tcp_congestion_control=" /etc/sysctl.conf; then
-        sed -i "s|^net.ipv4.tcp_congestion_control=.*|net.ipv4.tcp_congestion_control=bbr|" /etc/sysctl.conf
-    else
-        echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-    fi
-    if grep -q "^net.core.default_qdisc=" /etc/sysctl.conf; then
-        sed -i "s|^net.core.default_qdisc=.*|net.core.default_qdisc=$QDISC_TYPE|" /etc/sysctl.conf
-    else
-        echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
-    fi
+
+    # --- 幂等删除所有旧行并只追加一行 ---
+    sed -i '/^ *#\? *net\.core\.default_qdisc\s*=.*/d' /etc/sysctl.conf
+    sed -i '/^ *#\? *net\.ipv4\.tcp_congestion_control\s*=.*/d' /etc/sysctl.conf
+    echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+    echo "net.core.default_qdisc=$QDISC_TYPE" >> /etc/sysctl.conf
+    # ---
 
     log "应用网络内核tcp优化…" "warn"
     sysctl -p
