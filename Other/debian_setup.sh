@@ -101,6 +101,23 @@ if [ -n "$PKGS_TO_INSTALL" ]; then
 else
     log "所有基础软件包已安装" "info"
 fi
+
+# ---- hosts 主机名修复的小节开始 ----
+HNAME=$(hostname)
+if grep -q "^127.0.1.1" /etc/hosts; then
+    if ! grep "^127.0.1.1" /etc/hosts | grep -wq "$HNAME"; then
+        cp /etc/hosts /etc/hosts.bak.$(date +%Y%m%d)
+        sed -i "/^127.0.1.1/ s/\$/ $HNAME/" /etc/hosts
+        log "已将主机名 $HNAME 添加进现有 127.0.1.1 行" "warn"
+    else
+        log "127.0.1.1 行已经包含主机名 $HNAME，无需更改" "info"
+    fi
+else
+    echo "127.0.1.1 $HNAME" >> /etc/hosts
+    log "已追加主机名 $HNAME 到 /etc/hosts" "warn"
+fi
+# ---- hosts 主机名修复的小节结束 ----
+
 step_end 2 "系统更新与基础组件已就绪"
 
 # 步骤2.5 — Fish Shell 官方源一键安装与配置
@@ -114,23 +131,19 @@ else
     FISH_GPG="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
     FISH_APT_LINE="deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
     FISH_KEY_URL="https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key"
-    # 确保APT源目录存在
     mkdir -p /etc/apt/sources.list.d/
-    # 检查并写入官方APT源
     if ! grep -qs "^${FISH_APT_LINE}" "$FISH_SRC_LIST" 2>/dev/null; then
         echo "$FISH_APT_LINE" > "$FISH_SRC_LIST" || step_fail 2.5 "写入Fish源失败"
         log "已写入Fish官方APT源" "info"
     else
         log "Fish APT源已存在，跳过写入" "info"
     fi
-    # 导入Fish GPG密钥（如尚未存在）
     if [ ! -s "$FISH_GPG" ]; then
         curl -fsSL "$FISH_KEY_URL" | gpg --dearmor > "$FISH_GPG" || step_fail 2.5 "导入Fish GPG密钥失败"
         log "已导入Fish官方GPG密钥" "info"
     else
         log "Fish GPG密钥已存在，跳过导入" "info"
     fi
-    # 安装Fish
     run_cmd apt update
     run_cmd apt install -y fish || step_fail 2.5 "Fish安装失败"
     log "Fish安装完成" "info"
