@@ -57,7 +57,8 @@ else
     run_cmd apt upgrade -y
 fi
 PKGS_TO_INSTALL=()
-for pkg in dnsutils wget curl rsync chrony cron tuned; do
+# 朋友，改动就在下面这行，把 gpg 加进去了
+for pkg in dnsutils wget curl rsync chrony cron tuned gpg; do
     dpkg -l | grep -q "^ii\s*$pkg\s" || PKGS_TO_INSTALL+=($pkg)
 done
 if [ ${#PKGS_TO_INSTALL[@]} -gt 0 ]; then
