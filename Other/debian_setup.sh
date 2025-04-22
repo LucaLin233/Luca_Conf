@@ -12,10 +12,11 @@
 
 # --- 脚本版本 ---
 # 请根据实际修改版本号
-SCRIPT_VERSION="1.7.3"
+# 修复 check_and_start_service 函数语法错误的版本
+SCRIPT_VERSION="1.7.4"
 
 # --- 文件路径 ---
-STATUS_FILE="/var/lib/system-deploy-status.json"
+STATUS_FILE="/var/lib/system-deploy-status.json" # 存储部署状态的文件
 # Fish 官方源文件和密钥路径
 FISH_GPG_KEY_PATH="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
 FISH_APT_LIST_PATH="/etc/apt/sources.list.d/shells_fish_release_4.list"
@@ -44,25 +45,29 @@ step_end() { log "✓ 步骤 $1 完成: $2" "info"; echo; }
 step_fail() { log "✗ 步骤 $1 失败: $2" "error"; exit 1; }
 
 # check_and_start_service <服务> - 检查并启动 Systemd 服务 (非致命)
+# 修复了之前的语法错误
 check_and_start_service() {
     local service_name="$1"
+    # 检查服务文件是否存在
     if ! systemctl list-unit-files --type=service | grep -q "^${service_name}\s"; then
-        log "$service_name 服务文件不存在." "info"
-        return 0
+        log "$service_name 服务文件不存在，跳过检查和启动." "info"
+        return 0 # 不存在不是错误，只是跳过
     fi
+
     log "检查并确保服务运行: $service_name" "info"
     if systemctl is-active "$service_name" &>/dev/null; then
         log "$service_name 服务已运行." "info"
         return 0
     fi
+
     if systemctl is-enabled "$service_name" &>/dev/null; then
         log "$service_name 服务未运行，但已启用。尝试启动..." "warn"
         systemctl start "$service_name" && log "$service_name 启动成功." "info" && return 0 || log "$service_name 启动失败." "error" && return 1
     else
         log "$service_name 服务未启用。尝试启用并启动..." "warn"
         systemctl enable --now "$service_name" && log "$service_name 已启用并启动成功." "info" && return 0 || log "$service_name 启用并启动失败." "error" && return 1
-    }
-}
+    fi # <-- 修正: if/else 块的结束 fi 在这里
+} # <-- 修正: 函数定义的结束 } 在这里，紧跟着上面的 fi
 
 # run_cmd <命令> [参数...] - 执行命令并检查退出状态 (非致命 except step 步骤 1 tools)
 run_cmd() {
@@ -212,16 +217,19 @@ else
 
     # 添加 Fish 官方 APT 源和密钥 (即使失败也不中断)
     log "添加 Fish 官方 APT 源和密钥..." "info"
+    # 添加源行
     if echo "$FISH_APT_URL" | sudo tee "$FISH_APT_LIST_PATH" > /dev/null; then
         log "Fish 源行已添加." "info"
          # 下载并导入 GPG 密钥
+        # curl 失败、gpg 失败或 tee 失败都算失败
         if run_cmd curl -fsSL "$FISH_KEY_URL" | run_cmd gpg --dearmor -o "$FISH_GPG_KEY_PATH"; then
             log "Fish GPG 密钥导入成功." "info"
-            run_cmd chmod a+r "$FISH_GPG_KEY_PATH" || log "警告: 设置密钥文件权限失败." "warn"
+             log "为确保 key 文件可读，设置权限..." "info"
+             run_cmd chmod a+r "$FISH_GPG_KEY_PATH" || log "警告: 设置密钥文件权限失败." "warn" # 非致命错误
         else
             log "错误: 导入 Fish GPG 密钥失败. 可能无法安装 Fish." "error"
-            # 失败后清理源文件，避免 apt update 出错
-            [ -f "$FISH_APT_LIST_PATH" ] && run_cmd rm "$FISH_APT_LIST_PATH" && log "已清除 Fish 源文件." "warn"
+            # 失败后清理可能残留的源文件
+            [ -f "$FISH_APT_LIST_PATH" ] && run_cmd rm "$FISH_APT_LIST_PATH" && log "已清除 Fish 源文件因导入密钥失败." "warn"
         fi
     else
         log "错误: 添加 Fish 官方 APT 源失败. 可能无法安装 Fish." "error"
@@ -231,23 +239,28 @@ else
     # 只有当源文件存在时才尝试安装
     if [ -f "$FISH_APT_LIST_PATH" ] && [ -s "$FISH_GPG_KEY_PATH" ]; then # 简单的检查文件是否存在且非空
          log "更新 APT 缓存以包含 Fish 源..." "warn"
-         if run_cmd apt update; then
-             log "APT 缓存更新成功." "info"
-             log "安装 Fish 软件包..." "warn"
-             if run_cmd apt install -y fish; then
-                 log "Fish Shell 软件包安装成功." "info"
-                 FISH_INSTALL_STATUS="已安装"
-                 fish_path=$(command -v fish) #g 再次获取 fish 路径
-             else
-                 log "错误: 安装 Fish Shell 软件包失败." "error"
-                 FISH_INSTALL_STATUS="安装软件包失败"
+         # 尝试只更新新添加的源，如果失败则进行全局 update
+         if ! run_cmd apt update -o Dir::Etc::sourcelist="$FISH_APT_LIST_PATH" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="no"; then
+             log "警告: 只更新 Fish 源失败.尝试全局 apt update..." "warn"
+             if ! run_cmd apt update; then
+                  log "错误: 全局 apt update 也失败. Fish 安装可能无法进行." "error"
+                  FISH_INSTALL_STATUS="APT更新失败"
              fi
-         else
-              log "错误: APT 缓存更新失败. 无法安装 Fish." "error"
-              FISH_INSTALL_STATUS="APT更新失败"
          fi
+
+        if [ "$FISH_INSTALL_STATUS" != "APT更新失败" ]; then
+            log "安装 Fish 软件包..." "warn"
+            if run_cmd apt install -y fish; then
+                log "Fish Shell 软件包安装成功." "info"
+                FISH_INSTALL_STATUS="已安装"
+                fish_path=$(command -v fish) #g 再次获取 fish 路径
+            else
+                log "错误: 安装 Fish Shell 软件包失败." "error"
+                FISH_INSTALL_STATUS="安装软件包失败"
+            fi
+        fi
     else
-        log "因源或密钥文件缺失/错误，跳过 Fish 的 Apt 安装步骤." "warn"
+        log "因源或密钥文件缺失/错误，跳过 Fish Apt 安装." "warn"
         FISH_INSTALL_STATUS="源或密钥问题跳过安装"
     fi
 fi
@@ -255,7 +268,7 @@ fi
 # 设置 Fish Shell 为默认 (如果已安装)
 if [ -n "$fish_path" ]; then
      if ! grep -q "^$fish_path$" /etc/shells; then
-        echo "$fish_path" | tee -a /etc/shells > /dev/null && log "已将 Fish 路径添加到 /etc/shells." "info" || log "添加 Fish 路径失败." "error"
+        echo "$fish_path" | tee -a /etc/shells > /dev/null && log "已将 Fish 路径添加到 /etc/shells." "info" || log "添加 Fish 失败." "error"
     fi
     if [ "$SHELL" != "$fish_path" ]; then
         if $RERUN_MODE; then
@@ -277,7 +290,7 @@ step_start 5 "安装 Docker 和 NextTrace"
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
 # 使用 get.docker.com 脚本安装 Docker
 if ! command -v docker &>/dev/null; then
-    log "未检测到 Docker。使用 get.docker.com 脚本安装..." "warn"
+    log "未检测到 Docker。使用 get.docker.com 安装..." "warn"
     if run_cmd bash -c "$(run_cmd curl -fsSL https://get.docker.com)"; then
         log "Docker 安装成功." "info"
         check_and_start_service docker.service || log "警告: 启用/启动 Docker 服务失败." "warn"
@@ -295,7 +308,7 @@ if [ "$MEM_TOTAL" -lt 1024 ]; then
         log "低内存环境. 优化 Docker 日志配置..." "warn"
         mkdir -p /etc/docker
         echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
-        log "重启 Docker 服务应用日志优化..." "warn"
+        log "重启 Docker 应用日志优化..." "warn"
         systemctl restart docker || log "警告: 重启 Docker 服务失败." "warn"
     else
         log "Docker 日志优化配置已存在." "info"
@@ -385,7 +398,7 @@ step_end 6 "Docker Compose 容器检查完成"
 
 # --- 步骤 7: 系统服务与性能优化 ---
 step_start 7 "系统服务与性能优化 (时区, Tuned, Timesync)"
-# 确保 tuned 服务已启用并启动 (非致命)
+# 确保 tuned 已启用并启动 (非致命)
 if systemctl list-unit-files --type=service | grep -q tuned.service; then
     check_and_start_service tuned.service || log "警告: tuned 服务启动失败." "warn"
 else
@@ -434,11 +447,11 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
         [ ! -f /etc/sysctl.conf.bak.orig ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig && log "已备份 /etc/sysctl.conf." "info"
         log "配置 sysctl 参数 for BBR and $QDISC_TYPE..." "info"
 
-        # 幂等删除旧配置并行，使用 '|' 分隔符
-        sed -i '\| *#\? *net\.ipv4\.tcp_congestion_control=|d' /etc/sysctl.conf && log "已移除旧的 tcp_congestion_control 行." "info" || true # 即使失败也 true
+        # 幂等删除旧配置并行，使用 '|' 分隔符，然后追加
+        sed -i '\| *#\? *net\.ipv4\.tcp_congestion_control=|d' /etc/sysctl.conf && log "已移除旧的 tcp_congestion_control 行." "info" || true
         echo "net.ipv4.tcp_congestion_control=bbr" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.ipv4.tcp_congestion_control=bbr." "info" || log "追加 tcp_congestion_control 失败." "error"
 
-        sed -i '\| *#\? *net\.core\.default_qdisc=|d' /etc/sysctl.conf && log "已移除旧的 default_qdisc 行." "info" || true # 即使失败也 true
+        sed -i '\| *#\? *net\.core\.default_qdisc=|d' /etc/sysctl.conf && log "已移除旧的 default_qdisc 行." "info" || true
         echo "net.core.default_qdisc=fq_codel" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.core.default_qdisc=fq_codel." "info" || log "追加 default_qdisc 失败." "error"
 
         log "应用 sysctl 配置..." "warn"
