@@ -12,11 +12,11 @@
 
 # --- 脚本版本 ---
 # 请根据实际修改版本号
-SCRIPT_VERSION="1.7.2"
+SCRIPT_VERSION="1.7.3"
 
 # --- 文件路径 ---
-STATUS_FILE="/var/lib/system-deploy-status.json" # 存储部署状态的文件
-# Fish 官方源 GPG Key 推荐存放路径 (.gpg 结尾，Systemd >= 248 支持)
+STATUS_FILE="/var/lib/system-deploy-status.json"
+# Fish 官方源文件和密钥路径
 FISH_GPG_KEY_PATH="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
 FISH_APT_LIST_PATH="/etc/apt/sources.list.d/shells_fish_release_4.list"
 FISH_APT_URL="deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
@@ -46,35 +46,32 @@ step_fail() { log "✗ 步骤 $1 失败: $2" "error"; exit 1; }
 # check_and_start_service <服务> - 检查并启动 Systemd 服务 (非致命)
 check_and_start_service() {
     local service_name="$1"
-    # 检查服务文件是否存在
     if ! systemctl list-unit-files --type=service | grep -q "^${service_name}\s"; then
-        log "$service_name 服务文件不存在，跳过检查和启动." "info"
-        return 0 # 不存在不是错误，只是跳过
+        log "$service_name 服务文件不存在." "info"
+        return 0
     fi
-
     log "检查并确保服务运行: $service_name" "info"
     if systemctl is-active "$service_name" &>/dev/null; then
         log "$service_name 服务已运行." "info"
         return 0
     fi
-
     if systemctl is-enabled "$service_name" &>/dev/null; then
         log "$service_name 服务未运行，但已启用。尝试启动..." "warn"
         systemctl start "$service_name" && log "$service_name 启动成功." "info" && return 0 || log "$service_name 启动失败." "error" && return 1
     else
         log "$service_name 服务未启用。尝试启用并启动..." "warn"
         systemctl enable --now "$service_name" && log "$service_name 已启用并启动成功." "info" && return 0 || log "$service_name 启用并启动失败." "error" && return 1
-    fi
+    }
 }
 
-# run_cmd <命令> [参数...] - 执行命令并检查退出状态 (非致命版本 except for core tools check)
+# run_cmd <命令> [参数...] - 执行命令并检查退出状态 (非致命 except step 步骤 1 tools)
 run_cmd() {
     "$@"
     local exit_status=$?
     if [ $exit_status -ne 0 ]; then
-        # 特殊处理 apt upgrade 的退出码，因为有时可能是部分升级失败 (如 100)，不需中断
+        # 特殊处理 apt upgrade 的退出码 100 (部分升级失败)
         if [ "$1" = "apt" ] && ([ "$2" = "upgrade" ] || [ "$2" = "full-upgrade" ]) && [ "$exit_status" -eq 100 ]; then
-             log "命令 '$*' 返回退出码 100 (部分升级可能失败)，继续执行." "warn"
+             log "命令 '$*' 返回退出码 100，继续执行." "warn"
              return 0
         fi
         # 对于其他非 sysctl 命令失败，记录错误但不中断
@@ -105,8 +102,8 @@ fi
 
 debian_version=$(cut -d. -f1 < /etc/debian_version)
 if [ "$debian_version" -lt 12 ]; then
-    log "警告: 此脚本为 Debian 12 优化。当前系统版本 $(cat /etc/debian_version)." "warn"
-    read -p "确定要继续吗? (y/n): " continue_install
+    log "警告: 此脚本为 Debian 12 优化。当前版本 $(cat /etc/debian_version)." "warn"
+    read -p "确定继续? (y/n): " continue_install
     if [ "$continue_install" != "y" ]; then
         exit 1
     fi
@@ -116,13 +113,13 @@ fi
 step_start 1 "网络与基础工具检查"
 if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && ! ping -c 1 -W 3 114.114.114.114 &>/dev/null; then
     log "警告: 网络不稳定，可能影响安装." "warn"
-    read -p "确定要继续吗? (y/n): " continue_install
+    read -p "确定继续? (y/n): " continue_install
     if [ "$continue_install" != "y" ]; then
         exit 1
     fi
 fi
-# 确保必要工具可用，这里使用 step_fail 保证安装基础工具成功
-for cmd in curl wget apt gpg; do # 确保 gpg 提前安装，用于 Fish Key
+# 确保必要工具可用 (包括 gpg 用于 Fish Key)
+for cmd in curl wget apt gpg; do
     if ! command -v $cmd &>/dev/null; then
         log "安装必要工具: $cmd" "warn"
         apt-get update -qq && apt-get install -y -qq $cmd || step_fail 1 "安装基础工具 $cmd 失败."
@@ -135,22 +132,21 @@ step_start 2 "执行系统更新并安装核心软件包"
 run_cmd apt update
 if $RERUN_MODE; then
     log "更新模式: 执行软件包升级." "info"
-    run_cmd apt upgrade -y # 这里 run_cmd 允许 apt upgrade 100 错误通过
+    run_cmd apt upgrade -y # run_cmd 允许退出码 100
 else
     log "首次运行: 执行完整的系统升级." "info"
-    run_cmd apt full-upgrade -y # 首次运行推荐 full-upgrade
+    run_cmd apt full-upgrade -y
 fi
 PKGS_TO_INSTALL=()
 # 核心软件包列表 (不含 fish 和 systemd-timesyncd)
 for pkg in dnsutils wget curl rsync chrony cron tuned; do
-    # 检查软件包是否未安装
     if ! dpkg -s "$pkg" &>/dev/null; then
          PKGS_TO_INSTALL+=($pkg)
     fi
 done
 if [ ${#PKGS_TO_INSTALL[@]} -gt 0 ]; then
     log "安装缺少的核心软件包: ${PKGS_TO_INSTALL[*]}" "info"
-    run_cmd apt install -y "${PKGS_TO_INSTALL[@]}" # 这里 run_cmd 会在安装失败时报错并返回1
+    run_cmd apt install -y "${PKGS_TO_INSTALL[@]}"
     if [ $? -ne 0 ]; then
          step_fail 2 "核心软件包安装失败."
     fi
@@ -158,7 +154,7 @@ else
     log "所有核心软件包已安装!" "info"
 fi
 HNAME=$(hostname)
-# 确保主机名正确映射到 /etc/hosts 中的 127.0.1.1
+# 确保主机名正确映射到 127.0.1.1
 if grep -q "^127.0.1.1" /etc/hosts; then
     if ! grep "^127.0.1.1" /etc/hosts | grep -wq "$HNAME"; then
         cp /etc/hosts /etc/hosts.bak.$(date +%Y%m%d)
@@ -176,19 +172,12 @@ step_start 3 "配置并启用 Zram Swap"
 ZRAM_SWAP_STATUS="未配置"
 if ! dpkg -l | grep -q "^ii\s*zram-tools\s"; then
     log "未检测到 zram-tools。正在安装..." "warn"
-    # 安装前确保 APT 源已更新
     if run_cmd apt update; then
-        if run_cmd apt install -y zram-tools; then # 这里 run_cmd 检查安装是否成功
+        if run_cmd apt install -y zram-tools; then
             log "zram-tools 安装成功." "info"
-            # 检查服务状态
-            if check_and_start_service zramswap.service; then
-                 ZRAM_SWAP_STATUS="已启用且活跃"
-            else
-                 log "警告: zramswap.service 检查失败，请手动验证." "warn"
-                 ZRAM_SWAP_STATUS="已安装但服务不活跃/失败"
-            fi
+            check_and_start_service zramswap.service || log "警告: zramswap.service 检查失败，请手动验证." "warn"
+            ZRAM_SWAP_STATUS="已启用且活跃" # 假设成功启用，如果服务检查失败则会在 check_and_start_service 中报错
         else
-            # zram-tools 安装失败不中断整个脚本
             log "错误: zram-tools 安装失败." "error"
             ZRAM_SWAP_STATUS="安装失败"
         fi
@@ -198,159 +187,137 @@ if ! dpkg -l | grep -q "^ii\s*zram-tools\s"; then
     fi
 else
     log "zram-tools 已安装." "info"
-    # 检查 Zram Swap 是否活跃
     if swapon --show | grep -q "/dev/zram"; then
         log "Zram Swap 已活跃." "info"
         ZRAM_SWAP_STATUS="已启用且活跃 ($(swapon --show | grep "/dev/zram" | awk '{print $3 "/" $4}'))"
     else
         log "zram-tools 已安装，但 Zram Swap 不活跃。尝试启动服务..." "warn"
-        if check_and_start_service zramswap.service; then
-             ZRAM_SWAP_STATUS="启动后已启用且活跃"
-        else
-             log "警告: zramswap.service 启动失败。Zram Swap 可能不活跃." "warn"
-             ZRAM_SWAP_STATUS="已安装但服务不活跃/失败"
-        fi
+        check_and_start_service zramswap.service || log "警告: zramswap.service 启动失败。Zram Swap 可能不活跃." "warn"
+        ZRAM_SWAP_STATUS="已安装但服务不活跃/失败"
     fi
 fi
-log "注意: 此脚本不自动处理旧的 Swap 文件或分区，请手动管理." "info"
+log "注意: 此脚本不自动处理旧 Swap 文件/分区，请手动管理." "info"
 step_end 3 "Zram Swap 配置完成"
 
 # --- 步骤 4: 从官方源安装 Fish Shell 并设置默认 Shell ---
 step_start 4 "从官方源安装 Fish Shell 并设置默认 Shell"
-FISH_INSTALL_STATUS="未安装" # 初始化 Fish 安装状态
+FISH_INSTALL_STATUS="未安装或检查失败" # 初始化 Fish 安装状态
 
-fish_path=$(command -v fish)
+fish_path=$(command -v fish 2>/dev/null || true) # 检查 fish 是否已安装
 if [ -n "$fish_path" ]; then
     log "Fish Shell 已安装 (路径: $fish_path)." "info"
     FISH_INSTALL_STATUS="已安装"
 else
     log "未检测到 Fish Shell。尝试从官方源安装..." "warn"
-    FISH_INSTALL_SUCCESS=false # 标记 Fish 官方源安装是否成功
 
-    # 添加 Fish 官方 APT 源
-    log "添加 Fish 官方 APT 源: $FISH_APT_URL" "info"
+    # 添加 Fish 官方 APT 源和密钥 (即使失败也不中断)
+    log "添加 Fish 官方 APT 源和密钥..." "info"
     if echo "$FISH_APT_URL" | sudo tee "$FISH_APT_LIST_PATH" > /dev/null; then
-        log "Fish 官方 APT 源行已添加至 $FISH_APT_LIST_PATH." "info"
-        # 添加 Fish 官方 GPG 密钥到 trusted.gpg.d
-        log "添加 Fish 官方 GPG 密钥到 $FISH_GPG_KEY_PATH..." "info"
-        # curl 失败、gpg 失败或 tee 失败都算失败
+        log "Fish 源行已添加." "info"
+         # 下载并导入 GPG 密钥
         if run_cmd curl -fsSL "$FISH_KEY_URL" | run_cmd gpg --dearmor -o "$FISH_GPG_KEY_PATH"; then
             log "Fish GPG 密钥导入成功." "info"
-             log "为确保 key 文件可读，设置权限..." "info"
-             run_cmd chmod a+r "$FISH_GPG_KEY_PATH" || log "Warning: Failed to set read permissions on Fish GPG key." "warn" # 非致命错误
+            run_cmd chmod a+r "$FISH_GPG_KEY_PATH" || log "警告: 设置密钥文件权限失败." "warn"
         else
-            log "错误: 导入 Fish GPG 密钥失败. 跳过 Fish 安装." "error"
-            FISH_INSTALL_STATUS="导入密钥失败"
-            # 清理可能残留的源文件
-            [ -f "$FISH_APT_LIST_PATH" ] && run_cmd rm "$FISH_APT_LIST_PATH" && log "已清理 Fish APT 源文件因导入密钥失败." "warn"
+            log "错误: 导入 Fish GPG 密钥失败. 可能无法安装 Fish." "error"
+            # 失败后清理源文件，避免 apt update 出错
+            [ -f "$FISH_APT_LIST_PATH" ] && run_cmd rm "$FISH_APT_LIST_PATH" && log "已清除 Fish 源文件." "warn"
         fi
     else
-        log "错误: 添加 Fish 官方 APT 源失败. 跳过 Fish 安装." "error"
-        FISH_INSTALL_STATUS="添加源失败"
+        log "错误: 添加 Fish 官方 APT 源失败. 可能无法安装 Fish." "error"
     fi
 
-    # 只有当源和密钥都似乎成功添加后，才尝试 apt update 和 install
-    if [ "$FISH_INSTALL_STATUS" = "未安装" ] || [ "$FISH_INSTALL_STATUS" = "导入密钥失败" ]; then
-        log "由于前期错误，跳过 Fish 的 apt update 和 install 步骤." "warn"
-    else
-        # 更新 APT 缓存 (只更新 Fish 的源如果可能，否则全局更新)
-        log "更新 APT 缓存..." "warn"
-        # 尝试只更新新添加的源，如果失败则进行全局 update
-        if ! run_cmd apt update -o Dir::Etc::sourcelist="$FISH_APT_LIST_PATH" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="no"; then
-             log "警告: 只更新 Fish 源失败 (可能源本身问题或语法错误)。尝试全局 apt update..." "warn"
-             if ! run_cmd apt update; then
-                  log "严重错误: 全局 apt update 也失败. Fish 安装可能无法进行." "error"
-                  FISH_INSTALL_STATUS="APT更新失败"
+    # 尝试 apt update 并安装 Fish (非致命)
+    # 只有当源文件存在时才尝试安装
+    if [ -f "$FISH_APT_LIST_PATH" ] && [ -s "$FISH_GPG_KEY_PATH" ]; then # 简单的检查文件是否存在且非空
+         log "更新 APT 缓存以包含 Fish 源..." "warn"
+         if run_cmd apt update; then
+             log "APT 缓存更新成功." "info"
+             log "安装 Fish 软件包..." "warn"
+             if run_cmd apt install -y fish; then
+                 log "Fish Shell 软件包安装成功." "info"
+                 FISH_INSTALL_STATUS="已安装"
+                 fish_path=$(command -v fish) #g 再次获取 fish 路径
+             else
+                 log "错误: 安装 Fish Shell 软件包失败." "error"
+                 FISH_INSTALL_STATUS="安装软件包失败"
              fi
-        fi
-
-        if [ "$FISH_INSTALL_STATUS" != "APT更新失败" ]; then
-            # 安装 Fish 软件包
-            log "安装 Fish 软件包..." "warn"
-            if run_cmd apt install -y fish; then # 这里 run_cmd 会检查安装是否成功
-                log "Fish Shell 软件包安装成功." "info"
-                FISH_INSTALL_STATUS="已安装"
-                fish_path=$(command -v fish) # 更新 fish_path
-            else
-                log "错误: 安装 Fish Shell 软件包失败." "error"
-                FISH_INSTALL_STATUS="安装软件包失败"
-            fi
-        fi
+         else
+              log "错误: APT 缓存更新失败. 无法安装 Fish." "error"
+              FISH_INSTALL_STATUS="APT更新失败"
+         fi
+    else
+        log "因源或密钥文件缺失/错误，跳过 Fish 的 Apt 安装步骤." "warn"
+        FISH_INSTALL_STATUS="源或密钥问题跳过安装"
     fi
 fi
 
-# 设置 Fish Shell 为默认 (如果已安装且用户同意)
+# 设置 Fish Shell 为默认 (如果已安装)
 if [ -n "$fish_path" ]; then
-     # Add fish path to /etc/shells if not already present
-    if ! grep -q "^$fish_path$" /etc/shells; then
-        echo "$fish_path" | tee -a /etc/shells > /dev/null && log "已将 Fish 路径添加到 /etc/shells." "warn" || log "添加 Fish 路径失败." "error" # 非致命错误
+     if ! grep -q "^$fish_path$" /etc/shells; then
+        echo "$fish_path" | tee -a /etc/shells > /dev/null && log "已将 Fish 路径添加到 /etc/shells." "info" || log "添加 Fish 路径失败." "error"
     fi
-
     if [ "$SHELL" != "$fish_path" ]; then
         if $RERUN_MODE; then
-            log "Fish 已安装但非当前默认 Shell ($SHELL). 重运行模式下不自动更改." "info"
+            log "Fish 已安装但非默认 ($SHELL). 重运行模式不自动更改." "info"
             read -p "设置 Fish ($fish_path) 为默认 Shell? (y/n): " change_shell
-            [ "$change_shell" = "y" ] && chsh -s "$fish_path" && log "Fish 已设为默认 Shell (需重登录)." "warn" || log "未更改默认 Shell." "info"
+            [ "$change_shell" = "y" ] && chsh -s "$fish_path" && log "Fish 已设为默认 (需重登录)." "warn" || log "未更改默认 Shell." "info"
         else
-            log "Fish 已安装 ($fish_path) 但非当前默认 Shell ($SHELL). 设置 Fish 为默认 Shell..." "warn"
-            chsh -s "$fish_path" && log "Fish 已设为默认 Shell (需重登录)." "warn" || log "设置默认 Shell 失败." "error" # 非致命错误
+            log "Fish 已安装 ($fish_path) 但非默认 ($SHELL). 设置 Fish 为默认..." "warn"
+            chsh -s "$fish_path" && log "Fish 已设为默认 (需重登录)." "warn" || log "设置默认 Shell 失败." "error"
         fi
     else
-        log "Fish ($fish_path) 已是当前默认 Shell." "info"
+        log "Fish ($fish_path) 已是默认 Shell." "info"
     fi
 fi
-step_end 4 "Fish Shell 安装与设置完成 (状态: $FISH_INSTALL_STATUS)" # 在摘要中记录 Fish 状态
+step_end 4 "Fish Shell 安装与设置完成 (状态: $FISH_INSTALL_STATUS)"
 
 # --- 步骤 5: 安装 Docker 和 NextTrace ---
 step_start 5 "安装 Docker 和 NextTrace"
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
-# 使用 get.docker.com 脚本安装 Docker (符合原始脚本逻辑)
+# 使用 get.docker.com 脚本安装 Docker
 if ! command -v docker &>/dev/null; then
     log "未检测到 Docker。使用 get.docker.com 脚本安装..." "warn"
-    # run_cmd 将检查 curl 和 bash 的退出状态
     if run_cmd bash -c "$(run_cmd curl -fsSL https://get.docker.com)"; then
         log "Docker 安装成功." "info"
-        check_and_start_service docker.service || log "Warning: Failed to enable/start Docker service automatically." "warn" # 非致命错误
+        check_and_start_service docker.service || log "警告: 启用/启动 Docker 服务失败." "warn"
     else
-        log "错误: Docker 安装失败." "error" # 非致命错误，继续脚本
+        log "错误: Docker 安装失败." "error"
     fi
 else
     docker_version=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || true)
     log "Docker 已安装 (版本: ${docker_version:-未知})." "info"
-    check_and_start_service docker.service || log "Docker 服务检查/启动失败." "error" # 非致命错误
+    check_and_start_service docker.service || log "Docker 服务检查/启动失败." "error"
 fi
 # 低内存环境优化 Docker 日志
 if [ "$MEM_TOTAL" -lt 1024 ]; then
     if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
-        log "低内存环境detected. 优化 Docker 日志配置..." "warn"
+        log "低内存环境. 优化 Docker 日志配置..." "warn"
         mkdir -p /etc/docker
         echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' > /etc/docker/daemon.json
         log "重启 Docker 服务应用日志优化..." "warn"
-        systemctl restart docker || log "警告: 重启 Docker 服务失败." "warn" # 非致命错误
+        systemctl restart docker || log "警告: 重启 Docker 服务失败." "warn"
     else
         log "Docker 日志优化配置已存在." "info"
     fi
 fi
-# 安装 NextTrace (检查是否已安装)
+# 安装 NextTrace
 if command -v nexttrace &>/dev/null; then
     log "NextTrace 已安装." "info"
 else
     log "未检测到 NextTrace。正在部署..." "warn"
-    # run_cmd 检查 curl 和 bash 的退出状态
     if run_cmd bash -c "$(run_cmd curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"; then
         log "NextTrace 安装成功." "info"
     else
-        log "警告: NextTrace 安装失败." "error" # 非致命错误
+        log "警告: NextTrace 安装失败." "error"
     fi
 fi
 step_end 5 "Docker 和 NextTrace 部署完成"
 
 # --- 步骤 6: 检查并启动 Docker Compose 容器 ---
 step_start 6 "检查并启动 Docker Compose 定义的容器"
-SUCCESSFUL_RUNNING_CONTAINERS=0 # 统计在 configured_dirs 中成功运行的容器总数
-FAILED_DIRS="" # 存放 Compose 启动失败的目录列表
-
-# 判断正确的 docker compose 命令 (插件 vs 独立命令)
+SUCCESSFUL_RUNNING_CONTAINERS=0
+FAILED_DIRS=""
 COMPOSE_CMD=""
 if command -v docker-compose &>/dev/null; then
     COMPOSE_CMD="docker-compose"
@@ -368,7 +335,7 @@ else
             continue
         fi
         COMPOSE_FILE=""
-        for file in compose.yaml docker-compose.yml; do # 优先 yaml
+        for file in compose.yaml docker-compose.yml; do
             if [ -f "$dir/$file" ]; then
                 COMPOSE_FILE="$file"
                 break
@@ -389,20 +356,19 @@ else
                      SUCCESSFUL_RUNNING_CONTAINERS=$((SUCCESSFUL_RUNNING_CONTAINERS + CURRENT_RUNNING_COUNT))
                 else
                     log "目录 '$dir': $CURRENT_RUNNING_COUNT 个容器运行中 (预期至少 $EXPECTED_SERVICES)。尝试启动/重创..." "warn"
-                    # 重创以处理配置变更，非致命错误
                     if $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --force-recreate; then
                         sleep 5 # 短暂等待启动
                         NEW_RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps --filter status=running --quiet 2>/dev/null | wc -l)
                         log "目录 '$dir' 启动/重创尝试成功. $NEW_RUNNING_COUNT 个容器正在运行." "info"
                         SUCCESSFUL_RUNNING_CONTAINERS=$((SUCCESSFUL_RUNNING_CONTAINERS + NEW_RUNNING_COUNT))
                     else
-                        log "错误: Compose 启动失败目录: '$dir'." "error" # 非致命错误
+                        log "错误: Compose 启动失败目录: '$dir'." "error"
                         FAILED_DIRS+=" $dir"
                     fi
                 fi
                 cd - >/dev/null
             else
-                log "错误: 无法进入目录 '$dir'。跳过." "error" # 非致命错误
+                log "错误: 无法进入目录 '$dir'。跳过." "error"
                 FAILED_DIRS+=" $dir"
             fi
         else
@@ -419,27 +385,27 @@ step_end 6 "Docker Compose 容器检查完成"
 
 # --- 步骤 7: 系统服务与性能优化 ---
 step_start 7 "系统服务与性能优化 (时区, Tuned, Timesync)"
-# 确保 tuned 服务已启用并启动
+# 确保 tuned 服务已启用并启动 (非致命)
 if systemctl list-unit-files --type=service | grep -q tuned.service; then
-    check_and_start_service tuned.service || log "警告: tuned 服务启动失败." "warn" # 非致命错误
+    check_and_start_service tuned.service || log "警告: tuned 服务启动失败." "warn"
 else
     log "未检测到 tuned 服务. 跳过调优配置." "warn"
 fi
-# 设置系统时区为亚洲/上海
+# 设置系统时区为亚洲/上海 (非致命)
 if command -v timedatectl >/dev/null 2>&1; then
     CURRENT_TZ=$(timedatectl | grep "Time zone" | awk '{print $3}')
     if [ "$CURRENT_TZ" != "Asia/Shanghai" ]; then
         log "设置时区为亚洲/上海..." "warn"
-        timedatectl set-timezone Asia/Shanghai && log "时区成功设置为亚洲/上海." "info" || log "timedatectl 设置时区失败." "error" # 非致命错误
+        timedatectl set-timezone Asia/Shanghai && log "时区成功设置为亚洲/上海." "info" || log "timedatectl 设置时区失败." "error"
     else
         log "时区已是亚洲/上海." "info"
     fi
 else
     log "未检测到 timedatectl 命令。跳过时区设置." "warn"
 fi
-# 确保 systemd-timesyncd 已启动 (如果存在) - 脚本不强制安装，但确保已安装的在运行
+# 确保 systemd-timesyncd 已启动 (如果存在) (非致命)
 check_and_start_service systemd-timesyncd.service || log "systemd-timesyncd 服务检查失败或不存在." "info"
-# 如果使用 chrony，确保 chrony 服务已启动 (如果存在) - 脚本不强制安装，但检查已安装的
+# 确保 chrony 已启动 (如果存在) (非致命)
 # check_and_start_service chrony.service || log "chrony 服务检查失败或不存在." "info"
 
 step_end 7 "系统服务与性能优化完成"
@@ -460,7 +426,7 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
              log "'tcp_bbr' 模块已编译或可用." "info"
         else
              log "严重警告: 内核可能不支持 BBR. 无法启用." "error"
-             SKIP_SYSCTL_CONFIG=true # 如果确定 BBR 模块不可用，则跳过 sysctl 配置
+             SKIP_SYSCTL_CONFIG=true
         fi
     fi
 
@@ -468,20 +434,17 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
         [ ! -f /etc/sysctl.conf.bak.orig ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig && log "已备份 /etc/sysctl.conf." "info"
         log "配置 sysctl 参数 for BBR and $QDISC_TYPE..." "info"
 
-        # 使用 sed 查找并删除所有现有的，包括注释掉的行，然后追加新的。使用 '|' 作为分隔符。
-        # net.ipv4.tcp_congestion_control
-        sed -i '\| *#\? *net\.ipv4\.tcp_congestion_control=|d' /etc/sysctl.conf && log "已移除旧的 net.ipv4.tcp_congestion_control 行." "info" || log "移除旧的 net.ipv4.tcp_congestion_control 行失败或不存在旧行." "info"
-        echo "net.ipv4.tcp_congestion_control=bbr" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.ipv4.tcp_congestion_control=bbr." "info" || log "追加 net.ipv4.tcp_congestion_control 失败." "error" # 非致命错误
+        # 幂等删除旧配置并行，使用 '|' 分隔符
+        sed -i '\| *#\? *net\.ipv4\.tcp_congestion_control=|d' /etc/sysctl.conf && log "已移除旧的 tcp_congestion_control 行." "info" || true # 即使失败也 true
+        echo "net.ipv4.tcp_congestion_control=bbr" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.ipv4.tcp_congestion_control=bbr." "info" || log "追加 tcp_congestion_control 失败." "error"
 
-        # net.core.default_qdisc
-        sed -i '\| *#\? *net\.core\.default_qdisc=|d' /etc/sysctl.conf && log "已移除旧的 net.core.default_qdisc 行." "info" || log "移除旧的 net.core.default_qdisc 行失败或不存在旧行." "info"
-        echo "net.core.default_qdisc=fq_codel" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.core.default_qdisc=fq_codel." "info" || log "追加 net.core.default_qdisc 失败." "error" # 非致命错误
+        sed -i '\| *#\? *net\.core\.default_qdisc=|d' /etc/sysctl.conf && log "已移除旧的 default_qdisc 行." "info" || true # 即使失败也 true
+        echo "net.core.default_qdisc=fq_codel" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.core.default_qdisc=fq_codel." "info" || log "追加 default_qdisc 失败." "error"
 
         log "应用 sysctl 配置..." "warn"
-        # `sysctl -p` 如果失败可能只是部分参数问题，不强制脚本失败
-        run_cmd sysctl -p || log "警告: 'sysctl -p' 失败. 检查配置语法." "warn" # 非致命错误
+        run_cmd sysctl -p || log "警告: 'sysctl -p' 失败. 检查配置语法." "warn"
 
-        # 验证当前设置 (即使 sysctl -p 失败也尝试获取)
+        # 验证当前设置
         CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败/未设置")
         CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败/未设置")
         log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
@@ -516,32 +479,29 @@ else
 fi
 
 NEW_SSH_PORT_SET="$CURRENT_SSH_PORT"
-CHANGE_PORT_REQUESTED=false # 标记用户是否尝试更改端口
+CHANGE_PORT_REQUESTED=false
 
 if [ -n "$new_port_input" ]; then
     CHANGE_PORT_REQUESTED=true
-    # 验证输入的端口号是否为有效数字且在指定范围内
     if ! [[ "$new_port_input" =~ ^[0-9]+$ ]]; then
-        log "输入无效，端口未更改." "error" # 非致命错误
+        log "输入无效，端口未更改." "error"
     elif [ "$new_port_input" -lt 1024 ] || [ "$new_port_input" -gt 65535 ]; then
-        log "端口号无效，端口未更改." "error" # 非致命错误
-    # 检查新的端口是否已被占用
+        log "端口号无效，端口未更改." "error"
     elif ss -tuln | grep -q ":$new_port_input\b"; then
-        log "警告: 端口 $new_port_input 已被占用. 端口未更改." "warn" # 非致命错误
+        log "警告: 端口 $new_port_input 已被占用. 端口未更改." "warn"
     else
         log "正在更改 SSH 端口为 $new_port_input..." "warn"
         # 移除旧的 Port 行并添加新行
-        # 使用 sed 查找并删除所有现有的 Port 行，包括注释掉的。使用 '|' 作为分隔符。
-        sed -i '\| *#\? *Port |d' /etc/ssh/sshd_config && log "已移除旧的 Port 行." "info" || log "移除旧的 Port 行失败或不存在旧行." "info"
-        echo "Port $new_port_input" >> /etc/ssh/sshd_config && log "已添加 Port $new_port_input 到 sshd_config." "info" || log "添加 Port 行到 sshd_config 失败." "error" # 非致命错误
+        sed -i '\| *#\? *Port |d' /etc/ssh/sshd_config && log "已移除旧的 Port 行." "info" || true # 即使失败也 true
+        echo "Port $new_port_input" >> /etc/ssh/sshd_config && log "已添加 Port $new_port_input 到 sshd_config." "info" || log "添加 Port 行失败." "error"
 
         log "重启 SSH 服务应用新端口..." "warn"
         if systemctl restart sshd; then
             log "SSH 服务重启成功. 新端口 $new_port_input 已生效." "info"
-            NEW_SSH_PORT_SET="$new_port_input" # 更新变量，标记端口更改成功
+            NEW_SSH_PORT_SET="$new_port_input"
         else
-            log "错误: SSH 服务重启失败! 新端口可能未生效. 请手动检查!" "error" # 非致命错误
-            NEW_SSH_PORT_SET="Failed to restart/$new_port_input" # 在变量中标记失败，用于摘要
+            log "错误: SSH 服务重启失败! 新端口可能未生效." "error"
+            NEW_SSH_PORT_SET="Failed to restart/$new_port_input"
         fi
     fi
 fi
@@ -574,14 +534,14 @@ log_update "运行 apt update..."
 apt update $APT_OPTIONS >>"$LOGFILE" 2>&1
 UPDATE_EXIT_STATUS=$?
 if [ $UPDATE_EXIT_STATUS -ne 0 ]; then
-    log_update "警告: apt update 失败，退出状态码 $UPDATE_EXIT_STATUS."
+    log_update "警告: apt update 失败， exits $UPDATE_EXIT_STATUS."
 fi
 
 log_update "运行 apt upgrade..."
 DEBIAN_FRONTEND=noninteractive apt upgrade $APT_OPTIONS >>"$LOGFILE" 2>&1
 UPGRADE_EXIT_STATUS=$?
 if [ $UPGRADE_EXIT_STATUS -ne 0 ]; then
-     log_update "警告: apt upgrade 失败，退出状态码 $UPGRADE_EXIT_STATUS."
+     log_update "警告: apt upgrade 失败, exits $UPGRADE_EXIT_STATUS."
 fi
 
 # 检查是否有新内核需要重启
@@ -598,11 +558,11 @@ if [ -n "$INSTALLED_KERNEL_PKG" ]; then
 fi
 
 if [ -n "$INSTALLED_KERNEL_VERSION" ] && [ "$RUNNING_KERNEL" != "$INSTALLED_KERNEL_VERSION" ]; then
-    log_update "检测到新内核 ($INSTALLED_KERNEL_VERSION) 与运行内核 ($RUNNING_KERNEL) 不同."
+    log_update "检测到新内核 ($INSTALLED_KERNEL_VERSION)."
     # 重启前检查并尝试启动 sshd
     if ! systemctl is-active sshd >/dev/null 2>&1; then
          log_update "SSHD 服务未运行，尝试启动..."
-         systemctl restart sshd >>"$LOGFILE" 2>&1 || log_update "警告: SSHD 启动失败!" # 非致命错误
+         systemctl restart sshd >>"$LOGFILE" 2>&1 || log_update "警告: SSHD 启动失败!"
     fi
     log_update "因新内核需要重启系统..."
     reboot
@@ -612,11 +572,10 @@ fi
 log_update "自动更新脚本执行完毕."
 EOF
 
-chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info" || log "设置脚本可执行失败." "error" # 非致命错误
+chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info" || log "设置脚本可执行失败." "error"
 
 # 配置 Crontab 条目 (每周日 00:05) 并去重
 CRON_CMD="5 0 * * 0 $UPDATE_SCRIPT"
-# 移除旧的包含 auto-update.log 重定向的行，并添加新行
 (crontab -l 2>/dev/null | grep -v "$UPDATE_SCRIPT" | grep -v "auto-update.log"; echo "$CRON_CMD") | sort -u | crontab -
 log "Crontab 已配置每周日 00:05 执行，并确保唯一性." "info"
 
@@ -649,10 +608,10 @@ show_info "磁盘使用 (/)" "$DISK_USAGE_ROOT"
 
 show_info "Zram Swap 状态" "$ZRAM_SWAP_STATUS"
 
-# Fish 安装状态 (使用步骤 4 中设置的变量)
+# Fish 安装状态
 show_info "Fish Shell 状态" "$FISH_INSTALL_STATUS"
-fish_path=$(command -v fish 2>/dev/null || true)
-[ -n "$fish_path" ] && show_info "Fish Shell 路径" "$fish_path"
+fish_path_summary=$(command -v fish 2>/dev/null || true) # 再次获取 fish 路径 for summary
+[ -n "$fish_path_summary" ] && show_info "Fish Shell 路径" "$fish_path_summary"
 
 # SSH 端口状态
 DISPLAY_SSH_PORT_SUMMARY="$NEW_SSH_PORT_SET"
@@ -676,9 +635,18 @@ command -v docker >/dev/null 2>&1 && DOCKER_VER_SUMMARY=$(docker --version 2>/de
 show_info "Docker 版本" "$DOCKER_VER_SUMMARY"
 show_info "活跃 Docker 容器数" "$ACTIVE_CONTAINERS_COUNT"
 
-# NextTrace 状态 (增加过滤 [API])
-# 使用 sed 移除可能的 "[API]" 字符串
-NEXTTRACE_VER_SUMMARY=$(nexttrace -V 2>/dev/null | awk '{print $2}' | tr -d ',' | sed 's/\[API\]//g' || echo '未安装')
+# NextTrace 状态 (过滤 [API])
+NEXTTRACE_FULL_OUTPUT=$(nexttrace -V 2>&1 || true) # 即使命令失败也不中断
+# 过滤掉带有 [API] 的行，然后从第一行非空输出中提取版本号
+NEXTTRACE_VER_LINE=$(echo "$NEXTTRACE_FULL_OUTPUT" | grep -v '\[API\]' | head -n 1)
+NEXTTRACE_VER_SUMMARY="未安装"
+if [ -n "$NEXTTRACE_VER_LINE" ]; then
+    # 提取第二个字段，并去除可能的逗号
+    NEXTTRACE_VER_SUMMARY=$(echo "$NEXTTRACE_VER_LINE" | awk '{print $2}' | tr -d ',' || echo "提取失败")
+fi
+# 如果提取后仍为空，则显示未安装
+[ -z "$NEXTTRACE_VER_SUMMARY" ] && NEXTTRACE_VER_SUMMARY="未安装"
+
 show_info "NextTrace 版本" "$NEXTTRACE_VER_SUMMARY"
 
 # 网络优化参数
@@ -758,7 +726,7 @@ printf '{
 if [ -f "$STATUS_FILE" ]; then
     log "部署状态已保存至文件: $STATUS_FILE" "info"
 else
-    log "警告: 无法创建状态文件 $STATUS_FILE." "error" # 非致命错误
+    log "警告: 无法创建状态文件 $STATUS_FILE." "error"
 fi
 
 # --- 最终提示 ---
