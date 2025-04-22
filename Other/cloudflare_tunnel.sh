@@ -34,11 +34,28 @@ install_cloudflared() {
     TARGET_BIN_PATH="/usr/local/bin/cloudflared"
 
     # 检查 Cloudflared 二进制文件是否已存在，提示覆盖
+    # 这里添加了停止服务的逻辑，以便覆盖正在执行的二进制文件
     if [ -f "$TARGET_BIN_PATH" ]; then
         echo "提示: Cloudflared 二进制文件已存在于 $TARGET_BIN_PATH。"
         read -p "是否覆盖安装? (y/N): " OVERWRITE_CONFIRM
         if [[ "$OVERWRITE_CONFIRM" =~ ^[Yy]$ ]]; then
             echo "继续覆盖安装..."
+
+            # --- 新增: 尝试停止现有服务，以便覆盖二进制文件 ---
+            echo "正在尝试停止现有的 cloudflared 服务 (如果正在运行)..."
+            # 使用 systemctl is-active 检查服务是否正在运行
+            if systemctl is-active --quiet cloudflared.service; then
+                sudo systemctl stop cloudflared.service || {
+                    echo "错误: 停止 cloudflared.service 失败。这可能导致无法覆盖正在执行的二进制文件。" >&2
+                    echo "请手动停止服务后重试：sudo systemctl stop cloudflared" >&2
+                    exit 1 # 如果停止失败，退出安装，以免 curl 报错
+                }
+                echo "现有 cloudflared 服务已停止。"
+            else
+                echo "未检测到正在运行的 cloudflared.service。"
+            fi
+            # --- 新增: 停止现有服务结束 ---
+
         else
             echo "取消安装。"
             exit 0
@@ -52,9 +69,11 @@ install_cloudflared() {
     fi
 
     # 下载 Cloudflared 二进制文件
+    # 注意: 如果上面停止服务失败，这里可能会因为文件被占用而报错
     echo "正在下载 cloudflared 二进制文件从 $CLOUDFLARED_URL..."
     if ! sudo curl -L "$CLOUDFLARED_URL" -o "$TARGET_BIN_PATH"; then
         echo "错误: 下载 cloudflared 失败。" >&2
+        echo "可能是因为旧的服务还在运行并占用文件，或者网络问题。" >&2
         exit 1
     fi
 
