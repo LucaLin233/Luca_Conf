@@ -523,76 +523,115 @@ step_end 9 "SSH 端口管理完成"
 # --- 步骤 10: 部署自动更新脚本和 Cron 任务 ---
 step_start 10 "部署自动更新脚本和 Crontab 任务"
 UPDATE_SCRIPT="/root/auto-update.sh"
-# 写入自动更新脚本内容
+# 写入自动更新脚本内容 (使用修复后的 v1.6 版本)
 cat > "$UPDATE_SCRIPT" <<'EOF'
 #!/bin/bash
 # -----------------------------------------------------------------------------
-# 自动化系统更新与内核重启脚本
-# 更新软件包，检查新内核，并在必要时重启。
+# 自动化系统更新与内核重启脚本 (修复版 v1.6 - 日志覆盖 + pseudo-TTY)
+# 更新软件包，检查新内核，必要时重启。每次运行时覆盖旧日志。
+# 使用 apt-get dist-upgrade. 通过 `script` 命令模拟 TTY 环境运行 apt-get.
 # -----------------------------------------------------------------------------
 
 # --- 配置 ---
 LOGFILE="/var/log/auto-update.log"
-APT_OPTIONS="-y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\""
+# 为 apt-get dist-upgrade 准备选项
+APT_GET_OPTIONS="-y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" -o APT::ListChanges::Frontend=none"
+# script 命令需要一个文件来记录输出
+SCRIPT_OUTPUT_DUMMY="/tmp/auto_update_script_cmd_output.log"
 
 # --- 自动更新脚本内部日志函数 ---
 log_update() {
+    # 注意：确保日志函数使用追加模式 '>>'
     echo "[$(date '+%Y-%m-%d %H:%M:%S (%Z)')] $1" >>"$LOGFILE"
 }
 
 # --- 主逻辑 ---
-log_update "启动自动化系统更新."
 
-log_update "运行 apt update..."
-apt update $APT_OPTIONS >>"$LOGFILE" 2>&1
+# --- 关键修改：覆盖旧日志 ---
+# 在记录第一条日志前，清空日志文件
+> "$LOGFILE"
+
+log_update "启动自动化系统更新 (修复版 v1.6 - 日志覆盖 + pseudo-TTY)."
+
+log_update "运行 /usr/bin/apt-get update..."
+/usr/bin/apt-get update -o APT::ListChanges::Frontend=none >>"$LOGFILE" 2>&1
 UPDATE_EXIT_STATUS=$?
 if [ $UPDATE_EXIT_STATUS -ne 0 ]; then
-    log_update "警告: apt update 失败， exits $UPDATE_EXIT_STATUS."
+    log_update "警告: /usr/bin/apt-get update 失败， exits $UPDATE_EXIT_STATUS."
+    # exit 1
 fi
 
-log_update "运行 apt upgrade..."
-DEBIAN_FRONTEND=noninteractive apt upgrade $APT_OPTIONS >>"$LOGFILE" 2>&1
+# 运行前清理旧的 script 输出文件
+/bin/rm -f "$SCRIPT_OUTPUT_DUMMY"
+
+log_update "运行 /usr/bin/apt-get dist-upgrade (尝试通过 'script' 命令模拟 TTY)..."
+COMMAND_TO_RUN="DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get dist-upgrade $APT_GET_OPTIONS"
+/usr/bin/script -q -c "$COMMAND_TO_RUN" "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE" 2>&1
 UPGRADE_EXIT_STATUS=$?
-if [ $UPGRADE_EXIT_STATUS -ne 0 ]; then
-     log_update "警告: apt upgrade 失败, exits $UPGRADE_EXIT_STATUS."
-fi
 
-# 检查是否有新内核需要重启
-RUNNING_KERNEL="$(uname -r)"
-# 查找最新安装的非 meta 内核包
-INSTALLED_KERNEL_PKG="$(dpkg --list 'linux-image-*' | awk '/^ii/{print $2}' | grep -v -E '^linux-image-(amd64|cloud-amd64|.+?-cloud-amd64)$' | sort -V | tail -n1 || true)"
-
-log_update "当前运行内核: $RUNNING_KERNEL"
-log_update "最新安装内核包: ${INSTALLED_KERNEL_PKG:-未找到}"
-
-INSTALLED_KERNEL_VERSION=""
-if [ -n "$INSTALLED_KERNEL_PKG" ]; then
-    INSTALLED_KERNEL_VERSION="$(echo "$INSTALLED_KERNEL_PKG" | sed 's/linux-image-//')"
-fi
-
-if [ -n "$INSTALLED_KERNEL_VERSION" ] && [ "$RUNNING_KERNEL" != "$INSTALLED_KERNEL_VERSION" ]; then
-    log_update "检测到新内核 ($INSTALLED_KERNEL_VERSION)."
-    # 重启前检查并尝试启动 sshd
-    if ! systemctl is-active sshd >/dev/null 2>&1; then
-         log_update "SSHD 服务未运行，尝试启动..."
-         systemctl restart sshd >>"$LOGFILE" 2>&1 || log_update "警告: SSHD 启动失败!"
-    fi
-    log_update "因新内核需要重启系统..."
-    reboot
+if [ -f "$SCRIPT_OUTPUT_DUMMY" ]; then
+    log_update "--- Output captured by 'script' command (from $SCRIPT_OUTPUT_DUMMY) ---"
+    /bin/cat "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE"
+    log_update "--- End of 'script' command output ---"
+    # /bin/rm -f "$SCRIPT_OUTPUT_DUMMY" # 可以取消注释以删除临时文件
 else
-    log_update "无需重启，内核已是最新."
+    log_update "警告: 未找到 'script' 命令的输出文件 $SCRIPT_OUTPUT_DUMMY"
 fi
+
+if [ $UPGRADE_EXIT_STATUS -eq 0 ]; then
+    log_update "apt-get dist-upgrade (via script) 命令执行完成 (script 命令退出码 0)."
+
+    RUNNING_KERNEL="$(/bin/uname -r)"
+    log_update "当前运行内核: $RUNNING_KERNEL"
+
+    LATEST_INSTALLED_KERNEL_PKG=$(/usr/bin/dpkg-query -W -f='${Package}\t${Version}\n' 'linux-image-[0-9]*' 2>/dev/null | /usr/bin/sort -k2 -V | /usr/bin/tail -n1 | /usr/bin/awk '{print $1}' || true)
+
+    if [ -z "$LATEST_INSTALLED_KERNEL_PKG" ]; then
+        log_update "未找到已安装的特定版本内核包。无法比较。"
+        INSTALLED_KERNEL_VERSION=""
+    else
+        log_update "检测到的最新安装内核包: $LATEST_INSTALLED_KERNEL_PKG"
+        INSTALLED_KERNEL_VERSION="$(echo "$LATEST_INSTALLED_KERNEL_PKG" | /bin/sed 's/^linux-image-//')"
+        log_update "提取到的最新内核版本: $INSTALLED_KERNEL_VERSION"
+    fi
+
+    if [ -n "$INSTALLED_KERNEL_VERSION" ] && [ "$RUNNING_KERNEL" != "$INSTALLED_KERNEL_VERSION" ]; then
+        log_update "检测到新内核版本 ($INSTALLED_KERNEL_VERSION) 与运行内核 ($RUNNING_KERNEL) 不同。"
+
+        if ! /bin/systemctl is-active sshd >/dev/null 2>&1; then
+             log_update "SSHD 服务未运行，尝试启动..."
+             /bin/systemctl restart sshd >>"$LOGFILE" 2>&1 || log_update "警告: SSHD 启动失败! 重启可能导致无法连接。"
+             # exit 1
+        fi
+
+        log_update "因新内核需要重启系统..."
+        log_update "执行 /sbin/reboot ..."
+        /sbin/reboot >>"$LOGFILE" 2>&1
+        /bin/sleep 15
+        log_update "警告: 重启命令已发出，但脚本仍在运行？"
+
+    else
+        log_update "内核已是最新 ($RUNNING_KERNEL) 或无法确定新内核，无需重启。"
+    fi
+
+else
+    log_update "错误: apt-get dist-upgrade (via script) 未成功完成 (script 命令退出码: $UPGRADE_EXIT_STATUS). 跳过内核检查和重启。"
+    log_update "请检查上面由 'script' 命令捕获的具体输出，以了解内部错误。"
+fi
+
 log_update "自动更新脚本执行完毕."
+exit 0
 EOF
 
+# --- 后面的 chmod 和 crontab 设置保持不变 ---
 chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info" || log "设置脚本可执行失败." "error"
 
-# 配置 Crontab 条目 (每周日 00:05) 并去重
 CRON_CMD="5 0 * * 0 $UPDATE_SCRIPT"
 (crontab -l 2>/dev/null | grep -v "$UPDATE_SCRIPT" | grep -v "auto-update.log"; echo "$CRON_CMD") | sort -u | crontab -
 log "Crontab 已配置每周日 00:05 执行，并确保唯一性." "info"
 
 step_end 10 "自动更新脚本与 Crontab 任务部署完成"
+# --- 步骤 10 结束 ---
 
 # --- 步骤 11: 系统部署信息摘要 ---
 step_start 11 "系统部署信息摘要"
