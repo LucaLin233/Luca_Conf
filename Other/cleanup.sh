@@ -5,6 +5,12 @@
 
 set -e
 
+# 检查是否为自动模式
+AUTO_CONFIRM=false
+if [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
+    AUTO_CONFIRM=true
+fi
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -165,7 +171,13 @@ echo "将会保留并迁移:"
 [ "$MISE_INSTALLED" = true ] && echo "  - mise将配置到zsh环境"
 echo
 
-read -p "确认执行迁移操作? (y/N): " confirm
+if [ "$AUTO_CONFIRM" = true ]; then
+    confirm="y"
+    success "自动确认模式，继续执行..."
+else
+    read -p "确认执行迁移操作? (y/N): " confirm </dev/tty
+fi
+
 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
     error "操作已取消"
     exit 1
@@ -348,7 +360,12 @@ echo "5. ⚙️  稍后手动配置"
 echo ""
 
 while true; do
-    read -p "请选择配置选项 (1-5): " choice
+    if [ "$AUTO_CONFIRM" = true ]; then
+        choice="2"
+        log "自动模式选择: Rainbow风格（彩虹图标丰富）"
+    else
+        read -p "请选择配置选项 (1-5): " choice </dev/tty
+    fi
     case $choice in
         1)
             if [ -f "$HOME/.oh-my-zsh/custom/themes/powerlevel10k/config/p10k-lean.zsh" ]; then
