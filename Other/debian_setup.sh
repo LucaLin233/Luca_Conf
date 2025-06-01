@@ -1,9 +1,9 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
-# Debian 系统部署与优化脚本
-# 版本: X.X (修复 Bug，集成 Zram，强化 Fish 安装鲁棒性)
+# Debian 系统部署与优化脚本 (Zsh版本)
+# 版本: 2.0.1 (移除Fish/Starship，集成Zsh + Oh My Zsh + Powerlevel10k + mise + Docker IPv6)
 # 适用系统: Debian 12
-# 功能概述: 包含 Fish Shell, Docker, Zram, 网络优化, SSH 加固, 自动更新等功能。
+# 功能概述: 包含 Zsh Shell, Docker (IPv6), Zram, 网络优化, SSH 加固, 自动更新等功能。
 # 脚本特性: 幂等可重复执行，确保 Cron 定时任务唯一性。
 #
 # 作者: LucaLin233
@@ -11,18 +11,10 @@
 # -----------------------------------------------------------------------------
 
 # --- 脚本版本 ---
-# 请根据实际修改版本号
-# 修复 check_and_start_service 函数语法错误的版本
-# 集成 Zram with zstd/PERCENT=50 的版本
-SCRIPT_VERSION="1.7.6" # 更新版本号以反映 Zram 的优化
+SCRIPT_VERSION="2.0.1" # Zsh集成版本 + Docker IPv6支持
 
 # --- 文件路径 ---
 STATUS_FILE="/var/lib/system-deploy-status.json" # 存储部署状态的文件
-# Fish 官方源文件和密钥路径
-FISH_GPG_KEY_PATH="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
-FISH_APT_LIST_PATH="/etc/apt/sources.list.d/shells_fish_release_4.list"
-FISH_APT_URL="deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
-FISH_KEY_URL="https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key"
 CONTAINER_DIRS=(/root /root/proxy /root/vmagent) # 包含 docker-compose 文件的目录
 
 # --- 日志函数 ---
@@ -136,7 +128,7 @@ for cmd in curl wget apt gpg; do
 done
 step_end 1 "网络与基础工具可用"
 
-# --- 步骤 2: 系统更新与核心软件包安装 (不含 systemd-timesyncd 和 Fish) ---
+# --- 步骤 2: 系统更新与核心软件包安装 ---
 step_start 2 "执行系统更新并安装核心软件包"
 run_cmd apt update
 if $RERUN_MODE; then
@@ -209,679 +201,529 @@ if echo "$ZRAM_SWAP_STATUS" | grep -q "已安装"; then
         if grep -q "ALGO=zstd" "$ZRAM_CONFIG_FILE" && grep -q "PERCENT=50" "$ZRAM_CONFIG_FILE"; then
             log "$ZRAM_CONFIG_FILE 已包含期望配置，跳过备份和覆盖." "info"
         else
-            run_cmd /bin/cp "$ZRAM_CONFIG_FILE" "$ZRAM_BACKUP_FILE" && log "已备份 $ZRAM_CONFIG_FILE 为 $ZRAM_BACKUP_FILE." "info"
-        fi
-    elif [ ! -f "$ZRAM_CONFIG_FILE" ]; then
-        log "$ZRAM_CONFIG_FILE 不存在，将创建新文件." "info"
-    fi
-
-    # 写入配置，确保幂等性
-    {
-        echo "# Configuration for zram-tools (managed by deployment script v$SCRIPT_VERSION)"
-        echo "# Compression algorithm: zstd"
-        echo "ALGO=zstd"
-        echo "# Percentage of RAM for zram: 50%"
-        echo "PERCENT=50"
-        # 保留或设置默认的 PRIORITY (如果需要)
-        echo "# Priority for zram swap devices"
-        echo "PRIORITY=100" # 默认优先级
-    } | run_cmd tee "$ZRAM_CONFIG_FILE" > /dev/null
-
-    if [ $? -eq 0 ]; then
-        log "已将 ALGO=zstd 和 PERCENT=50 (及 PRIORITY=100) 写入 $ZRAM_CONFIG_FILE." "info"
-    else
-        log "写入 $ZRAM_CONFIG_FILE 失败." "error"
-        ZRAM_SWAP_STATUS="配置文件写入失败 (zstd, 50%)"
-        # 不在此处 step_fail，让服务重启尝试，但状态会反映问题
-    fi
-
-    # 重启/启动 zramswap.service 应用配置
-    log "重启 zramswap.service 应用新配置..." "warn"
-    if systemctl list-unit-files --type=service | grep -q "^zramswap.service\s"; then
-         run_cmd systemctl stop zramswap.service # 尝试停止，忽略错误
-         if run_cmd systemctl daemon-reload && \
-            run_cmd systemctl enable zramswap.service && \
-            run_cmd systemctl start zramswap.service; then
-             log "zramswap.service start 命令成功." "info"
-             sleep 3
-             if systemctl is-active zramswap.service >/dev/null 2>&1; then
-                 log "zramswap.service 服务已活跃." "info"
-                 if swapon --show | grep -q "/dev/zram"; then
-                     ZRAM_DEVICE_INFO=$(swapon --show | grep "/dev/zram" | awk '{print $1 " (Size: " $3 ", Used: " $4 ", Prio: " $5 ")"}')
-                     ZRAM_SWAP_STATUS="已启用 (zstd, 50% RAM) - ${ZRAM_DEVICE_INFO}"
-                     log "Zram Swap 已活跃: ${ZRAM_DEVICE_INFO}" "info"
-                 else
-                     log "警告: zramswap.service 报告活跃，但 'swapon --show' 未显示 /dev/zram. Zram Swap 可能未正确挂载." "warn"
-                     ZRAM_SWAP_STATUS="服务活跃但Swap未显示Zram (zstd, 50% RAM)"
-                 fi
-             else
-                 log "错误: zramswap.service start 后未报告活跃。" "error"
-                 ZRAM_SWAP_STATUS="服务启动失败/不活跃 (zstd, 50% RAM)"
-             fi
-         else
-             log "错误: systemctl daemon-reload/enable/start zramswap.service 命令失败." "error"
-             ZRAM_SWAP_STATUS="systemd命令失败，配置未应用 (zstd, 50% RAM)"
-         fi
-    else
-        log "未找到 zramswap.service 文件。跳过服务管理。" "warn"
-        ZRAM_SWAP_STATUS="配置已写，但服务文件缺失 (zstd, 50% RAM)"
-    fi
-else
-    log "zram-tools 安装失败或跳过，Zram Swap 配置已跳过." "warn"
-fi
-
-log "注意: 此脚本不自动处理旧 Swap 文件/分区，请手动管理." "info"
-step_end 3 "Zram Swap 配置完成 (状态: $ZRAM_SWAP_STATUS)"
-
-# --- 步骤 4: 从官方源安装 Fish Shell 并设置默认 Shell ---
-step_start 4 "从官方源安装 Fish Shell 并设置默认 Shell"
-FISH_INSTALL_STATUS="未安装或检查失败"
-
-fish_path=$(command -v fish 2>/dev/null || true)
-if [ -n "$fish_path" ]; then
-    log "Fish Shell 已安装 (路径: $fish_path)." "info"
-    FISH_INSTALL_STATUS="已安装"
-else
-    log "未检测到 Fish Shell。尝试从官方源安装..." "warn"
-    log "添加 Fish 官方 APT 源和密钥..." "info"
-    if echo "$FISH_APT_URL" | run_cmd tee "$FISH_APT_LIST_PATH" > /dev/null; then
-        log "Fish 源行已添加." "info"
-        if run_cmd curl -fsSL "$FISH_KEY_URL" | run_cmd gpg --dearmor -o "$FISH_GPG_KEY_PATH"; then
-            log "Fish GPG 密钥导入成功." "info"
-            run_cmd chmod a+r "$FISH_GPG_KEY_PATH"
-        else
-            log "错误: 导入 Fish GPG 密钥失败. 可能无法安装 Fish." "error"
-            [ -f "$FISH_APT_LIST_PATH" ] && run_cmd rm "$FISH_APT_LIST_PATH" && log "已清除 Fish 源文件因导入密钥失败." "warn"
-        fi
-    else
-        log "错误: 添加 Fish 官方 APT 源失败. 可能无法安装 Fish." "error"
-    fi
-
-    if [ -f "$FISH_APT_LIST_PATH" ] && [ -s "$FISH_GPG_KEY_PATH" ]; then
-         log "更新 APT 缓存以包含 Fish 源..." "warn"
-         if ! run_cmd apt update -o Dir::Etc::sourcelist="$FISH_APT_LIST_PATH" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="no"; then
-             log "警告: 只更新 Fish 源失败.尝试全局 apt update..." "warn"
-             if ! run_cmd apt update; then
-                  log "错误: 全局 apt update 也失败. Fish 安装可能无法进行." "error"
-                  FISH_INSTALL_STATUS="APT更新失败"
-             fi
-         fi
-        if [ "$FISH_INSTALL_STATUS" != "APT更新失败" ]; then
-            log "安装 Fish 软件包..." "warn"
-            if run_cmd apt install -y fish; then
-                log "Fish Shell 软件包安装成功." "info"
-                FISH_INSTALL_STATUS="已安装"
-                fish_path=$(command -v fish)
-            else
-                log "错误: 安装 Fish Shell 软件包失败." "error"
-                FISH_INSTALL_STATUS="安装软件包失败"
-            fi
-        fi
-    else
-        log "因源或密钥文件缺失/错误，跳过 Fish Apt 安装." "warn"
-        FISH_INSTALL_STATUS="源或密钥问题跳过安装"
-    fi
-fi
-
-if [ -n "$fish_path" ]; then
-     if ! grep -q "^$fish_path$" /etc/shells; then
-        echo "$fish_path" | run_cmd tee -a /etc/shells > /dev/null && log "已将 Fish 路径添加到 /etc/shells." "info"
-    fi
-    if [ "$SHELL" != "$fish_path" ]; then
-        if $RERUN_MODE; then
-            log "Fish 已安装但非默认 ($SHELL). 重运行模式不自动更改." "info"
-            read -p "设置 Fish ($fish_path) 为默认 Shell? (y/n): " change_shell
-            [ "$change_shell" = "y" ] && run_cmd chsh -s "$fish_path" && log "Fish 已设为默认 (需重登录)." "warn" || log "未更改默认 Shell." "info"
-        else
-            log "Fish 已安装 ($fish_path) 但非默认 ($SHELL). 设置 Fish 为默认..." "warn"
-            run_cmd chsh -s "$fish_path" && log "Fish 已设为默认 (需重登录)." "warn"
-        fi
-    else
-        log "Fish ($fish_path) 已是默认 Shell." "info"
-    fi
-fi
-step_end 4 "Fish Shell 安装与设置完成 (状态: $FISH_INSTALL_STATUS)"
-
-# --- 步骤 5: 安装 Docker 和 NextTrace ---
-step_start 5 "安装 Docker 和 NextTrace"
-MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}') # 在这里获取内存，用于Docker优化
-if ! command -v docker &>/dev/null; then
-    log "未检测到 Docker。使用 get.docker.com 安装..." "warn"
-    if run_cmd bash -c "$(run_cmd curl -fsSL https://get.docker.com)"; then
-        log "Docker 安装成功." "info"
-        check_and_start_service docker.service
-    else
-        log "错误: Docker 安装失败." "error" # Docker安装失败是比较严重的问题
-    fi
-else
-    docker_version=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || true)
-    log "Docker 已安装 (版本: ${docker_version:-未知})." "info"
-    check_and_start_service docker.service
-fi
-if [ -n "$MEM_TOTAL" ] && [ "$MEM_TOTAL" -lt 1024 ]; then
-    if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
-        log "低内存环境. 优化 Docker 日志配置..." "warn"
-        run_cmd mkdir -p /etc/docker
-        echo '{"storage-driver": "overlay2", "log-driver": "json-file", "log-opts": {"max-size": "10m", "max-file": "3"}}' | run_cmd tee /etc/docker/daemon.json > /dev/null
-        log "重启 Docker 应用日志优化..." "warn"
-        systemctl restart docker || log "警告: 重启 Docker 服务失败 (日志优化)." "warn"
-    else
-        log "Docker 日志优化配置已存在." "info"
-    fi
-fi
-if command -v nexttrace &>/dev/null; then
-    log "NextTrace 已安装." "info"
-else
-    log "未检测到 NextTrace。正在部署..." "warn"
-    if run_cmd bash -c "$(run_cmd curl -Ls https://github.com/sjlleo/nexttrace/raw/main/nt_install.sh)"; then
-        log "NextTrace 安装成功." "info"
-    else
-        log "警告: NextTrace 安装失败." "warn" # NextTrace安装失败通常不影响核心功能
-    fi
-fi
-step_end 5 "Docker 和 NextTrace 部署完成"
-
-# --- 步骤 6: 检查并启动 Docker Compose 容器 ---
-step_start 6 "检查并启动 Docker Compose 定义的容器"
-SUCCESSFUL_RUNNING_CONTAINERS=0
-FAILED_DIRS=""
-COMPOSE_CMD=""
-if command -v docker-compose &>/dev/null; then
-    COMPOSE_CMD="docker-compose"
-elif docker compose version &>/dev/null; then
-    COMPOSE_CMD="docker compose"
-fi
-
-if [ -z "$COMPOSE_CMD" ]; then
-    log "未检测到 Docker Compose。跳过容器启动." "warn"
-else
-    log "使用 Docker Compose 命令: '$COMPOSE_CMD'" "info"
-    for dir in "${CONTAINER_DIRS[@]}"; do
-        if [ ! -d "$dir" ]; then
-            log "目录 '$dir' 不存在。跳过." "warn"
-            continue
-        fi
-        COMPOSE_FILE=""
-        for file in compose.yaml docker-compose.yml docker-compose.yaml; do # 添加 docker-compose.yaml
-            if [ -f "$dir/$file" ]; then
-                COMPOSE_FILE="$file"
-                break
-            fi
-        done
-        if [ -n "$COMPOSE_FILE" ]; then
-            log "进入目录 '$dir' 检查 Compose 文件 '$COMPOSE_FILE'." "info"
-            if cd "$dir"; then
-                EXPECTED_SERVICES=$($COMPOSE_CMD -f "$COMPOSE_FILE" config --services 2>/dev/null | wc -l)
-                if [ "$EXPECTED_SERVICES" -eq 0 ]; then
-                    log "目录 '$dir': Compose 文件 '$COMPOSE_FILE' 未定义服务。跳过." "warn"
-                    cd - >/dev/null
-                    continue
-                fi
-                CURRENT_RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps --filter status=running --quiet 2>/dev/null | wc -l)
-                if [ "$CURRENT_RUNNING_COUNT" -ge "$EXPECTED_SERVICES" ]; then
-                     log "目录 '$dir': 已检测到至少 $EXPECTED_SERVICES 个容器运行中。跳过启动." "info"
-                     SUCCESSFUL_RUNNING_CONTAINERS=$((SUCCESSFUL_RUNNING_CONTAINERS + CURRENT_RUNNING_COUNT))
-                else
-                    log "目录 '$dir': $CURRENT_RUNNING_COUNT 个容器运行中 (预期至少 $EXPECTED_SERVICES)。尝试启动/重创..." "warn"
-                    # 使用 run_cmd 来执行 docker-compose up，这样如果失败会记录但脚本继续
-                    if $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --force-recreate; then # docker-compose up 通常不适合 run_cmd 因为它的输出和错误处理比较复杂
-                        sleep 5
-                        NEW_RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps --filter status=running --quiet 2>/dev/null | wc -l)
-                        log "目录 '$dir' 启动/重创尝试成功. $NEW_RUNNING_COUNT 个容器正在运行." "info"
-                        SUCCESSFUL_RUNNING_CONTAINERS=$((SUCCESSFUL_RUNNING_CONTAINERS + NEW_RUNNING_COUNT))
-                    else
-                        log "错误: Compose 启动失败目录: '$dir'." "error"
-                        FAILED_DIRS+=" $dir"
-                    fi
-                fi
-                cd - >/dev/null
-            else
-                log "错误: 无法进入目录 '$dir'。跳过." "error"
-                FAILED_DIRS+=" $dir"
-            fi
-        else
-            log "目录 '$dir': 未找到 Compose 文件。跳过." "warn"
-        fi
-    done
-    ACTUAL_TOTAL_RUNNING=$(docker ps -q 2>/dev/null | wc -l || echo 0)
-    log "容器检查汇总: 系统上实际运行容器总数: $ACTUAL_TOTAL_RUNNING." "info"
-    if [ -n "$FAILED_DIRS" ]; then
-        log "警告: 以下目录的 Compose 启动可能失败: $FAILED_DIRS" "error"
-    fi
-fi
-step_end 6 "Docker Compose 容器检查完成"
-
-# --- 步骤 7: 系统服务与性能优化 ---
-step_start 7 "系统服务与性能优化 (时区, Tuned, Timesync)"
-if systemctl list-unit-files --type=service | grep -q tuned.service; then
-    check_and_start_service tuned.service
-else
-    log "未检测到 tuned 服务. 跳过调优配置." "warn"
-fi
-if command -v timedatectl >/dev/null 2>&1; then
-    CURRENT_TZ=$(timedatectl | grep "Time zone" | awk '{print $3}')
-    if [ "$CURRENT_TZ" != "Asia/Shanghai" ]; then
-        log "设置时区为亚洲/上海..." "warn"
-        timedatectl set-timezone Asia/Shanghai && log "时区成功设置为亚洲/上海." "info" || log "timedatectl 设置时区失败." "error"
-    else
-        log "时区已是亚洲/上海." "info"
-    fi
-else
-    log "未检测到 timedatectl 命令。跳过时区设置." "warn"
-fi
-check_and_start_service systemd-timesyncd.service # 通常会存在
-# chrony 是可选安装的，如果安装了，它会禁用 systemd-timesyncd
-if dpkg -s chrony &>/dev/null; then
-    check_and_start_service chrony.service
-fi
-step_end 7 "系统服务与性能优化完成"
-
-# --- 步骤 8: 配置 TCP 性能 (BBR) 和 Qdisc (fq_codel) ---
-step_start 8 "配置 TCP 性能 (BBR) 和 Qdisc (fq_codel)"
-QDISC_TYPE="fq_codel" # Debian 11+ 默认可能是 fq_codel，但明确设置确保一致
-read -p "启用 BBR + $QDISC_TYPE 网络拥塞控制? (Y/n): " bbr_choice
-bbr_choice="${bbr_choice:-y}"
-
-if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
-    log "用户选择启用 BBR + $QDISC_TYPE." "info"
-    SKIP_SYSCTL_CONFIG=false
-    if ! /sbin/modprobe -n -q tcp_bbr >/dev/null 2>&1 || ! run_cmd /sbin/modprobe tcp_bbr; then
-        log "警告: 未找到或无法加载 'tcp_bbr' 模块." "warn"
-        if [ -f "/proc/config.gz" ] && (zcat /proc/config.gz | grep -q CONFIG_TCP_BBR=y || zcat /proc/config.gz | grep -q CONFIG_TCP_BBR=m); then
-             log "'tcp_bbr' 模块已编译或可用，但加载失败 (可能已内建或冲突)." "info"
-        else
-             log "严重警告: 内核可能不支持 BBR. 无法启用." "error"
-             SKIP_SYSCTL_CONFIG=true
-        fi
-    else
-        log "tcp_bbr 模块已加载." "info"
-    fi
-
-    if [ "$SKIP_SYSCTL_CONFIG" != true ]; then
-        SYSCTL_CONF_BACKUP="/etc/sysctl.conf.bak.orig.$SCRIPT_VERSION"
-        [ ! -f "$SYSCTL_CONF_BACKUP" ] && [ -f "/etc/sysctl.conf" ] && run_cmd cp /etc/sysctl.conf "$SYSCTL_CONF_BACKUP" && log "已备份 /etc/sysctl.conf 为 $SYSCTL_CONF_BACKUP." "info"
-
-        log "配置 sysctl 参数 for BBR and $QDISC_TYPE..." "info"
-        # 使用 awk 确保只添加一次或更新现有行，更健壮
-        run_cmd awk '!/^net\.ipv4\.tcp_congestion_control=|^net\.core\.default_qdisc=/' /etc/sysctl.conf > /tmp/sysctl.conf.tmp
-        echo "net.ipv4.tcp_congestion_control=bbr" >> /tmp/sysctl.conf.tmp
-        echo "net.core.default_qdisc=$QDISC_TYPE" >> /tmp/sysctl.conf.tmp
-        run_cmd mv /tmp/sysctl.conf.tmp /etc/sysctl.conf
-
-        log "应用 sysctl 配置..." "warn"
-        if ! run_cmd sysctl -p; then # sysctl -p 失败通常是配置问题
-            log "警告: 'sysctl -p' 失败. 请检查 /etc/sysctl.conf 语法." "warn"
-        fi
-
-        CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败")
-        CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败")
-        log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
-        if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
-            log "BBR 和 $QDISC_TYPE 参数已生效." "info"
-        else
-            log "警告: 网络参数验证可能不匹配 (当前 CC: $CURR_CC, Qdisc: $CURR_QDISC). 可能需要重启或手动检查." "warn"
-        fi
-    else
-        log "因 BBR 模块问题，跳过 sysctl 配置." "warn"
-    fi
-else
-    log "跳过 BBR + $QDISC_TYPE 配置." "warn"
-    CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败")
-    CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败")
-    log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
-fi
-step_end 8 "网络性能参数配置完成"
-
-# --- 步骤 9: 管理 SSH 安全端口 ---
-step_start 9 "管理 SSH 服务端口"
-SSHD_CONFIG_BACKUP="/etc/ssh/sshd_config.bak.orig.$SCRIPT_VERSION"
-[ ! -f "$SSHD_CONFIG_BACKUP" ] && [ -f "/etc/ssh/sshd_config" ] && run_cmd cp /etc/ssh/sshd_config "$SSHD_CONFIG_BACKUP" && log "已备份 /etc/ssh/sshd_config 为 $SSHD_CONFIG_BACKUP." "info"
-
-CURRENT_SSH_PORT=$(grep -i "^Port " /etc/ssh/sshd_config | awk '{print $2}' | head -n 1) # Ignore case for Port
-[ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT="22" && log "未找到 Port 配置，假定默认 22." "info" || log "当前配置 SSH 端口为 $CURRENT_SSH_PORT." "info"
-
-if $RERUN_MODE; then
-    read -p "当前 SSH 端口为 $CURRENT_SSH_PORT。输入新端口或 Enter 跳过 (1024-65535): " new_port_input
-else
-    read -p "默认 SSH 端口为 $CURRENT_SSH_PORT。输入新端口或 Enter 跳过 (1024-65535): " new_port_input # 首次运行时提示更明确
-fi
-
-NEW_SSH_PORT_SET="$CURRENT_SSH_PORT"
-CHANGE_PORT_REQUESTED=false
-
-if [ -n "$new_port_input" ]; then
-    CHANGE_PORT_REQUESTED=true
-    if ! [[ "$new_port_input" =~ ^[0-9]+$ ]]; then
-        log "输入无效，端口未更改." "error"
-    elif [ "$new_port_input" -lt 1024 ] || [ "$new_port_input" -gt 65535 ]; then
-        log "端口号无效 ($new_port_input)，必须在 1024-65535 之间。端口未更改." "error"
-    elif ss -tuln | grep -q ":$new_port_input\b"; then
-        log "警告: 端口 $new_port_input 已被占用. 端口未更改." "warn"
-    else
-        log "正在更改 SSH 端口为 $new_port_input..." "warn"
-        # 使用 awk 确保只更新或添加 Port 行
-        awk -v port="$new_port_input" '
-            BEGIN { port_set=0 }
-            /^#? *Port / {
-                if (!port_set) { print "Port " port; port_set=1 }
-                next
-            }
-            { print }
-            END { if (!port_set) print "Port " port }
-        ' /etc/ssh/sshd_config > /tmp/sshd_config.tmp && run_cmd mv /tmp/sshd_config.tmp /etc/ssh/sshd_config
-
-        if [ $? -eq 0 ]; then
-            log "已更新 /etc/ssh/sshd_config 中的 Port 为 $new_port_input." "info"
-            log "重启 SSH 服务应用新端口..." "warn"
-            if systemctl restart sshd; then # sshd 重启失败是严重问题
-                log "SSH 服务重启成功. 新端口 $new_port_input 已生效." "info"
-                NEW_SSH_PORT_SET="$new_port_input"
-            else
-                log "错误: SSH 服务重启失败! 新端口可能未生效. 请检查 'systemctl status sshd' 和 'journalctl -xeu sshd'." "error"
-                NEW_SSH_PORT_SET="Failed to restart/$CURRENT_SSH_PORT (tried $new_port_input)" # 回退到旧端口或标记失败
-                # 尝试恢复备份
-                if [ -f "$SSHD_CONFIG_BACKUP" ]; then
-                    run_cmd cp "$SSHD_CONFIG_BACKUP" /etc/ssh/sshd_config && systemctl restart sshd && log "已从备份恢复 SSH 配置并重启服务." "warn"
-                fi
-            fi
-        else
-            log "更新 /etc/ssh/sshd_config 文件失败。" "error"
+            run_cmd cp "$ZRAM_CONFIG_FILE" "$ZRAM_BACKUP_FILE"
+            log "已备份原始配置到 $ZRAM_BACKUP_FILE" "info"
         fi
     fi
-fi
-step_end 9 "SSH 端口管理完成"
 
-# --- 步骤 10: 部署自动更新脚本和 Cron 任务 ---
-step_start 10 "部署自动更新脚本和 Crontab 任务"
-UPDATE_SCRIPT="/root/auto-update.sh"
-# 写入自动更新脚本内容 (使用修复后的 v1.6 版本)
-cat > "$UPDATE_SCRIPT" <<'EOF'
-#!/bin/bash
-# -----------------------------------------------------------------------------
-# 自动化系统更新与内核重启脚本 (修复版 v1.6 - 日志覆盖 + pseudo-TTY)
-# 更新软件包，检查新内核，必要时重启。每次运行时覆盖旧日志。
-# 使用 apt-get dist-upgrade. 通过 `script` 命令模拟 TTY 环境运行 apt-get.
-# -----------------------------------------------------------------------------
-
-# --- 配置 ---
-LOGFILE="/var/log/auto-update.log"
-# 为 apt-get dist-upgrade 准备选项
-APT_GET_OPTIONS="-y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" -o APT::ListChanges::Frontend=none"
-# script 命令需要一个文件来记录输出
-SCRIPT_OUTPUT_DUMMY="/tmp/auto_update_script_cmd_output.log"
-
-# --- 自动更新脚本内部日志函数 ---
-log_update() {
-    # 注意：确保日志函数使用追加模式 '>>'
-    echo "[$(date '+%Y-%m-%d %H:%M:%S (%Z)')] $1" >>"$LOGFILE"
-}
-
-# --- 主逻辑 ---
-
-# --- 关键修改：覆盖旧日志 ---
-# 在记录第一条日志前，清空日志文件
->"$LOGFILE"
-
-log_update "启动自动化系统更新 (修复版 v1.6 - 日志覆盖 + pseudo-TTY)."
-
-log_update "运行 /usr/bin/apt-get update..."
-# 添加 DEBIAN_FRONTEND=noninteractive 避免可能的交互提示
-DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -o APT::ListChanges::Frontend=none >>"$LOGFILE" 2>&1
-UPDATE_EXIT_STATUS=$?
-if [ $UPDATE_EXIT_STATUS -ne 0 ]; then
-    log_update "警告: /usr/bin/apt-get update 失败， exits $UPDATE_EXIT_STATUS."
-    # 不退出，尝试继续升级
-fi
-
-# 运行前清理旧的 script 输出文件
-/bin/rm -f "$SCRIPT_OUTPUT_DUMMY"
-
-log_update "运行 /usr/bin/apt-get dist-upgrade (尝试通过 'script' 命令模拟 TTY)..."
-COMMAND_TO_RUN="DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get dist-upgrade $APT_GET_OPTIONS"
-# script 命令自身也可能产生错误输出到 stderr，将其也重定向到日志
-/usr/bin/script -q -c "$COMMAND_TO_RUN" "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE" 2>&1
-UPGRADE_EXIT_STATUS=$? # 这是 script 命令的退出状态
-
-# 检查 script 命令是否成功执行了内部命令
-# 通常如果内部命令失败，script 自身可能仍然返回 0，所以需要检查 SCRIPT_OUTPUT_DUMMY 中的内容或内部命令的特定输出
-# 此处简化，主要依赖 script 命令的退出码，但更复杂的检查可以加入
-
-if [ -f "$SCRIPT_OUTPUT_DUMMY" ]; then
-    log_update "--- Output captured by 'script' command (from $SCRIPT_OUTPUT_DUMMY) ---"
-    /bin/cat "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE"
-    log_update "--- End of 'script' command output ---"
-    # /bin/rm -f "$SCRIPT_OUTPUT_DUMMY" # 可以取消注释以删除临时文件
-else
-    log_update "警告: 未找到 'script' 命令的输出文件 $SCRIPT_OUTPUT_DUMMY"
-fi
-
-# 根据 script 命令的退出码判断（虽然不完美，但比没有好）
-if [ $UPGRADE_EXIT_STATUS -eq 0 ]; then
-    log_update "apt-get dist-upgrade (via script) 命令执行完成 (script 命令退出码 0)."
-
-    RUNNING_KERNEL="$(/bin/uname -r)"
-    log_update "当前运行内核: $RUNNING_KERNEL"
-
-    # 查找最新安装的 linux-image 包（通常是最高版本号）
-    LATEST_INSTALLED_KERNEL_PKG=$(/usr/bin/dpkg-query -W -f='${Package}\t${Version}\n' 'linux-image-[0-9]*.[0-9]*.[0-9]*-[0-9]*-*' 'linux-image-generic*' 'linux-image-cloud*' 2>/dev/null | /usr/bin/sort -k2 -V | /usr/bin/tail -n1 | /usr/bin/awk '{print $1}' || true)
-
-    if [ -z "$LATEST_INSTALLED_KERNEL_PKG" ]; then
-        log_update "未找到已安装的特定版本内核包。无法比较。"
-        INSTALLED_KERNEL_VERSION=""
-    else
-        log_update "检测到的最新安装内核包: $LATEST_INSTALLED_KERNEL_PKG"
-        # 从包名提取版本号，这可能需要更复杂的 sed 或 awk
-        # 示例：linux-image-5.10.0-18-amd64 -> 5.10.0-18-amd64
-        INSTALLED_KERNEL_VERSION=$(echo "$LATEST_INSTALLED_KERNEL_PKG" | /bin/sed -n 's/^linux-image-\([0-9\.-]*[^ ]*\)/\1/p' || true)
-        if [ -z "$INSTALLED_KERNEL_VERSION" ]; then # 备用提取方法
-            INSTALLED_KERNEL_VERSION=$(/usr/bin/dpkg-query -W -f='${Version}' "$LATEST_INSTALLED_KERNEL_PKG" 2>/dev/null | sed 's/^[0-9]*://' || true) # 去除 epoch
-        fi
-        log_update "提取到的最新内核版本字符串: $INSTALLED_KERNEL_VERSION"
-    fi
-
-    # 比较内核版本（需要注意版本字符串格式的一致性）
-    # 简单的字符串比较可能不总是准确，但对于标准 Debian 内核命名通常有效
-    if [ -n "$INSTALLED_KERNEL_VERSION" ] && [[ "$RUNNING_KERNEL" != *"$INSTALLED_KERNEL_VERSION"* ]] && [[ "$INSTALLED_KERNEL_VERSION" != *"$RUNNING_KERNEL"* ]]; then
-        # 更可靠的比较是查看 /boot 下的 vmlinuz 文件，并与 uname -r 匹配
-        # 但这里为了简单，继续使用基于包名的比较
-        log_update "检测到新内核版本 ($INSTALLED_KERNEL_VERSION) 与运行内核 ($RUNNING_KERNEL) 可能不同。"
-
-        if ! /bin/systemctl is-active sshd >/dev/null 2>&1; then
-             log_update "SSHD 服务未运行，尝试启动..."
-             /bin/systemctl restart sshd >>"$LOGFILE" 2>&1 || log_update "警告: SSHD 启动失败! 重启可能导致无法连接。"
-        fi
-
-        log_update "因新内核需要重启系统..."
-        log_update "执行 /sbin/reboot ..."
-        /sbin/reboot >>"$LOGFILE" 2>&1
-        /bin/sleep 15 # 等待重启命令生效
-        log_update "警告: 重启命令已发出，但脚本仍在运行？这不应该发生。" # 如果脚本还能记录，说明重启失败
-
-    else
-        log_update "内核已是最新 ($RUNNING_KERNEL 与 $INSTALLED_KERNEL_VERSION 匹配或无法确定新内核)，无需重启。"
-    fi
-
-else
-    log_update "错误: apt-get dist-upgrade (via script) 未成功完成 (script 命令退出码: $UPGRADE_EXIT_STATUS). 跳过内核检查和重启。"
-    log_update "请检查上面由 'script' 命令捕获的具体输出，以了解内部错误。"
-fi
-
-log_update "自动更新脚本执行完毕."
-exit 0
+    # 创建新的配置文件
+    cat > "$ZRAM_CONFIG_FILE" << 'EOF'
+# Zram configuration
+ALGO=zstd
+PERCENT=50
+PRIORITY=10
 EOF
 
-run_cmd chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info"
+    log "Zram 配置文件已更新: ALGO=zstd, PERCENT=50" "info"
 
-CRON_CMD="5 0 * * 0 $UPDATE_SCRIPT" # 每周日 00:05
-(crontab -l 2>/dev/null | grep -vF "$UPDATE_SCRIPT" | grep -vF "auto-update.log"; echo "$CRON_CMD") | sort -u | crontab -
-log "Crontab 已配置每周日 00:05 执行 '$UPDATE_SCRIPT'，并确保唯一性." "info"
+    # 重启 zramswap 服务以应用新配置
+    if systemctl is-active zramswap &>/dev/null; then
+        log "重启 zramswap 服务以应用新配置..." "warn"
+        run_cmd systemctl restart zramswap
+    else
+        log "启动 zramswap 服务..." "warn"
+        run_cmd systemctl enable --now zramswap
+    fi
 
-step_end 10 "自动更新脚本与 Crontab 任务部署完成"
-
-# --- 步骤 11: 系统部署信息摘要 ---
-step_start 11 "系统部署信息摘要"
-log "\n╔═════════════════════════════════════════╗" "title"
-log "║           系统部署完成摘要                ║" "title"
-log "╚═════════════════════════════════════════╝" "title"
-
-show_info() { log " • $1: $2" "info"; }
-
-show_info "部署模式" "$(if $RERUN_MODE; then echo "重运行 / 更新"; else echo "首次部署"; fi)"
-show_info "脚本版本" "$SCRIPT_VERSION"
-
-OS_PRETTY_NAME="未知 Debian 版本"
-[ -f /etc/os-release ] && OS_PRETTY_NAME=$(grep 'PRETTY_NAME' /etc/os-release |cut -d= -f2 | tr -d '"' || echo '未知 Debian 版本')
-show_info "操作系统" "$OS_PRETTY_NAME"
-
-show_info "当前运行内核" "$(uname -r)"
-show_info "CPU 核心数" "$(nproc)"
-
-MEM_TOTAL_HUMAN=$(free -h | grep Mem | awk '{print $2}' || echo '未知')
-show_info "总内存大小" "$MEM_TOTAL_HUMAN"
-
-DISK_USAGE_ROOT="未知"
-df -h / >/dev/null 2>&1 && DISK_USAGE_ROOT=$(df -h / | tail -1 | awk '{print $3 "/" $2 " (" "$5" ")"}')
-show_info "磁盘使用 (/)" "$DISK_USAGE_ROOT"
-
-show_info "Zram Swap 状态" "$ZRAM_SWAP_STATUS"
-
-show_info "Fish Shell 状态" "$FISH_INSTALL_STATUS"
-fish_path_summary=$(command -v fish 2>/dev/null || true)
-[ -n "$fish_path_summary" ] && show_info "Fish Shell 路径" "$fish_path_summary"
-
-DISPLAY_SSH_PORT_SUMMARY="$NEW_SSH_PORT_SET"
-SSH_PORT_WARNING=""
-if echo "$NEW_SSH_PORT_SET" | grep -q "Failed to restart"; then
-    # NEW_SSH_PORT_SET might be "Failed to restart/22 (tried 2222)"
-    ATTEMPTED_PORT=$(echo "$NEW_SSH_PORT_SET" | sed -n 's/.*(tried \([0-9]*\)).*/\1/p')
-    CURRENT_EFFECTIVE_PORT=$(echo "$NEW_SSH_PORT_SET" | sed 's/\/.*//' | sed 's/Failed to restart//')
-    DISPLAY_SSH_PORT_SUMMARY="$CURRENT_EFFECTIVE_PORT"
-    SSH_PORT_WARNING=" (警告: SSH 服务重启失败，尝试端口 $ATTEMPTED_PORT 失败)"
-elif [ "$NEW_SSH_PORT_SET" = "$CURRENT_SSH_PORT" ] && [ "$CHANGE_PORT_REQUESTED" = true ]; then
-    SSH_PORT_WARNING=" (尝试更改失败/端口被占用/无效)"
-elif [ "$NEW_SSH_PORT_SET" = "$CURRENT_SSH_PORT" ]; then
-     SSH_PORT_WARNING=" (未更改)"
+    # 验证 zram 状态
+    if systemctl is-active zramswap &>/dev/null; then
+        ZRAM_SWAP_STATUS="配置成功并运行"
+        log "Zram Swap 配置成功并运行." "info"
+        # 显示 zram 信息
+        if command -v zramctl &>/dev/null; then
+            log "当前 Zram 状态:" "info"
+            zramctl
+        fi
+    else
+        ZRAM_SWAP_STATUS="配置完成但服务未运行"
+        log "Zram 配置完成但服务未能正常启动." "warn"
+    fi
 else
-     SSH_PORT_WARNING=" (已成功更改)"
+    log "Zram-tools 未正确安装，跳过配置." "warn"
 fi
-show_info "SSH 端口" "$DISPLAY_SSH_PORT_SUMMARY$SSH_PORT_WARNING"
 
-DOCKER_VER_SUMMARY="未安装"
-ACTIVE_CONTAINERS_COUNT="N/A"
-if command -v docker >/dev/null 2>&1; then
-    DOCKER_VER_SUMMARY=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '检查失败')
-    ACTIVE_CONTAINERS_COUNT=$(docker ps -q 2>/dev/null | wc -l || echo '检查失败')
+step_end 3 "Zram Swap 配置完成"
+
+# --- 步骤 4: 安装和配置 Zsh + Oh My Zsh + Powerlevel10k ---
+step_start 4 "安装和配置 Zsh Shell 环境"
+
+# 4.1: 安装 Zsh 和必要工具
+ZSH_PKGS_TO_INSTALL=()
+for pkg in zsh git curl wget; do
+    if ! dpkg -s "$pkg" &>/dev/null; then
+        ZSH_PKGS_TO_INSTALL+=($pkg)
+    fi
+done
+
+if [ ${#ZSH_PKGS_TO_INSTALL[@]} -gt 0 ]; then
+    log "安装 Zsh 相关软件包: ${ZSH_PKGS_TO_INSTALL[*]}" "info"
+    run_cmd apt install -y "${ZSH_PKGS_TO_INSTALL[@]}" || step_fail 4 "Zsh 相关软件包安装失败."
+else
+    log "Zsh 相关软件包已安装!" "info"
 fi
-show_info "Docker 版本" "$DOCKER_VER_SUMMARY"
-show_info "活跃 Docker 容器数" "$ACTIVE_CONTAINERS_COUNT"
 
-NEXTTRACE_VER_SUMMARY="未安装"
-if command -v nexttrace >/dev/null 2>&1; then
-    NEXTTRACE_FULL_OUTPUT=$(nexttrace -V 2>&1 || true)
-    NEXTTRACE_VER_LINE=$(echo "$NEXTTRACE_FULL_OUTPUT" | grep -v '\[API\]' | head -n 1)
-    if [ -n "$NEXTTRACE_VER_LINE" ]; then
-        NEXTTRACE_VER_SUMMARY=$(echo "$NEXTTRACE_VER_LINE" | awk '{print $2}' | tr -d ',' || echo "提取失败")
-    else # If only API line or empty
-        NEXTTRACE_VER_SUMMARY="已安装 (版本提取失败)"
+log "Zsh 版本: $(zsh --version)" "info"
+
+# 4.2: 为 root 用户安装 Oh My Zsh
+if [ -d "/root/.oh-my-zsh" ]; then
+    log "Oh My Zsh 已存在，跳过安装" "warn"
+else
+    log "为 root 用户安装 Oh My Zsh..." "info"
+    export RUNZSH=no
+    export CHSH=no
+    if su - root -c 'curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh' || \
+       su - root -c 'wget -O- https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh'; then
+        log "Oh My Zsh 安装成功" "info"
+    else
+        log "Oh My Zsh 安装失败，但继续执行" "warn"
     fi
 fi
-[ -z "$NEXTTRACE_VER_SUMMARY" ] && NEXTTRACE_VER_SUMMARY="未安装" # Final check
-show_info "NextTrace 版本" "$NEXTTRACE_VER_SUMMARY"
 
-CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败")
-CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败")
-show_info "网络参数 (sysctl)" "CC=$CURR_CC, Qdisc=$CURR_QDISC"
-
-BBR_MODULE_STATUS="未知"
-if lsmod | grep -q "^tcp_bbr\s"; then # Check if loaded
-    BBR_MODULE_STATUS="模块已加载"
-elif /sbin/modprobe -n -q tcp_bbr >/dev/null 2>&1; then # Check if loadable
-    BBR_MODULE_STATUS="模块可用 (但当前未加载)"
-elif [ -f "/proc/config.gz" ] && (zcat /proc/config.gz | grep -q CONFIG_TCP_BBR=y ); then
-     BBR_MODULE_STATUS="编译进内核 (内建)"
-elif [ -f "/proc/config.gz" ] && (zcat /proc/config.gz | grep -q CONFIG_TCP_BBR=m ); then
-     BBR_MODULE_STATUS="编译为模块 (但当前不可用/未找到)"
+# 4.3: 安装 Powerlevel10k 主题
+THEME_DIR="/root/.oh-my-zsh/custom/themes/powerlevel10k"
+if [ -d "$THEME_DIR" ]; then
+    log "Powerlevel10k 主题已存在，跳过安装" "warn"
 else
-     BBR_MODULE_STATUS="模块不存在或内核不支持"
+    log "安装 Powerlevel10k 主题..." "info"
+    if git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$THEME_DIR"; then
+        log "Powerlevel10k 主题安装成功" "info"
+    else
+        log "Powerlevel10k 主题安装失败，但继续执行" "warn"
+    fi
 fi
-show_info "BBR 内核模块状态" "$BBR_MODULE_STATUS"
 
-TIMEZONE_SUMMARY="未知"
-command -v timedatectl >/dev/null 2>&1 && TIMEZONE_SUMMARY=$(timedatectl | grep "Time zone" | awk '{print $3" "$4" "$5}')
-show_info "系统时区设置" "$TIMEZONE_SUMMARY"
+# 4.4: 安装推荐插件
+log "安装推荐的 Zsh 插件..." "info"
+CUSTOM_PLUGINS="/root/.oh-my-zsh/custom/plugins"
 
-show_info "当前脚本 Shell" "$SHELL"
-ROOT_LOGIN_SHELL=$(getent passwd root | cut -d: -f7 || echo "获取失败")
-show_info "Root 用户默认登录 Shell" "$ROOT_LOGIN_SHELL"
-
-TUNED_PROFILE_SUMMARY=$(tuned-adm active 2>/dev/null | grep 'Current active profile:' | awk -F': ' '{print $NF}')
-[ -z "$TUNED_PROFILE_SUMMARY" ] && TUNED_PROFILE_SUMMARY="(未配置或 tuned 服务未运行)"
-show_info "活跃 Tuned Profile" "$TUNED_PROFILE_SUMMARY"
-
-if [ "$SUCCESSFUL_RUNNING_CONTAINERS" -gt 0 ]; then
-    show_info "Compose 容器状态" "在配置目录共检测到 $SUCCESSFUL_RUNNING_CONTAINERS 个容器运行中."
-elif [ -n "$COMPOSE_CMD" ]; then # Only show if compose was attempted
-    log " • Compose 容器状态: 未检测到运行中的 Compose 容器 (或所有预期容器已停止)." "info"
-fi
-[ -n "$FAILED_DIRS" ] && log " • 警告: Compose 启动失败目录:$FAILED_DIRS" "error" # Removed leading space
-
-log "\n──────────────────────────────────────────────────" "title"
-log " 部署完成时间: $(date '+%Y-%m-%d %H:%M:%S %Z')" "info"
-log "──────────────────────────────────────────────────\n" "title"
-
-step_end 11 "摘要报告已生成"
-
-# --- 保存部署状态 ---
-# 清理 failed_dirs 变量，移除可能的前导空格
-CLEANED_FAILED_DIRS=$(echo "$FAILED_DIRS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-printf '{
-  "script_version": "%s",
-  "last_run": "%s",
-  "ssh_port": "%s",
-  "system": "%s",
-  "zram_status": "%s",
-  "fish_status": "%s",
-  "network_optimization": {
-    "tcp_congestion_control": "%s",
-    "default_qdisc": "%s"
-  },
-  "container_status": {
-    "successful_running": %d,
-    "failed_dirs": "%s"
-  }
-}\n' \
-"$SCRIPT_VERSION" \
-"$(date '+%Y-%m-%d %H:%M:%S')" \
-"$NEW_SSH_PORT_SET" \
-"$OS_PRETTY_NAME" \
-"$ZRAM_SWAP_STATUS" \
-"$FISH_INSTALL_STATUS" \
-"$CURR_CC" \
-"$CURR_QDISC" \
-"$SUCCESSFUL_RUNNING_CONTAINERS" \
-"$CLEANED_FAILED_DIRS" \
-> "$STATUS_FILE"
-
-if [ -f "$STATUS_FILE" ]; then
-    log "部署状态已保存至文件: $STATUS_FILE" "info"
+# zsh-autosuggestions
+if [ ! -d "$CUSTOM_PLUGINS/zsh-autosuggestions" ]; then
+    git clone https://github.com/zsh-users/zsh-autosuggestions "$CUSTOM_PLUGINS/zsh-autosuggestions" || log "zsh-autosuggestions 安装失败" "warn"
 else
-    log "警告: 无法创建状态文件 $STATUS_FILE." "error"
+    log "zsh-autosuggestions 已存在" "info"
 fi
 
-log "✅ 脚本执行完毕." "title"
-
-if [ "$CHANGE_PORT_REQUESTED" = true ] && [ "$NEW_SSH_PORT_SET" = "$new_port_input" ] && [[ "$new_port_input" =~ ^[0-9]+$ ]]; then
-    log "⚠️  重要提示: SSH 端口已更改为 $NEW_SSH_PORT_SET. 请使用新端口重新连接." "warn"
-    log "   示例: ssh -p $NEW_SSH_PORT_SET 您的用户名@您的服务器IP地址" "warn"
-elif echo "$NEW_SSH_PORT_SET" | grep -q "Failed to restart"; then
-    log "⚠️  重要提示: SSH 端口更改尝试失败，SSH 服务可能仍在原端口 ($CURRENT_SSH_PORT) 或无法访问. 请检查 SSH 服务状态." "error"
-fi
-
-if $RERUN_MODE; then
-    log "➡️  重运行模式: 已按需更新配置和服务." "info"
+# zsh-syntax-highlighting
+if [ ! -d "$CUSTOM_PLUGINS/zsh-syntax-highlighting" ]; then
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$CUSTOM_PLUGINS/zsh-syntax-highlighting" || log "zsh-syntax-highlighting 安装失败" "warn"
 else
-    log "🎉 初始部署完成!" "info"
+    log "zsh-syntax-highlighting 已存在" "info"
 fi
-log "🔄 可随时再次运行此脚本进行维护或更新." "info"
-log "手动检查建议: 请验证旧 Swap 文件/配置是否已正确移除，并检查各项服务状态。" "warn"
+
+# zsh-completions
+if [ ! -d "$CUSTOM_PLUGINS/zsh-completions" ]; then
+    git clone https://github.com/zsh-users/zsh-completions "$CUSTOM_PLUGINS/zsh-completions" || log "zsh-completions 安装失败" "warn"
+else
+    log "zsh-completions 已存在" "info"
+fi
+
+# 4.5: 配置 .zshrc
+log "配置 .zshrc..." "info"
+if [ -f "/root/.zshrc" ]; then
+    cp "/root/.zshrc" "/root/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
+    log "已备份现有 .zshrc" "info"
+fi
+
+cat > /root/.zshrc << 'EOF'
+# Oh My Zsh 配置
+export ZSH="$HOME/.oh-my-zsh"
+
+# 主题设置
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# 插件配置
+plugins=(
+    git
+    sudo
+    command-not-found
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    zsh-completions
+)
+
+# 加载 Oh My Zsh
+source $ZSH/oh-my-zsh.sh
+
+# 自定义配置
+export EDITOR='nano'
+export LANG=en_US.UTF-8
+
+# 历史配置
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
+
+# 实用别名
+alias upgrade='apt update && apt full-upgrade -y'
+alias update='apt update -y'
+alias reproxy='cd /root/proxy && docker compose down && docker compose pull && docker compose up -d --remove-orphans'
+alias autodel='docker system prune -a -f && apt autoremove -y'
+alias copyall='cd /root/copy && ansible-playbook -i inventory.ini copyhk.yml && ansible-playbook -i inventory.ini copysg.yml && ansible-playbook -i inventory.ini copyother.yml'
+
+# 如果存在 mise，则初始化
+if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate zsh)"
+fi
+
+EOF
+
+# 4.6: 设置 root 用户默认 shell 为 zsh
+log "设置 root 用户默认 shell 为 zsh..." "info"
+if [ "$SHELL" != "$(which zsh)" ]; then
+    run_cmd chsh -s "$(which zsh)" root || log "更改默认 shell 失败，但继续执行" "warn"
+    log "默认 shell 已设置为 zsh (重新登录后生效)" "info"
+else
+    log "默认 shell 已经是 zsh" "info"
+fi
+
+step_end 4 "Zsh Shell 环境配置完成"
+
+# --- 步骤 5: 安装和配置 mise ---
+step_start 5 "安装和配置 mise 工具"
+
+# 检查 mise 是否已安装
+if command -v mise >/dev/null 2>&1; then
+    log "mise 已安装: $(mise --version)" "info"
+    MISE_INSTALLED=true
+else
+    log "安装 mise..." "info"
+    MISE_INSTALLED=false
+    
+    # 使用官方安装脚本安装 mise
+    if curl https://mise.run | sh; then
+        log "mise 安装成功" "info"
+        # 将 mise 添加到当前会话的 PATH
+        export PATH="$HOME/.local/bin:$PATH"
+        MISE_INSTALLED=true
+    else
+        log "mise 安装失败，尝试备用方法..." "warn"
+        # 备用安装方法
+        if wget -qO- https://mise.run | sh; then
+            log "mise 备用安装成功" "info"
+            export PATH="$HOME/.local/bin:$PATH"
+            MISE_INSTALLED=true
+        else
+            log "mise 安装失败" "error"
+            MISE_INSTALLED=false
+        fi
+    fi
+fi
+
+if [ "$MISE_INSTALLED" = true ]; then
+    # 确保 mise 在 PATH 中
+    if ! command -v mise >/dev/null 2>&1; then
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    
+    # 验证 mise 安装
+    if command -v mise >/dev/null 2>&1; then
+        log "mise 版本: $(mise --version)" "info"
+        
+        # 更新 .zshrc 以确保 mise 正确初始化
+        if ! grep -q "mise activate zsh" /root/.zshrc; then
+            echo '' >> /root/.zshrc
+            echo '# mise 初始化' >> /root/.zshrc
+            echo 'if command -v mise >/dev/null 2>&1; then' >> /root/.zshrc
+            echo '    eval "$(mise activate zsh)"' >> /root/.zshrc
+            echo 'fi' >> /root/.zshrc
+            log "已将 mise 初始化添加到 .zshrc" "info"
+        fi
+        
+        log "mise 配置完成" "info"
+    else
+        log "mise 安装后验证失败" "warn"
+    fi
+else
+    log "mise 安装失败，跳过配置" "warn"
+fi
+
+step_end 5 "mise 工具配置完成"
+
+# --- 步骤 6: 网络优化配置 ---
+step_start 6 "网络优化配置"
+SYSCTL_CONFIG_FILE="/etc/sysctl.d/99-network-optimizations.conf"
+SYSCTL_BACKUP_FILE="$SYSCTL_CONFIG_FILE.bak.orig.$SCRIPT_VERSION"
+
+if [ -f "$SYSCTL_CONFIG_FILE" ] && [ ! -f "$SYSCTL_BACKUP_FILE" ]; then
+    run_cmd cp "$SYSCTL_CONFIG_FILE" "$SYSCTL_BACKUP_FILE"
+    log "已备份现有网络配置到 $SYSCTL_BACKUP_FILE" "info"
+fi
+
+cat > "$SYSCTL_CONFIG_FILE" << 'EOF'
+# 网络优化配置
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+net.ipv4.tcp_rmem = 4096 65536 16777216
+net.ipv4.tcp_wmem = 4096 65536 16777216
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_mtu_probing = 1
+net.core.netdev_max_backlog = 5000
+net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+EOF
+
+run_cmd sysctl -p "$SYSCTL_CONFIG_FILE" || log "应用网络配置失败，但继续执行" "warn"
+log "网络优化配置已应用" "info"
+step_end 6 "网络优化配置完成"
+
+# --- 步骤 7: SSH 安全加固 ---
+step_start 7 "SSH 安全加固"
+SSH_CONFIG_FILE="/etc/ssh/sshd_config"
+SSH_BACKUP_FILE="$SSH_CONFIG_FILE.bak.orig.$SCRIPT_VERSION"
+
+if [ -f "$SSH_CONFIG_FILE" ] && [ ! -f "$SSH_BACKUP_FILE" ]; then
+    run_cmd cp "$SSH_CONFIG_FILE" "$SSH_BACKUP_FILE"
+    log "已备份 SSH 配置到 $SSH_BACKUP_FILE" "info"
+fi
+
+# 应用 SSH 安全配置
+run_cmd sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/' "$SSH_CONFIG_FILE" || true
+run_cmd sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' "$SSH_CONFIG_FILE" || true
+run_cmd sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' "$SSH_CONFIG_FILE" || true
+
+# 重启 SSH 服务
+if systemctl is-active ssh &>/dev/null || systemctl is-active sshd &>/dev/null; then
+    run_cmd systemctl reload ssh || run_cmd systemctl reload sshd || log "SSH 服务重载失败" "warn"
+    log "SSH 配置已更新并重载" "info"
+else
+    log "SSH 服务未运行，配置已更新" "info"
+fi
+
+step_end 7 "SSH 安全加固完成"
+
+# --- 步骤 8: Docker 安装与 IPv6 配置 ---
+step_start 8 "Docker 安装与 IPv6 配置"
+
+# 8.1: 检查系统 IPv6 支持
+log "检查系统 IPv6 支持..." "info"
+IPV6_SUPPORTED=false
+if [ -f /proc/net/if_inet6 ] && grep -q "ipv6" /proc/modules 2>/dev/null; then
+    IPV6_SUPPORTED=true
+    log "系统支持 IPv6" "info"
+else
+    log "警告: 系统可能不支持 IPv6，将仍然配置 Docker IPv6 但可能无法正常工作" "warn"
+fi
+
+# 8.2: 安装 Docker
+if command -v docker &>/dev/null; then
+    log "Docker 已安装: $(docker --version)" "info"
+    DOCKER_INSTALLED=true
+else
+    log "安装 Docker..." "info"
+    DOCKER_INSTALLED=false
+    
+    # 安装依赖
+    run_cmd apt install -y apt-transport-https ca-certificates gnupg lsb-release
+    
+    # 添加 Docker 官方 GPG 密钥
+    if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+        run_cmd mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/debian/gpg | run_cmd gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    fi
+    
+    # 添加 Docker 仓库
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | run_cmd tee /etc/apt/sources.list.d/docker.list > /dev/null
+    
+    # 安装 Docker
+    run_cmd apt update
+    run_cmd apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    
+    # 启动并启用 Docker
+    run_cmd systemctl enable --now docker
+    log "Docker 安装完成" "info"
+    DOCKER_INSTALLED=true
+fi
+
+# 8.3: 配置 Docker IPv6 支持
+if [ "$DOCKER_INSTALLED" = true ]; then
+    log "配置 Docker IPv6 支持..." "info"
+    DOCKER_DAEMON_JSON="/etc/docker/daemon.json"
+    DOCKER_DAEMON_BACKUP="$DOCKER_DAEMON_JSON.bak.orig.$SCRIPT_VERSION"
+    
+    # 备份现有配置文件
+    if [ -f "$DOCKER_DAEMON_JSON" ] && [ ! -f "$DOCKER_DAEMON_BACKUP" ]; then
+        run_cmd cp "$DOCKER_DAEMON_JSON" "$DOCKER_DAEMON_BACKUP"
+        log "已备份现有 Docker daemon.json 到 $DOCKER_DAEMON_BACKUP" "info"
+    fi
+    
+    # 创建或更新 daemon.json
+    run_cmd mkdir -p /etc/docker
+    
+    if [ -f "$DOCKER_DAEMON_JSON" ]; then
+        # 如果文件存在，尝试合并配置
+        log "检测到现有 daemon.json，尝试合并 IPv6 配置..." "info"
+        
+        # 使用 Python 或简单的文本处理来合并 JSON
+        if command -v python3 &>/dev/null; then
+            # 使用 Python 合并 JSON
+            python3 -c "
+import json
+import sys
+
+try:
+    with open('$DOCKER_DAEMON_JSON', 'r') as f:
+        config = json.load(f)
+except:
+    config = {}
+
+config['ipv6'] = True
+config['fixed-cidr-v6'] = 'fd00::/80'
+
+with open('$DOCKER_DAEMON_JSON', 'w') as f:
+    json.dump(config, f, indent=2)
+    
+print('IPv6 配置已合并到现有 daemon.json')
+" && log "IPv6 配置已合并到现有 daemon.json" "info"
+        else
+            # 如果没有 Python，检查是否已包含 IPv6 配置
+            if grep -q '"ipv6"' "$DOCKER_DAEMON_JSON" && grep -q '"fixed-cidr-v6"' "$DOCKER_DAEMON_JSON"; then
+                log "daemon.json 已包含 IPv6 配置，跳过修改" "info"
+            else
+                log "无法自动合并配置，将覆盖 daemon.json" "warn"
+                cat > "$DOCKER_DAEMON_JSON" << 'EOF'
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "fd00::/80"
+}
+EOF
+                log "已创建新的 daemon.json 配置" "info"
+            fi
+        fi
+    else
+        # 如果文件不存在，直接创建
+        cat > "$DOCKER_DAEMON_JSON" << 'EOF'
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "fd00::/80"
+}
+EOF
+        log "已创建 Docker daemon.json 配置文件" "info"
+    fi
+    
+    # 8.4: 重启 Docker 服务以应用 IPv6 配置
+    log "重启 Docker 服务以应用 IPv6 配置..." "warn"
+    if run_cmd systemctl restart docker; then
+        log "Docker 服务重启成功" "info"
+        
+        # 验证 Docker 服务状态
+        sleep 2
+        if systemctl is-active docker &>/dev/null; then
+            log "Docker 服务运行正常" "info"
+            
+            # 验证 IPv6 配置
+            if docker network ls | grep -q bridge; then
+                log "验证 Docker IPv6 配置..." "info"
+                if docker network inspect bridge | grep -q "fd00::/80" 2>/dev/null; then
+                    log "Docker IPv6 配置验证成功" "info"
+                else
+                    log "Docker IPv6 配置可能未生效，但服务正常运行" "warn"
+                fi
+            fi
+        else
+            log "Docker 服务重启后状态异常" "warn"
+        fi
+    else
+        log "Docker 服务重启失败" "warn"
+    fi
+else
+    log "Docker 未安装，跳过 IPv6 配置" "warn"
+fi
+
+# 8.5: 确保 Docker 服务正常运行
+check_and_start_service docker
+
+# 8.6: 安装 docker-compose (独立版本)
+if ! command -v docker-compose &>/dev/null; then
+    log "安装 docker-compose..." "info"
+    DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'"' -f4)
+    if [ -n "$DOCKER_COMPOSE_VERSION" ]; then
+        run_cmd curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        run_cmd chmod +x /usr/local/bin/docker-compose
+        log "docker-compose 安装完成: $(docker-compose --version)" "info"
+    else
+        log "获取 docker-compose 版本失败，跳过安装" "warn"
+    fi
+else
+    log "docker-compose 已安装: $(docker-compose --version)" "info"
+fi
+
+step_end 8 "Docker 安装与 IPv6 配置完成"
+
+# --- 步骤 9: 系统服务优化 ---
+step_start 9 "系统服务优化"
+
+# 启用并启动关键服务
+for service in chrony cron; do
+    check_and_start_service "$service"
+done
+
+# 配置自动更新
+if ! grep -q "unattended-upgrades" /etc/cron.daily/* 2>/dev/null; then
+    log "配置自动更新..." "info"
+    run_cmd apt install -y unattended-upgrades
+    run_cmd dpkg-reconfigure -plow unattended-upgrades
+fi
+
+step_end 9 "系统服务优化完成"
+
+# --- 步骤 10: 清理和完成 ---
+step_start 10 "系统清理和状态记录"
+
+# 清理
+run_cmd apt autoremove -y
+run_cmd apt autoclean
+
+# 记录部署状态
+cat > "$STATUS_FILE" << EOF
+{
+    "script_version": "$SCRIPT_VERSION",
+    "deployment_date": "$(date -Iseconds)",
+    "debian_version": "$(cat /etc/debian_version)",
+    "zsh_installed": true,
+    "mise_installed": $([ "$MISE_INSTALLED" = true ] && echo "true" || echo "false"),
+    "docker_installed": $(command -v docker &>/dev/null && echo "true" || echo "false"),
+    "docker_ipv6_enabled": true,
+    "ipv6_supported": $([ "$IPV6_SUPPORTED" = true ] && echo "true" || echo "false"),
+    "zram_configured": $(echo "$ZRAM_SWAP_STATUS" | grep -q "成功" && echo "true" || echo "false")
+}
+EOF
+
+log "部署状态已记录到 $STATUS_FILE" "info"
+
+step_end 10 "系统清理和状态记录完成"
+
+# --- 完成 ---
+echo
+log "==============================================" "title"
+log "🎉 Debian 系统部署完成!" "title"
+log "==============================================" "title"
+echo
+log "主要组件状态:" "info"
+log "  ✓ Zsh + Oh My Zsh + Powerlevel10k" "info"
+log "  ✓ mise 工具 (如果安装成功)" "info"
+log "  ✓ Docker + docker-compose (IPv6 已启用)" "info"
+log "  ✓ Zram Swap 优化" "info"
+log "  ✓ 网络性能优化" "info"
+log "  ✓ SSH 安全加固" "info"
+echo
+log "实用别名已配置:" "info"
+log "  • upgrade - 系统完整升级" "info"
+log "  • update - 更新软件包列表" "info"
+log "  • reproxy - 重新部署代理服务" "info"
+log "  • autodel - 清理系统和Docker" "info"
+log "  • copyall - 执行Ansible批量部署" "info"
+echo
+log "重要提醒:" "warn"
+log "  • 请重新登录以使用 Zsh shell" "warn"
+log "  • 首次使用 Zsh 时会提示配置 Powerlevel10k" "warn"
+log "  • mise 工具需要在新的 shell 会话中使用" "warn"
+log "  • Docker IPv6 支持已启用 (fd00::/80)" "warn"
+echo
+log "完成时间: $(date)" "info"
