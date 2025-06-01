@@ -369,28 +369,12 @@ fi
 # Powerlevel10k 配置 (如果存在配置文件)
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-# 一些有用的别名
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias grep='grep --color=auto'
-alias fgrep='fgrep --color=auto'
-alias egrep='egrep --color=auto'
-
-# Docker 相关别名
-alias dps='docker ps'
-alias dpa='docker ps -a'
-alias di='docker images'
-alias dsp='docker system prune'
-
-# 系统相关别名
-alias ..='cd ..'
-alias ...='cd ../..'
-alias h='history'
-alias c='clear'
-alias df='df -h'
-alias du='du -h'
-alias free='free -h'
+# 实用别名
+alias upgrade='apt update && apt full-upgrade -y'
+alias update='apt update -y'
+alias reproxy='cd /root/proxy && docker compose down && docker compose pull && docker compose up -d --remove-orphans'
+alias autodel='docker system prune -a -f && apt autoremove -y'
+alias copyall='cd /root/copy && ansible-playbook -i inventory.ini copyhk.yml && ansible-playbook -i inventory.ini copysg.yml && ansible-playbook -i inventory.ini copyother.yml'
 EOF
     
     log ".zshrc 配置文件创建成功." "info"
