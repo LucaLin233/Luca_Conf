@@ -155,7 +155,7 @@ HNAME=$(hostname)
 # 确保主机名正确映射到 127.0.1.1
 if grep -q "^127.0.1.1" /etc/hosts; then
     if ! grep "^127.0.1.1" /etc/hosts | grep -wq "$HNAME"; then
-        cp /etc/hosts /etc/hosts.bak.$(date +%Y%m%d)
+        [ ! -f /etc/hosts.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/hosts /etc/hosts.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/hosts." "info"
         sed -i "/^127.0.1.1/ s/\$/ $HNAME/" /etc/hosts
         log "已将主机名 $HNAME 添加到 127.0.1.1 行." "warn"
     fi
@@ -237,7 +237,7 @@ if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
             read -p "是否重新安装 Oh My Zsh? (y/n): " reinstall_omz
             if [ "$reinstall_omz" = "y" ]; then
                 log "备份并重新安装 Oh My Zsh..." "warn"
-                mv "$HOME/.oh-my-zsh" "$HOME/.oh-my-zsh.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+                [ ! -f "$HOME/.oh-my-zsh.bak.orig.v${SCRIPT_VERSION}" ] && mv "$HOME/.oh-my-zsh" "$HOME/.oh-my-zsh.bak.orig.v${SCRIPT_VERSION}" 2>/dev/null || true
             else
                 log "跳过 Oh My Zsh 重新安装." "info"
             fi
@@ -320,13 +320,9 @@ if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
     log "配置 .zshrc 文件..." "info"
     
     # 备份现有配置
-    if [ -f "$HOME/.zshrc" ]; then
-        if [ ! -f "$HOME/.zshrc.bak.orig" ]; then
-            cp "$HOME/.zshrc" "$HOME/.zshrc.bak.orig"
-            log "已备份原始 .zshrc 配置." "info"
-        fi
-        cp "$HOME/.zshrc" "$HOME/.zshrc.bak.$(date +%Y%m%d%H%M%S)"
-        log "已备份当前 .zshrc 配置." "info"
+    if [ -f "$HOME/.zshrc" ] && [ ! -f "$HOME/.zshrc.bak.orig.v${SCRIPT_VERSION}" ]; then
+        cp "$HOME/.zshrc" "$HOME/.zshrc.bak.orig.v${SCRIPT_VERSION}"
+        log "已备份 .zshrc 配置." "info"
     fi
     
     # 创建新的 .zshrc 配置
@@ -671,7 +667,7 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
     fi
 
     if [ "$SKIP_SYSCTL_CONFIG" != true ]; then
-        [ ! -f /etc/sysctl.conf.bak.orig ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig && log "已备份 /etc/sysctl.conf." "info"
+        [ ! -f /etc/sysctl.conf.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/sysctl.conf." "info"
         log "配置 sysctl 参数 for BBR and $QDISC_TYPE..." "info"
 
         # 幂等删除旧配置并行，使用 '|' 分隔符，然后追加
@@ -706,7 +702,7 @@ step_end 9 "网络性能参数配置完成"
 
 # --- 步骤 10: 管理 SSH 安全端口 ---
 step_start 10 "管理 SSH 服务端口"
-[ ! -f /etc/ssh/sshd_config.bak.orig ] && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig && log "已备份 /etc/ssh/sshd_config." "info"
+[ ! -f /etc/ssh/sshd_config.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/ssh/sshd_config." "info"
 # 查找当前 SSH 端口
 CURRENT_SSH_PORT=$(grep "^Port " /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
 [ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT="22" && log "未找到 Port 配置，假定默认 22." "info" || log "当前配置 SSH 端口为 $CURRENT_SSH_PORT." "info"
