@@ -1,9 +1,9 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
-# Debian 系统部署与优化脚本
-# 版本: X.X (修复 Bug，集成 Zram，强化 Fish 安装鲁棒性)
+# Debian 系统部署与优化脚本 (集成Zsh + Mise版本)
+# 版本: 1.9.0 (集成Zsh Shell环境 + Mise版本管理器)
 # 适用系统: Debian 12
-# 功能概述: 包含 Fish Shell, Docker, Zram, 网络优化, SSH 加固, 自动更新等功能。
+# 功能概述: 包含 Zsh+Oh-My-Zsh, Mise版本管理器, Docker, Zram, 网络优化, SSH 加固, 自动更新等功能。
 # 脚本特性: 幂等可重复执行，确保 Cron 定时任务唯一性。
 #
 # 作者: LucaLin233
@@ -11,18 +11,12 @@
 # -----------------------------------------------------------------------------
 
 # --- 脚本版本 ---
-# 请根据实际修改版本号
-# 修复 check_and_start_service 函数语法错误的版本
-SCRIPT_VERSION="1.7.4"
+SCRIPT_VERSION="1.9.0"
 
 # --- 文件路径 ---
 STATUS_FILE="/var/lib/system-deploy-status.json" # 存储部署状态的文件
-# Fish 官方源文件和密钥路径
-FISH_GPG_KEY_PATH="/etc/apt/trusted.gpg.d/shells_fish_release_4.gpg"
-FISH_APT_LIST_PATH="/etc/apt/sources.list.d/shells_fish_release_4.list"
-FISH_APT_URL="deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_12/ /"
-FISH_KEY_URL="https://download.opensuse.org/repositories/shells:fish:release:4/Debian_12/Release.key"
 CONTAINER_DIRS=(/root /root/proxy /root/vmagent) # 包含 docker-compose 文件的目录
+MISE_PATH="$HOME/.local/bin/mise" # Mise安装路径
 
 # --- 日志函数 ---
 # log <消息> [级别] - 打印带颜色日志
@@ -45,13 +39,12 @@ step_end() { log "✓ 步骤 $1 完成: $2" "info"; echo; }
 step_fail() { log "✗ 步骤 $1 失败: $2" "error"; exit 1; }
 
 # check_and_start_service <服务> - 检查并启动 Systemd 服务 (非致命)
-# 修复了之前的语法错误
 check_and_start_service() {
     local service_name="$1"
     # 检查服务文件是否存在
     if ! systemctl list-unit-files --type=service | grep -q "^${service_name}\s"; then
         log "$service_name 服务文件不存在，跳过检查和启动." "info"
-        return 0 # 不存在不是错误，只是跳过
+        return 0
     fi
 
     log "检查并确保服务运行: $service_name" "info"
@@ -66,8 +59,8 @@ check_and_start_service() {
     else
         log "$service_name 服务未启用。尝试启用并启动..." "warn"
         systemctl enable --now "$service_name" && log "$service_name 已启用并启动成功." "info" && return 0 || log "$service_name 启用并启动失败." "error" && return 1
-    fi # <-- 修正: if/else 块的结束 fi 在这里
-} # <-- 修正: 函数定义的结束 } 在这里，紧跟着上面的 fi
+    fi
+}
 
 # run_cmd <命令> [参数...] - 执行命令并检查退出状态 (非致命 except step 步骤 1 tools)
 run_cmd() {
@@ -123,8 +116,8 @@ if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && ! ping -c 1 -W 3 114.114.114.114 &>/d
         exit 1
     fi
 fi
-# 确保必要工具可用 (包括 gpg 用于 Fish Key)
-for cmd in curl wget apt gpg; do
+# 确保必要工具可用 (包括zsh需要的git)
+for cmd in curl wget apt git; do
     if ! command -v $cmd &>/dev/null; then
         log "安装必要工具: $cmd" "warn"
         apt-get update -qq && apt-get install -y -qq $cmd || step_fail 1 "安装基础工具 $cmd 失败."
@@ -132,19 +125,19 @@ for cmd in curl wget apt gpg; do
 done
 step_end 1 "网络与基础工具可用"
 
-# --- 步骤 2: 系统更新与核心软件包安装 (不含 systemd-timesyncd 和 Fish) ---
+# --- 步骤 2: 系统更新与核心软件包安装 ---
 step_start 2 "执行系统更新并安装核心软件包"
 run_cmd apt update
 if $RERUN_MODE; then
     log "更新模式: 执行软件包升级." "info"
-    run_cmd apt upgrade -y # run_cmd 允许退出码 100
+    run_cmd apt upgrade -y
 else
     log "首次运行: 执行完整的系统升级." "info"
     run_cmd apt full-upgrade -y
 fi
 PKGS_TO_INSTALL=()
-# 核心软件包列表 (不含 fish 和 systemd-timesyncd)
-for pkg in dnsutils wget curl rsync chrony cron tuned; do
+# 核心软件包列表 (包含zsh需要的工具)
+for pkg in dnsutils wget curl rsync chrony cron tuned zsh git; do
     if ! dpkg -s "$pkg" &>/dev/null; then
          PKGS_TO_INSTALL+=($pkg)
     fi
@@ -162,7 +155,7 @@ HNAME=$(hostname)
 # 确保主机名正确映射到 127.0.1.1
 if grep -q "^127.0.1.1" /etc/hosts; then
     if ! grep "^127.0.1.1" /etc/hosts | grep -wq "$HNAME"; then
-        cp /etc/hosts /etc/hosts.bak.$(date +%Y%m%d)
+        [ ! -f /etc/hosts.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/hosts /etc/hosts.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/hosts." "info"
         sed -i "/^127.0.1.1/ s/\$/ $HNAME/" /etc/hosts
         log "已将主机名 $HNAME 添加到 127.0.1.1 行." "warn"
     fi
@@ -181,7 +174,7 @@ if ! dpkg -l | grep -q "^ii\s*zram-tools\s"; then
         if run_cmd apt install -y zram-tools; then
             log "zram-tools 安装成功." "info"
             check_and_start_service zramswap.service || log "警告: zramswap.service 检查失败，请手动验证." "warn"
-            ZRAM_SWAP_STATUS="已启用且活跃" # 假设成功启用，如果服务检查失败则会在 check_and_start_service 中报错
+            ZRAM_SWAP_STATUS="已启用且活跃"
         else
             log "错误: zram-tools 安装失败." "error"
             ZRAM_SWAP_STATUS="安装失败"
@@ -204,89 +197,321 @@ fi
 log "注意: 此脚本不自动处理旧 Swap 文件/分区，请手动管理." "info"
 step_end 3 "Zram Swap 配置完成"
 
-# --- 步骤 4: 从官方源安装 Fish Shell 并设置默认 Shell ---
-step_start 4 "从官方源安装 Fish Shell 并设置默认 Shell"
-FISH_INSTALL_STATUS="未安装或检查失败" # 初始化 Fish 安装状态
+# --- 步骤 4: 安装和配置 Zsh Shell 环境 ---
+step_start 4 "安装和配置 Zsh Shell 环境"
+ZSH_INSTALL_STATUS="未安装或检查失败"
 
-fish_path=$(command -v fish 2>/dev/null || true) # 检查 fish 是否已安装
-if [ -n "$fish_path" ]; then
-    log "Fish Shell 已安装 (路径: $fish_path)." "info"
-    FISH_INSTALL_STATUS="已安装"
-else
-    log "未检测到 Fish Shell。尝试从官方源安装..." "warn"
-
-    # 添加 Fish 官方 APT 源和密钥 (即使失败也不中断)
-    log "添加 Fish 官方 APT 源和密钥..." "info"
-    # 添加源行
-    if echo "$FISH_APT_URL" | sudo tee "$FISH_APT_LIST_PATH" > /dev/null; then
-        log "Fish 源行已添加." "info"
-         # 下载并导入 GPG 密钥
-        # curl 失败、gpg 失败或 tee 失败都算失败
-        if run_cmd curl -fsSL "$FISH_KEY_URL" | run_cmd gpg --dearmor -o "$FISH_GPG_KEY_PATH"; then
-            log "Fish GPG 密钥导入成功." "info"
-             log "为确保 key 文件可读，设置权限..." "info"
-             run_cmd chmod a+r "$FISH_GPG_KEY_PATH" || log "警告: 设置密钥文件权限失败." "warn" # 非致命错误
-        else
-            log "错误: 导入 Fish GPG 密钥失败. 可能无法安装 Fish." "error"
-            # 失败后清理可能残留的源文件
-            [ -f "$FISH_APT_LIST_PATH" ] && run_cmd rm "$FISH_APT_LIST_PATH" && log "已清除 Fish 源文件因导入密钥失败." "warn"
-        fi
+# 检查 Zsh 是否已安装
+if command -v zsh &>/dev/null; then
+    ZSH_VERSION=$(zsh --version 2>/dev/null | awk '{print $2}' || echo "未知")
+    log "Zsh 已安装 (版本: $ZSH_VERSION)." "info"
+    ZSH_INSTALL_STATUS="已安装"
+    
+    if $RERUN_MODE; then
+        read -p "是否重新配置 Zsh 环境? (y/n): " reconfig_zsh
+        RECONFIG_ZSH=$reconfig_zsh
     else
-        log "错误: 添加 Fish 官方 APT 源失败. 可能无法安装 Fish." "error"
+        RECONFIG_ZSH="y"
     fi
+else
+    log "未检测到 Zsh。正在安装..." "warn"
+    if run_cmd apt install -y zsh; then
+        log "Zsh 安装成功." "info"
+        ZSH_INSTALL_STATUS="已安装"
+        RECONFIG_ZSH="y"
+    else
+        log "错误: Zsh 安装失败." "error"
+        ZSH_INSTALL_STATUS="安装失败"
+        RECONFIG_ZSH="n"
+    fi
+fi
 
-    # 尝试 apt update 并安装 Fish (非致命)
-    # 只有当源文件存在时才尝试安装
-    if [ -f "$FISH_APT_LIST_PATH" ] && [ -s "$FISH_GPG_KEY_PATH" ]; then # 简单的检查文件是否存在且非空
-         log "更新 APT 缓存以包含 Fish 源..." "warn"
-         # 尝试只更新新添加的源，如果失败则进行全局 update
-         if ! run_cmd apt update -o Dir::Etc::sourcelist="$FISH_APT_LIST_PATH" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="no"; then
-             log "警告: 只更新 Fish 源失败.尝试全局 apt update..." "warn"
-             if ! run_cmd apt update; then
-                  log "错误: 全局 apt update 也失败. Fish 安装可能无法进行." "error"
-                  FISH_INSTALL_STATUS="APT更新失败"
-             fi
-         fi
-
-        if [ "$FISH_INSTALL_STATUS" != "APT更新失败" ]; then
-            log "安装 Fish 软件包..." "warn"
-            if run_cmd apt install -y fish; then
-                log "Fish Shell 软件包安装成功." "info"
-                FISH_INSTALL_STATUS="已安装"
-                fish_path=$(command -v fish) #g 再次获取 fish 路径
+# 配置 Zsh 环境 (如果安装成功或需要重新配置)
+if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
+    # 4.1: 安装 Oh My Zsh
+    log "安装 Oh My Zsh 框架..." "info"
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        log "Oh My Zsh 已存在." "info"
+        
+        if $RERUN_MODE; then
+            read -p "是否重新安装 Oh My Zsh? (y/n): " reinstall_omz
+            if [ "$reinstall_omz" = "y" ]; then
+                log "备份并重新安装 Oh My Zsh..." "warn"
+                [ ! -f "$HOME/.oh-my-zsh.bak.orig.v${SCRIPT_VERSION}" ] && mv "$HOME/.oh-my-zsh" "$HOME/.oh-my-zsh.bak.orig.v${SCRIPT_VERSION}" 2>/dev/null || true
             else
-                log "错误: 安装 Fish Shell 软件包失败." "error"
-                FISH_INSTALL_STATUS="安装软件包失败"
+                log "跳过 Oh My Zsh 重新安装." "info"
+            fi
+        fi
+    fi
+    
+    if [ ! -d "$HOME/.oh-my-zsh" ]; then
+        # 使用非交互模式安装 Oh My Zsh
+        log "下载并安装 Oh My Zsh..." "warn"
+        if run_cmd bash -c 'RUNZSH=no sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"'; then
+            log "Oh My Zsh 安装成功." "info"
+        else
+            log "警告: Oh My Zsh 安装失败，将使用基础 Zsh 配置." "warn"
+        fi
+    fi
+    
+    # 4.2: 安装 Powerlevel10k 主题
+    log "安装 Powerlevel10k 主题..." "info"
+    THEME_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+    if [ -d "$THEME_DIR" ]; then
+        log "Powerlevel10k 主题已存在." "info"
+        
+        if $RERUN_MODE; then
+            read -p "是否更新 Powerlevel10k 主题? (y/n): " update_p10k
+            if [ "$update_p10k" = "y" ]; then
+                log "更新 Powerlevel10k 主题..." "warn"
+                if cd "$THEME_DIR" && run_cmd git pull; then
+                    log "Powerlevel10k 主题更新成功." "info"
+                else
+                    log "警告: Powerlevel10k 主题更新失败." "warn"
+                fi
+                cd - >/dev/null
             fi
         fi
     else
-        log "因源或密钥文件缺失/错误，跳过 Fish Apt 安装." "warn"
-        FISH_INSTALL_STATUS="源或密钥问题跳过安装"
+        log "下载 Powerlevel10k 主题..." "warn"
+        if run_cmd git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$THEME_DIR"; then
+            log "Powerlevel10k 主题安装成功." "info"
+        else
+            log "警告: Powerlevel10k 主题安装失败." "warn"
+        fi
+    fi
+    
+    # 4.3: 安装推荐插件
+    log "安装推荐 Zsh 插件..." "info"
+    CUSTOM_PLUGINS="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+    mkdir -p "$CUSTOM_PLUGINS"
+    
+    # 安装 zsh-autosuggestions
+    if [ ! -d "$CUSTOM_PLUGINS/zsh-autosuggestions" ]; then
+        log "安装 zsh-autosuggestions 插件..." "info"
+        if run_cmd git clone https://github.com/zsh-users/zsh-autosuggestions "$CUSTOM_PLUGINS/zsh-autosuggestions"; then
+            log "zsh-autosuggestions 插件安装成功." "info"
+        else
+            log "警告: zsh-autosuggestions 插件安装失败." "warn"
+        fi
+    fi
+    
+    # 安装 zsh-syntax-highlighting
+    if [ ! -d "$CUSTOM_PLUGINS/zsh-syntax-highlighting" ]; then
+        log "安装 zsh-syntax-highlighting 插件..." "info"
+        if run_cmd git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$CUSTOM_PLUGINS/zsh-syntax-highlighting"; then
+            log "zsh-syntax-highlighting 插件安装成功." "info"
+        else
+            log "警告: zsh-syntax-highlighting 插件安装失败." "warn"
+        fi
+    fi
+    
+    # 安装 zsh-completions
+    if [ ! -d "$CUSTOM_PLUGINS/zsh-completions" ]; then
+        log "安装 zsh-completions 插件..." "info"
+        if run_cmd git clone https://github.com/zsh-users/zsh-completions "$CUSTOM_PLUGINS/zsh-completions"; then
+            log "zsh-completions 插件安装成功." "info"
+        else
+            log "警告: zsh-completions 插件安装失败." "warn"
+        fi
+    fi
+    
+    # 4.4: 配置 .zshrc
+    log "配置 .zshrc 文件..." "info"
+    
+    # 备份现有配置
+    if [ -f "$HOME/.zshrc" ] && [ ! -f "$HOME/.zshrc.bak.orig.v${SCRIPT_VERSION}" ]; then
+        cp "$HOME/.zshrc" "$HOME/.zshrc.bak.orig.v${SCRIPT_VERSION}"
+        log "已备份 .zshrc 配置." "info"
+    fi
+    
+    # 创建新的 .zshrc 配置
+    cat > "$HOME/.zshrc" << 'EOF'
+# Oh My Zsh 配置
+export ZSH="$HOME/.oh-my-zsh"
+
+# 设置主题为 Powerlevel10k
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# 插件配置
+plugins=(
+    git
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    zsh-completions
+    sudo
+    docker
+    kubectl
+    web-search
+    history
+    colored-man-pages
+    command-not-found
+)
+
+# 加载 Oh My Zsh
+source $ZSH/oh-my-zsh.sh
+
+# 启用补全
+autoload -U compinit && compinit
+
+# 添加 ~/.local/bin 到 PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# mise 版本管理器配置 (如果存在)
+if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate zsh)"
+fi
+
+# Powerlevel10k 配置 (如果存在配置文件)
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# 实用别名
+alias upgrade='apt update && apt full-upgrade -y'
+alias update='apt update -y'
+alias reproxy='cd /root/proxy && docker compose down && docker compose pull && docker compose up -d --remove-orphans'
+alias autodel='docker system prune -a -f && apt autoremove -y'
+alias copyall='cd /root/copy && ansible-playbook -i inventory.ini copyhk.yml && ansible-playbook -i inventory.ini copysg.yml && ansible-playbook -i inventory.ini copyother.yml'
+EOF
+    
+    log ".zshrc 配置文件创建成功." "info"
+    
+    # 4.5: 询问是否设置为默认 Shell
+    CURRENT_SHELL=$(getent passwd root | cut -d: -f7)
+    ZSH_PATH=$(which zsh)
+    
+    if [ "$CURRENT_SHELL" = "$ZSH_PATH" ]; then
+        log "Zsh 已经是 root 用户的默认 Shell." "info"
+    else
+        log "当前默认 Shell: $CURRENT_SHELL" "info"
+        log "Zsh 路径: $ZSH_PATH" "info"
+        
+        read -p "是否将 Zsh 设置为 root 用户的默认 Shell? (y/n): " set_default_shell
+        if [ "$set_default_shell" = "y" ]; then
+            log "设置 Zsh 为默认 Shell..." "warn"
+            if chsh -s "$ZSH_PATH" root; then
+                log "Zsh 已设置为默认 Shell（需要重新登录生效）." "info"
+                ZSH_INSTALL_STATUS="已安装并设为默认Shell"
+            else
+                log "警告: 设置默认 Shell 失败." "warn"
+                ZSH_INSTALL_STATUS="已安装但未设为默认"
+            fi
+        else
+            log "保持当前默认 Shell." "info"
+            ZSH_INSTALL_STATUS="已安装但未设为默认"
+        fi
+    fi
+    
+    # 4.6: 提供 Powerlevel10k 配置提示
+    log "Powerlevel10k 配置提示:" "info"
+    log "重新登录后可运行 'p10k configure' 来配置提示符主题." "info"
+    log "或者直接启动 zsh: 'zsh' 来体验新环境." "info"
+    
+else
+    log "跳过 Zsh 环境配置." "warn"
+fi
+
+step_end 4 "Zsh Shell 环境配置完成 (状态: $ZSH_INSTALL_STATUS)"
+
+# --- 步骤 5: 安装和配置 Mise 版本管理器 ---
+step_start 5 "安装和配置 Mise 版本管理器"
+MISE_INSTALL_STATUS="未安装或检查失败"
+
+# 确保 .local/bin 目录存在
+mkdir -p "$HOME/.local/bin"
+
+if [ -f "$MISE_PATH" ]; then
+    log "Mise 已安装，检查版本..." "info"
+    MISE_VERSION_OUTPUT=$($MISE_PATH --version 2>/dev/null || echo "无法获取版本")
+    log "当前 Mise 版本: $MISE_VERSION_OUTPUT" "info"
+    MISE_INSTALL_STATUS="已安装"
+    
+    if $RERUN_MODE; then
+        read -p "是否更新 Mise 到最新版本? (y/n): " update_mise
+        if [ "$update_mise" = "y" ]; then
+            log "更新 Mise..." "warn"
+            if run_cmd curl https://mise.run | sh; then
+                log "Mise 更新成功." "info"
+                MISE_INSTALL_STATUS="已更新"
+            else
+                log "警告: Mise 更新失败，继续使用当前版本." "warn"
+            fi
+        fi
+    fi
+else
+    log "未检测到 Mise。正在安装..." "warn"
+    if run_cmd bash -c "$(curl -fsSL https://mise.run)"; then
+        log "Mise 安装成功." "info"
+        MISE_INSTALL_STATUS="已安装"
+    else
+        log "错误: Mise 安装失败." "error"
+        MISE_INSTALL_STATUS="安装失败"
     fi
 fi
 
-# 设置 Fish Shell 为默认 (如果已安装)
-if [ -n "$fish_path" ]; then
-     if ! grep -q "^$fish_path$" /etc/shells; then
-        echo "$fish_path" | tee -a /etc/shells > /dev/null && log "已将 Fish 路径添加到 /etc/shells." "info" || log "添加 Fish 失败." "error"
-    fi
-    if [ "$SHELL" != "$fish_path" ]; then
+# 配置 Python 3.10 (如果 Mise 安装成功)
+if [ -f "$MISE_PATH" ]; then
+    log "配置 Python 3.10 通过 Mise..." "info"
+    
+    # 检查是否已有 Python 配置
+    if $MISE_PATH list python 2>/dev/null | grep -q "3.10"; then
+        log "Python 3.10 已通过 Mise 配置." "info"
+        
         if $RERUN_MODE; then
-            log "Fish 已安装但非默认 ($SHELL). 重运行模式不自动更改." "info"
-            read -p "设置 Fish ($fish_path) 为默认 Shell? (y/n): " change_shell
-            [ "$change_shell" = "y" ] && chsh -s "$fish_path" && log "Fish 已设为默认 (需重登录)." "warn" || log "未更改默认 Shell." "info"
-        else
-            log "Fish 已安装 ($fish_path) 但非默认 ($SHELL). 设置 Fish 为默认..." "warn"
-            chsh -s "$fish_path" && log "Fish 已设为默认 (需重登录)." "warn" || log "设置默认 Shell 失败." "error"
+            read -p "是否重新安装/更新 Python 3.10? (y/n): " update_python
+            if [ "$update_python" = "y" ]; then
+                log "重新安装 Python 3.10..." "warn"
+                if $MISE_PATH use -g python@3.10; then
+                    log "Python 3.10 重新配置成功." "info"
+                else
+                    log "警告: Python 3.10 重新配置失败." "warn"
+                fi
+            fi
         fi
     else
-        log "Fish ($fish_path) 已是默认 Shell." "info"
+        log "安装 Python 3.10..." "warn"
+        if $MISE_PATH use -g python@3.10; then
+            log "Python 3.10 安装配置成功." "info"
+        else
+            log "警告: Python 3.10 安装失败." "warn"
+        fi
     fi
+    
+    # 配置 Mise 到 .bashrc (为了兼容性)
+    BASHRC_FILE="$HOME/.bashrc"
+    MISE_ACTIVATE_LINE='eval "$($HOME/.local/bin/mise activate bash)"'
+    
+    if [ ! -f "$BASHRC_FILE" ]; then
+        log "创建 .bashrc 文件..." "warn"
+        touch "$BASHRC_FILE"
+    fi
+    
+    if ! grep -q "mise activate bash" "$BASHRC_FILE"; then
+        log "添加 Mise 自动激活到 .bashrc..." "info"
+        echo "" >> "$BASHRC_FILE"
+        echo "# Mise version manager" >> "$BASHRC_FILE"
+        echo "$MISE_ACTIVATE_LINE" >> "$BASHRC_FILE"
+        log "Mise 自动激活已添加到 .bashrc." "info"
+    else
+        log "Mise 自动激活已存在于 .bashrc." "info"
+    fi
+    
+    # 配置 Mise 到 .zshrc (如果 zsh 已安装配置)
+    if command -v zsh &>/dev/null && [ -f "$HOME/.zshrc" ]; then
+        if grep -q "mise activate zsh" "$HOME/.zshrc"; then
+            log "Mise 已配置到 .zshrc." "info"
+        else
+            log "确保 Mise 配置到 .zshrc..." "info"
+            # .zshrc 已经包含了 mise 配置，无需额外添加
+        fi
+    fi
+else
+    log "Mise 未正确安装，跳过 Python 配置." "warn"
 fi
-step_end 4 "Fish Shell 安装与设置完成 (状态: $FISH_INSTALL_STATUS)"
 
-# --- 步骤 5: 安装 Docker 和 NextTrace ---
-step_start 5 "安装 Docker 和 NextTrace"
+step_end 5 "Mise 版本管理器配置完成 (状态: $MISE_INSTALL_STATUS)"
+
+# --- 步骤 6: 安装 Docker 和 NextTrace ---
+step_start 6 "安装 Docker 和 NextTrace"
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
 # 使用 get.docker.com 脚本安装 Docker
 if ! command -v docker &>/dev/null; then
@@ -325,10 +550,10 @@ else
         log "警告: NextTrace 安装失败." "error"
     fi
 fi
-step_end 5 "Docker 和 NextTrace 部署完成"
+step_end 6 "Docker 和 NextTrace 部署完成"
 
-# --- 步骤 6: 检查并启动 Docker Compose 容器 ---
-step_start 6 "检查并启动 Docker Compose 定义的容器"
+# --- 步骤 7: 检查并启动 Docker Compose 容器 ---
+step_start 7 "检查并启动 Docker Compose 定义的容器"
 SUCCESSFUL_RUNNING_CONTAINERS=0
 FAILED_DIRS=""
 COMPOSE_CMD=""
@@ -370,7 +595,7 @@ else
                 else
                     log "目录 '$dir': $CURRENT_RUNNING_COUNT 个容器运行中 (预期至少 $EXPECTED_SERVICES)。尝试启动/重创..." "warn"
                     if $COMPOSE_CMD -f "$COMPOSE_FILE" up -d --force-recreate; then
-                        sleep 5 # 短暂等待启动
+                        sleep 5
                         NEW_RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps --filter status=running --quiet 2>/dev/null | wc -l)
                         log "目录 '$dir' 启动/重创尝试成功. $NEW_RUNNING_COUNT 个容器正在运行." "info"
                         SUCCESSFUL_RUNNING_CONTAINERS=$((SUCCESSFUL_RUNNING_CONTAINERS + NEW_RUNNING_COUNT))
@@ -394,10 +619,10 @@ else
         log "警告: 以下目录的 Compose 启动可能失败: $FAILED_DIRS" "error"
     fi
 fi
-step_end 6 "Docker Compose 容器检查完成"
+step_end 7 "Docker Compose 容器检查完成"
 
-# --- 步骤 7: 系统服务与性能优化 ---
-step_start 7 "系统服务与性能优化 (时区, Tuned, Timesync)"
+# --- 步骤 8: 系统服务与性能优化 ---
+step_start 8 "系统服务与性能优化 (时区, Tuned, Timesync)"
 # 确保 tuned 已启用并启动 (非致命)
 if systemctl list-unit-files --type=service | grep -q tuned.service; then
     check_and_start_service tuned.service || log "警告: tuned 服务启动失败." "warn"
@@ -418,13 +643,11 @@ else
 fi
 # 确保 systemd-timesyncd 已启动 (如果存在) (非致命)
 check_and_start_service systemd-timesyncd.service || log "systemd-timesyncd 服务检查失败或不存在." "info"
-# 确保 chrony 已启动 (如果存在) (非致命)
-# check_and_start_service chrony.service || log "chrony 服务检查失败或不存在." "info"
 
-step_end 7 "系统服务与性能优化完成"
+step_end 8 "系统服务与性能优化完成"
 
-# --- 步骤 8: 配置 TCP 性能 (BBR) 和 Qdisc (fq_codel) ---
-step_start 8 "配置 TCP 性能 (BBR) 和 Qdisc (fq_codel)"
+# --- 步骤 9: 配置 TCP 性能 (BBR) 和 Qdisc (fq_codel) ---
+step_start 9 "配置 TCP 性能 (BBR) 和 Qdisc (fq_codel)"
 QDISC_TYPE="fq_codel"
 read -p "启用 BBR + $QDISC_TYPE 网络拥塞控制? (Y/n): " bbr_choice
 bbr_choice="${bbr_choice:-y}"
@@ -444,7 +667,7 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
     fi
 
     if [ "$SKIP_SYSCTL_CONFIG" != true ]; then
-        [ ! -f /etc/sysctl.conf.bak.orig ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig && log "已备份 /etc/sysctl.conf." "info"
+        [ ! -f /etc/sysctl.conf.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/sysctl.conf." "info"
         log "配置 sysctl 参数 for BBR and $QDISC_TYPE..." "info"
 
         # 幂等删除旧配置并行，使用 '|' 分隔符，然后追加
@@ -475,11 +698,11 @@ else
     CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败/未设置")
     log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
 fi
-step_end 8 "网络性能参数配置完成"
+step_end 9 "网络性能参数配置完成"
 
-# --- 步骤 9: 管理 SSH 安全端口 ---
-step_start 9 "管理 SSH 服务端口"
-[ ! -f /etc/ssh/sshd_config.bak.orig ] && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig && log "已备份 /etc/ssh/sshd_config." "info"
+# --- 步骤 10: 管理 SSH 安全端口 ---
+step_start 10 "管理 SSH 服务端口"
+[ ! -f /etc/ssh/sshd_config.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/ssh/sshd_config." "info"
 # 查找当前 SSH 端口
 CURRENT_SSH_PORT=$(grep "^Port " /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
 [ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT="22" && log "未找到 Port 配置，假定默认 22." "info" || log "当前配置 SSH 端口为 $CURRENT_SSH_PORT." "info"
@@ -505,7 +728,7 @@ if [ -n "$new_port_input" ]; then
     else
         log "正在更改 SSH 端口为 $new_port_input..." "warn"
         # 移除旧的 Port 行并添加新行
-        sed -i '\| *#\? *Port |d' /etc/ssh/sshd_config && log "已移除旧的 Port 行." "info" || true # 即使失败也 true
+        sed -i '\| *#\? *Port |d' /etc/ssh/sshd_config && log "已移除旧的 Port 行." "info" || true
         echo "Port $new_port_input" >> /etc/ssh/sshd_config && log "已添加 Port $new_port_input 到 sshd_config." "info" || log "添加 Port 行失败." "error"
 
         log "重启 SSH 服务应用新端口..." "warn"
@@ -518,12 +741,12 @@ if [ -n "$new_port_input" ]; then
         fi
     fi
 fi
-step_end 9 "SSH 端口管理完成"
+step_end 10 "SSH 端口管理完成"
 
-# --- 步骤 10: 部署自动更新脚本和 Cron 任务 ---
-step_start 10 "部署自动更新脚本和 Crontab 任务"
+# --- 步骤 11: 部署自动更新脚本和 Cron 任务 ---
+step_start 11 "部署自动更新脚本和 Crontab 任务"
 UPDATE_SCRIPT="/root/auto-update.sh"
-# 写入自动更新脚本内容 (使用修复后的 v1.6 版本)
+# 写入自动更新脚本内容
 cat > "$UPDATE_SCRIPT" <<'EOF'
 #!/bin/bash
 # -----------------------------------------------------------------------------
@@ -558,7 +781,6 @@ log_update "运行 /usr/bin/apt-get update..."
 UPDATE_EXIT_STATUS=$?
 if [ $UPDATE_EXIT_STATUS -ne 0 ]; then
     log_update "警告: /usr/bin/apt-get update 失败， exits $UPDATE_EXIT_STATUS."
-    # exit 1
 fi
 
 # 运行前清理旧的 script 输出文件
@@ -573,7 +795,6 @@ if [ -f "$SCRIPT_OUTPUT_DUMMY" ]; then
     log_update "--- Output captured by 'script' command (from $SCRIPT_OUTPUT_DUMMY) ---"
     /bin/cat "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE"
     log_update "--- End of 'script' command output ---"
-    # /bin/rm -f "$SCRIPT_OUTPUT_DUMMY" # 可以取消注释以删除临时文件
 else
     log_update "警告: 未找到 'script' 命令的输出文件 $SCRIPT_OUTPUT_DUMMY"
 fi
@@ -601,7 +822,6 @@ if [ $UPGRADE_EXIT_STATUS -eq 0 ]; then
         if ! /bin/systemctl is-active sshd >/dev/null 2>&1; then
              log_update "SSHD 服务未运行，尝试启动..."
              /bin/systemctl restart sshd >>"$LOGFILE" 2>&1 || log_update "警告: SSHD 启动失败! 重启可能导致无法连接。"
-             # exit 1
         fi
 
         log_update "因新内核需要重启系统..."
@@ -623,18 +843,16 @@ log_update "自动更新脚本执行完毕."
 exit 0
 EOF
 
-# --- 后面的 chmod 和 crontab 设置保持不变 ---
 chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info" || log "设置脚本可执行失败." "error"
 
 CRON_CMD="5 0 * * 0 $UPDATE_SCRIPT"
 (crontab -l 2>/dev/null | grep -v "$UPDATE_SCRIPT" | grep -v "auto-update.log"; echo "$CRON_CMD") | sort -u | crontab -
 log "Crontab 已配置每周日 00:05 执行，并确保唯一性." "info"
 
-step_end 10 "自动更新脚本与 Crontab 任务部署完成"
-# --- 步骤 10 结束 ---
+step_end 11 "自动更新脚本与 Crontab 任务部署完成"
 
-# --- 步骤 11: 系统部署信息摘要 ---
-step_start 11 "系统部署信息摘要"
+# --- 步骤 12: 系统部署信息摘要 ---
+step_start 12 "系统部署信息摘要"
 log "\n╔═════════════════════════════════════════╗" "title"
 log "║           系统部署完成摘要                ║" "title"
 log "╚═════════════════════════════════════════╝" "title"
@@ -660,10 +878,49 @@ show_info "磁盘使用 (/)" "$DISK_USAGE_ROOT"
 
 show_info "Zram Swap 状态" "$ZRAM_SWAP_STATUS"
 
-# Fish 安装状态
-show_info "Fish Shell 状态" "$FISH_INSTALL_STATUS"
-fish_path_summary=$(command -v fish 2>/dev/null || true) # 再次获取 fish 路径 for summary
-[ -n "$fish_path_summary" ] && show_info "Fish Shell 路径" "$fish_path_summary"
+# Zsh Shell 状态
+show_info "Zsh Shell 状态" "$ZSH_INSTALL_STATUS"
+if command -v zsh &>/dev/null; then
+    ZSH_PATH_SUMMARY=$(which zsh)
+    show_info "Zsh Shell 路径" "$ZSH_PATH_SUMMARY"
+    show_info "Zsh Shell 版本" "$(zsh --version 2>/dev/null | awk '{print $2}' || echo '未知')"
+    
+    # 检查是否为默认shell
+    ROOT_SHELL=$(getent passwd root | cut -d: -f7)
+    if [ "$ROOT_SHELL" = "$ZSH_PATH_SUMMARY" ]; then
+        show_info "默认 Shell 状态" "Zsh (已设为默认)"
+    else
+        show_info "默认 Shell 状态" "Bash (Zsh 未设为默认)"
+    fi
+    
+    # 检查 Oh My Zsh
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        show_info "Oh My Zsh" "已安装"
+    else
+        show_info "Oh My Zsh" "未安装"
+    fi
+    
+    # 检查 Powerlevel10k
+    if [ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]; then
+        show_info "Powerlevel10k 主题" "已安装"
+    else
+        show_info "Powerlevel10k 主题" "未安装"
+    fi
+fi
+
+# Mise 和 Python 状态
+show_info "Mise 版本管理器" "$MISE_INSTALL_STATUS"
+if [ -f "$MISE_PATH" ]; then
+    show_info "Mise 路径" "$MISE_PATH"
+    
+    # 检查 Python 配置
+    if $MISE_PATH list python 2>/dev/null | grep -q "3.10"; then
+        PYTHON_VERSION=$($MISE_PATH which python 2>/dev/null && $($MISE_PATH which python) --version 2>/dev/null || echo "已配置但版本获取失败")
+        show_info "Python (Mise)" "$PYTHON_VERSION"
+    else
+        show_info "Python (Mise)" "未配置"
+    fi
+fi
 
 # SSH 端口状态
 DISPLAY_SSH_PORT_SUMMARY="$NEW_SSH_PORT_SET"
@@ -687,18 +944,14 @@ command -v docker >/dev/null 2>&1 && DOCKER_VER_SUMMARY=$(docker --version 2>/de
 show_info "Docker 版本" "$DOCKER_VER_SUMMARY"
 show_info "活跃 Docker 容器数" "$ACTIVE_CONTAINERS_COUNT"
 
-# NextTrace 状态 (过滤 [API])
-NEXTTRACE_FULL_OUTPUT=$(nexttrace -V 2>&1 || true) # 即使命令失败也不中断
-# 过滤掉带有 [API] 的行，然后从第一行非空输出中提取版本号
+# NextTrace 状态
+NEXTTRACE_FULL_OUTPUT=$(nexttrace -V 2>&1 || true)
 NEXTTRACE_VER_LINE=$(echo "$NEXTTRACE_FULL_OUTPUT" | grep -v '\[API\]' | head -n 1)
 NEXTTRACE_VER_SUMMARY="未安装"
 if [ -n "$NEXTTRACE_VER_LINE" ]; then
-    # 提取第二个字段，并去除可能的逗号
     NEXTTRACE_VER_SUMMARY=$(echo "$NEXTTRACE_VER_LINE" | awk '{print $2}' | tr -d ',' || echo "提取失败")
 fi
-# 如果提取后仍为空，则显示未安装
 [ -z "$NEXTTRACE_VER_SUMMARY" ] && NEXTTRACE_VER_SUMMARY="未安装"
-
 show_info "NextTrace 版本" "$NEXTTRACE_VER_SUMMARY"
 
 # 网络优化参数
@@ -743,7 +996,7 @@ log "\n────────────────────────�
 log " 部署完成时间: $(date '+%Y-%m-%d %H:%M:%S %Z')" "info"
 log "──────────────────────────────────────────────────\n" "title"
 
-step_end 11 "摘要报告已生成"
+step_end 12 "摘要报告已生成"
 
 # --- 保存部署状态 ---
 printf '{
@@ -752,7 +1005,8 @@ printf '{
   "ssh_port": "%s",
   "system": "%s",
   "zram_status": "%s",
-  "fish_status": "%s",
+  "zsh_status": "%s",
+  "mise_status": "%s",
   "network_optimization": {
     "tcp_congestion_control": "%s",
     "default_qdisc": "%s"
@@ -767,7 +1021,8 @@ printf '{
 "$NEW_SSH_PORT_SET" \
 "$OS_PRETTY_NAME" \
 "$ZRAM_SWAP_STATUS" \
-"$FISH_INSTALL_STATUS" \
+"$ZSH_INSTALL_STATUS" \
+"$MISE_INSTALL_STATUS" \
 "$CURR_CC" \
 "$CURR_QDISC" \
 "$SUCCESSFUL_RUNNING_CONTAINERS" \
@@ -794,6 +1049,24 @@ if $RERUN_MODE; then
 else
     log "🎉 初始部署完成!" "info"
 fi
-log "🔄 可随时再次运行此脚本进行维护或更新." "info"
 
+# Zsh 使用提示
+if command -v zsh &>/dev/null; then
+    log "🐚 Zsh Shell 使用提示:" "info"
+    log "   立即体验 Zsh: exec zsh" "info"
+    log "   配置 Powerlevel10k 主题: p10k configure" "info"
+    if [ "$(getent passwd root | cut -d: -f7)" != "$(which zsh)" ]; then
+        log "   如需设为默认: chsh -s $(which zsh) root" "info"
+    fi
+fi
+
+# Mise 使用提示
+if [ -f "$MISE_PATH" ]; then
+    log "🔧 Mise 使用提示:" "info"
+    log "   要激活 Mise 环境: source ~/.bashrc 或 exec zsh" "info"
+    log "   查看已安装工具: $MISE_PATH list" "info"
+    log "   使用 Python: $MISE_PATH which python && $($MISE_PATH which python) --version" "info"
+fi
+
+log "🔄 可随时再次运行此脚本进行维护或更新." "info"
 log "手动检查建议: 请验证旧 Swap 文件/配置是否已正确移除." "warn"
