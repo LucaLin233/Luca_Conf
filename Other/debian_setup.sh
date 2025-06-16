@@ -1,47 +1,34 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
-# Debian 系统部署与优化脚本 (集成Zsh + Mise版本)
-# 版本: 1.9.0 (集成Zsh Shell环境 + Mise版本管理器)
+# Debian 系统部署与优化脚本 (简化版 v1.9.0)
 # 适用系统: Debian 12
-# 功能概述: 包含 Zsh+Oh-My-Zsh, Mise版本管理器, Docker, Zram, 网络优化, SSH 加固, 自动更新等功能。
-# 脚本特性: 幂等可重复执行，确保 Cron 定时任务唯一性。
-#
-# 作者: LucaLin233
-# 贡献者/优化: Linux AI Buddy
+# 功能: Zsh+Oh-My-Zsh, Mise版本管理器, Docker, Zram, 网络优化, SSH 加固, 自动更新
+# 特性: 幂等可重复执行，确保 Cron 定时任务唯一性
 # -----------------------------------------------------------------------------
 
-# --- 脚本版本 ---
 SCRIPT_VERSION="1.9.0"
+STATUS_FILE="/var/lib/system-deploy-status.json"
+CONTAINER_DIRS=(/root /root/proxy /root/vmagent)
+MISE_PATH="$HOME/.local/bin/mise"
 
-# --- 文件路径 ---
-STATUS_FILE="/var/lib/system-deploy-status.json" # 存储部署状态的文件
-CONTAINER_DIRS=(/root /root/proxy /root/vmagent) # 包含 docker-compose 文件的目录
-MISE_PATH="$HOME/.local/bin/mise" # Mise安装路径
-
-# --- 日志函数 ---
-# log <消息> [级别] - 打印带颜色日志
+# --- 日志函数 (简化但保留所有级别) ---
 log() {
+    local colors=("\033[0;32m" "\033[0;33m" "\033[0;31m" "\033[0;36m" "\033[1;35m")
+    local levels=("" "warn" "error" "info" "title")
     local color="\033[0;32m"
-    case "$2" in
-        "warn")  color="\033[0;33m" ;;
-        "error") color="\033[0;31m" ;;
-        "info")  color="\033[0;36m" ;;
-        "title") color="\033[1;35m" ;;
-    esac
+    for i in "${!levels[@]}"; do
+        [[ "$2" == "${levels[$i]}" ]] && color="${colors[$i]}" && break
+    done
     echo -e "${color}$1\033[0m"
 }
 
-# step_start <编号> <描述> - 步骤开始
 step_start() { log "▶ 步骤 $1: $2..." "title"; }
-# step_end <编号> <描述> - 步骤完成
 step_end() { log "✓ 步骤 $1 完成: $2" "info"; echo; }
-# step_fail <编号> <描述> - 步骤失败并退出
 step_fail() { log "✗ 步骤 $1 失败: $2" "error"; exit 1; }
 
-# check_and_start_service <服务> - 检查并启动 Systemd 服务 (非致命)
+# --- 通用工具函数 (合并重复逻辑) ---
 check_and_start_service() {
     local service_name="$1"
-    # 检查服务文件是否存在
     if ! systemctl list-unit-files --type=service | grep -q "^${service_name}\s"; then
         log "$service_name 服务文件不存在，跳过检查和启动." "info"
         return 0
@@ -54,29 +41,44 @@ check_and_start_service() {
     fi
 
     if systemctl is-enabled "$service_name" &>/dev/null; then
-        log "$service_name 服务未运行，但已启用。尝试启动..." "warn"
         systemctl start "$service_name" && log "$service_name 启动成功." "info" && return 0 || log "$service_name 启动失败." "error" && return 1
     else
-        log "$service_name 服务未启用。尝试启用并启动..." "warn"
         systemctl enable --now "$service_name" && log "$service_name 已启用并启动成功." "info" && return 0 || log "$service_name 启用并启动失败." "error" && return 1
     fi
 }
 
-# run_cmd <命令> [参数...] - 执行命令并检查退出状态 (非致命 except step 步骤 1 tools)
 run_cmd() {
     "$@"
     local exit_status=$?
     if [ $exit_status -ne 0 ]; then
-        # 特殊处理 apt upgrade 的退出码 100 (部分升级失败)
         if [ "$1" = "apt" ] && ([ "$2" = "upgrade" ] || [ "$2" = "full-upgrade" ]) && [ "$exit_status" -eq 100 ]; then
              log "命令 '$*' 返回退出码 100，继续执行." "warn"
              return 0
         fi
-        # 对于其他非 sysctl 命令失败，记录错误但不中断
         if [ "$1" != "sysctl" ]; then
             log "执行命令失败: '$*'. 退出状态: $exit_status" "error"
             return 1
         fi
+    fi
+    return 0
+}
+
+backup_config() {
+    local file="$1"
+    [ ! -f "${file}.bak.orig.v${SCRIPT_VERSION}" ] && cp "$file" "${file}.bak.orig.v${SCRIPT_VERSION}" && log "已备份 $file." "info"
+}
+
+install_packages() {
+    local packages_to_install=()
+    for pkg in "$@"; do
+        if ! dpkg -s "$pkg" &>/dev/null; then
+             packages_to_install+=($pkg)
+        fi
+    done
+    if [ ${#packages_to_install[@]} -gt 0 ]; then
+        log "安装缺少的软件包: ${packages_to_install[*]}" "info"
+        run_cmd apt install -y "${packages_to_install[@]}"
+        return $?
     fi
     return 0
 }
@@ -116,7 +118,7 @@ if ! ping -c 1 -W 3 8.8.8.8 &>/dev/null && ! ping -c 1 -W 3 114.114.114.114 &>/d
         exit 1
     fi
 fi
-# 确保必要工具可用 (包括zsh需要的git)
+
 for cmd in curl wget apt git; do
     if ! command -v $cmd &>/dev/null; then
         log "安装必要工具: $cmd" "warn"
@@ -135,27 +137,14 @@ else
     log "首次运行: 执行完整的系统升级." "info"
     run_cmd apt full-upgrade -y
 fi
-PKGS_TO_INSTALL=()
-# 核心软件包列表 (包含zsh需要的工具)
-for pkg in dnsutils wget curl rsync chrony cron tuned zsh git; do
-    if ! dpkg -s "$pkg" &>/dev/null; then
-         PKGS_TO_INSTALL+=($pkg)
-    fi
-done
-if [ ${#PKGS_TO_INSTALL[@]} -gt 0 ]; then
-    log "安装缺少的核心软件包: ${PKGS_TO_INSTALL[*]}" "info"
-    run_cmd apt install -y "${PKGS_TO_INSTALL[@]}"
-    if [ $? -ne 0 ]; then
-         step_fail 2 "核心软件包安装失败."
-    fi
-else
-    log "所有核心软件包已安装!" "info"
-fi
+
+install_packages dnsutils wget curl rsync chrony cron tuned zsh git || step_fail 2 "核心软件包安装失败."
+
+# 修复 hosts 文件
 HNAME=$(hostname)
-# 确保主机名正确映射到 127.0.1.1
 if grep -q "^127.0.1.1" /etc/hosts; then
     if ! grep "^127.0.1.1" /etc/hosts | grep -wq "$HNAME"; then
-        [ ! -f /etc/hosts.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/hosts /etc/hosts.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/hosts." "info"
+        backup_config /etc/hosts
         sed -i "/^127.0.1.1/ s/\$/ $HNAME/" /etc/hosts
         log "已将主机名 $HNAME 添加到 127.0.1.1 行." "warn"
     fi
@@ -170,18 +159,13 @@ step_start 3 "配置并启用 Zram Swap"
 ZRAM_SWAP_STATUS="未配置"
 if ! dpkg -l | grep -q "^ii\s*zram-tools\s"; then
     log "未检测到 zram-tools。正在安装..." "warn"
-    if run_cmd apt update; then
-        if run_cmd apt install -y zram-tools; then
-            log "zram-tools 安装成功." "info"
-            check_and_start_service zramswap.service || log "警告: zramswap.service 检查失败，请手动验证." "warn"
-            ZRAM_SWAP_STATUS="已启用且活跃"
-        else
-            log "错误: zram-tools 安装失败." "error"
-            ZRAM_SWAP_STATUS="安装失败"
-        fi
+    if run_cmd apt update && run_cmd apt install -y zram-tools; then
+        log "zram-tools 安装成功." "info"
+        check_and_start_service zramswap.service || log "警告: zramswap.service 检查失败，请手动验证." "warn"
+        ZRAM_SWAP_STATUS="已启用且活跃"
     else
-        log "apt update 失败，跳过 zram-tools 安装." "error"
-        ZRAM_SWAP_STATUS="apt update 失败，安装跳过"
+        log "错误: zram-tools 安装失败." "error"
+        ZRAM_SWAP_STATUS="安装失败"
     fi
 else
     log "zram-tools 已安装." "info"
@@ -194,24 +178,21 @@ else
         ZRAM_SWAP_STATUS="已安装但服务不活跃/失败"
     fi
 fi
-log "注意: 此脚本不自动处理旧 Swap 文件/分区，请手动管理." "info"
 step_end 3 "Zram Swap 配置完成"
 
 # --- 步骤 4: 安装和配置 Zsh Shell 环境 ---
 step_start 4 "安装和配置 Zsh Shell 环境"
 ZSH_INSTALL_STATUS="未安装或检查失败"
 
-# 检查 Zsh 是否已安装
 if command -v zsh &>/dev/null; then
     ZSH_VERSION=$(zsh --version 2>/dev/null | awk '{print $2}' || echo "未知")
     log "Zsh 已安装 (版本: $ZSH_VERSION)." "info"
     ZSH_INSTALL_STATUS="已安装"
     
+    RECONFIG_ZSH="y"
     if $RERUN_MODE; then
         read -p "是否重新配置 Zsh 环境? (y/n): " reconfig_zsh
         RECONFIG_ZSH=$reconfig_zsh
-    else
-        RECONFIG_ZSH="y"
     fi
 else
     log "未检测到 Zsh。正在安装..." "warn"
@@ -226,13 +207,11 @@ else
     fi
 fi
 
-# 配置 Zsh 环境 (如果安装成功或需要重新配置)
 if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
-    # 4.1: 安装 Oh My Zsh
+    # 安装 Oh My Zsh
     log "安装 Oh My Zsh 框架..." "info"
     if [ -d "$HOME/.oh-my-zsh" ]; then
         log "Oh My Zsh 已存在." "info"
-        
         if $RERUN_MODE; then
             read -p "是否重新安装 Oh My Zsh? (y/n): " reinstall_omz
             if [ "$reinstall_omz" = "y" ]; then
@@ -245,7 +224,6 @@ if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
     fi
     
     if [ ! -d "$HOME/.oh-my-zsh" ]; then
-        # 使用非交互模式安装 Oh My Zsh
         log "下载并安装 Oh My Zsh..." "warn"
         if run_cmd bash -c 'RUNZSH=no sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"'; then
             log "Oh My Zsh 安装成功." "info"
@@ -254,12 +232,11 @@ if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
         fi
     fi
     
-    # 4.2: 安装 Powerlevel10k 主题
+    # 安装 Powerlevel10k 主题
     log "安装 Powerlevel10k 主题..." "info"
     THEME_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
     if [ -d "$THEME_DIR" ]; then
         log "Powerlevel10k 主题已存在." "info"
-        
         if $RERUN_MODE; then
             read -p "是否更新 Powerlevel10k 主题? (y/n): " update_p10k
             if [ "$update_p10k" = "y" ]; then
@@ -281,51 +258,36 @@ if [ "$RECONFIG_ZSH" = "y" ] && command -v zsh &>/dev/null; then
         fi
     fi
     
-    # 4.3: 安装推荐插件
+    # 安装推荐插件
     log "安装推荐 Zsh 插件..." "info"
     CUSTOM_PLUGINS="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
     mkdir -p "$CUSTOM_PLUGINS"
     
-    # 安装 zsh-autosuggestions
-    if [ ! -d "$CUSTOM_PLUGINS/zsh-autosuggestions" ]; then
-        log "安装 zsh-autosuggestions 插件..." "info"
-        if run_cmd git clone https://github.com/zsh-users/zsh-autosuggestions "$CUSTOM_PLUGINS/zsh-autosuggestions"; then
-            log "zsh-autosuggestions 插件安装成功." "info"
-        else
-            log "警告: zsh-autosuggestions 插件安装失败." "warn"
-        fi
-    fi
+    # 插件配置数组
+    declare -A plugins=(
+        ["zsh-autosuggestions"]="https://github.com/zsh-users/zsh-autosuggestions"
+        ["zsh-syntax-highlighting"]="https://github.com/zsh-users/zsh-syntax-highlighting.git"
+        ["zsh-completions"]="https://github.com/zsh-users/zsh-completions"
+    )
     
-    # 安装 zsh-syntax-highlighting
-    if [ ! -d "$CUSTOM_PLUGINS/zsh-syntax-highlighting" ]; then
-        log "安装 zsh-syntax-highlighting 插件..." "info"
-        if run_cmd git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$CUSTOM_PLUGINS/zsh-syntax-highlighting"; then
-            log "zsh-syntax-highlighting 插件安装成功." "info"
-        else
-            log "警告: zsh-syntax-highlighting 插件安装失败." "warn"
+    for plugin in "${!plugins[@]}"; do
+        if [ ! -d "$CUSTOM_PLUGINS/$plugin" ]; then
+            log "安装 $plugin 插件..." "info"
+            if run_cmd git clone "${plugins[$plugin]}" "$CUSTOM_PLUGINS/$plugin"; then
+                log "$plugin 插件安装成功." "info"
+            else
+                log "警告: $plugin 插件安装失败." "warn"
+            fi
         fi
-    fi
+    done
     
-    # 安装 zsh-completions
-    if [ ! -d "$CUSTOM_PLUGINS/zsh-completions" ]; then
-        log "安装 zsh-completions 插件..." "info"
-        if run_cmd git clone https://github.com/zsh-users/zsh-completions "$CUSTOM_PLUGINS/zsh-completions"; then
-            log "zsh-completions 插件安装成功." "info"
-        else
-            log "警告: zsh-completions 插件安装失败." "warn"
-        fi
-    fi
-    
-    # 4.4: 配置 .zshrc
+    # 配置 .zshrc
     log "配置 .zshrc 文件..." "info"
-    
-    # 备份现有配置
     if [ -f "$HOME/.zshrc" ] && [ ! -f "$HOME/.zshrc.bak.orig.v${SCRIPT_VERSION}" ]; then
         cp "$HOME/.zshrc" "$HOME/.zshrc.bak.orig.v${SCRIPT_VERSION}"
         log "已备份 .zshrc 配置." "info"
     fi
     
-    # 创建新的 .zshrc 配置
     cat > "$HOME/.zshrc" << 'EOF'
 # Oh My Zsh 配置
 export ZSH="$HOME/.oh-my-zsh"
@@ -365,6 +327,9 @@ fi
 # Powerlevel10k 配置 (如果存在配置文件)
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
+# Oh My Zsh 自动更新设置
+zstyle ':omz:update' mode auto
+
 # 实用别名
 alias upgrade='apt update && apt full-upgrade -y'
 alias update='apt update -y'
@@ -375,7 +340,7 @@ EOF
     
     log ".zshrc 配置文件创建成功." "info"
     
-    # 4.5: 询问是否设置为默认 Shell
+    # 询问是否设置为默认 Shell
     CURRENT_SHELL=$(getent passwd root | cut -d: -f7)
     ZSH_PATH=$(which zsh)
     
@@ -401,11 +366,9 @@ EOF
         fi
     fi
     
-    # 4.6: 提供 Powerlevel10k 配置提示
     log "Powerlevel10k 配置提示:" "info"
     log "重新登录后可运行 'p10k configure' 来配置提示符主题." "info"
     log "或者直接启动 zsh: 'zsh' 来体验新环境." "info"
-    
 else
     log "跳过 Zsh 环境配置." "warn"
 fi
@@ -415,8 +378,6 @@ step_end 4 "Zsh Shell 环境配置完成 (状态: $ZSH_INSTALL_STATUS)"
 # --- 步骤 5: 安装和配置 Mise 版本管理器 ---
 step_start 5 "安装和配置 Mise 版本管理器"
 MISE_INSTALL_STATUS="未安装或检查失败"
-
-# 确保 .local/bin 目录存在
 mkdir -p "$HOME/.local/bin"
 
 if [ -f "$MISE_PATH" ]; then
@@ -448,64 +409,35 @@ else
     fi
 fi
 
-# 配置 Python 3.10 (如果 Mise 安装成功)
+# 配置 Python 3.10 和 Shell 集成
 if [ -f "$MISE_PATH" ]; then
     log "配置 Python 3.10 通过 Mise..." "info"
     
-    # 检查是否已有 Python 配置
     if $MISE_PATH list python 2>/dev/null | grep -q "3.10"; then
         log "Python 3.10 已通过 Mise 配置." "info"
-        
         if $RERUN_MODE; then
             read -p "是否重新安装/更新 Python 3.10? (y/n): " update_python
             if [ "$update_python" = "y" ]; then
                 log "重新安装 Python 3.10..." "warn"
-                if $MISE_PATH use -g python@3.10; then
-                    log "Python 3.10 重新配置成功." "info"
-                else
-                    log "警告: Python 3.10 重新配置失败." "warn"
-                fi
+                $MISE_PATH use -g python@3.10 && log "Python 3.10 重新配置成功." "info" || log "警告: Python 3.10 重新配置失败." "warn"
             fi
         fi
     else
         log "安装 Python 3.10..." "warn"
-        if $MISE_PATH use -g python@3.10; then
-            log "Python 3.10 安装配置成功." "info"
-        else
-            log "警告: Python 3.10 安装失败." "warn"
-        fi
+        $MISE_PATH use -g python@3.10 && log "Python 3.10 安装配置成功." "info" || log "警告: Python 3.10 安装失败." "warn"
     fi
     
-    # 配置 Mise 到 .bashrc (为了兼容性)
+    # 配置到 .bashrc
     BASHRC_FILE="$HOME/.bashrc"
-    MISE_ACTIVATE_LINE='eval "$($HOME/.local/bin/mise activate bash)"'
-    
-    if [ ! -f "$BASHRC_FILE" ]; then
-        log "创建 .bashrc 文件..." "warn"
-        touch "$BASHRC_FILE"
-    fi
+    [ ! -f "$BASHRC_FILE" ] && touch "$BASHRC_FILE"
     
     if ! grep -q "mise activate bash" "$BASHRC_FILE"; then
         log "添加 Mise 自动激活到 .bashrc..." "info"
-        echo "" >> "$BASHRC_FILE"
-        echo "# Mise version manager" >> "$BASHRC_FILE"
-        echo "$MISE_ACTIVATE_LINE" >> "$BASHRC_FILE"
+        echo -e "\n# Mise version manager\neval \"\$(\$HOME/.local/bin/mise activate bash)\"" >> "$BASHRC_FILE"
         log "Mise 自动激活已添加到 .bashrc." "info"
     else
         log "Mise 自动激活已存在于 .bashrc." "info"
     fi
-    
-    # 配置 Mise 到 .zshrc (如果 zsh 已安装配置)
-    if command -v zsh &>/dev/null && [ -f "$HOME/.zshrc" ]; then
-        if grep -q "mise activate zsh" "$HOME/.zshrc"; then
-            log "Mise 已配置到 .zshrc." "info"
-        else
-            log "确保 Mise 配置到 .zshrc..." "info"
-            # .zshrc 已经包含了 mise 配置，无需额外添加
-        fi
-    fi
-else
-    log "Mise 未正确安装，跳过 Python 配置." "warn"
 fi
 
 step_end 5 "Mise 版本管理器配置完成 (状态: $MISE_INSTALL_STATUS)"
@@ -513,12 +445,13 @@ step_end 5 "Mise 版本管理器配置完成 (状态: $MISE_INSTALL_STATUS)"
 # --- 步骤 6: 安装 Docker 和 NextTrace ---
 step_start 6 "安装 Docker 和 NextTrace"
 MEM_TOTAL=$(free -m | grep Mem | awk '{print $2}')
-# 使用 get.docker.com 脚本安装 Docker
+
+# 安装 Docker
 if ! command -v docker &>/dev/null; then
     log "未检测到 Docker。使用 get.docker.com 安装..." "warn"
     if run_cmd bash -c "$(run_cmd curl -fsSL https://get.docker.com)"; then
         log "Docker 安装成功." "info"
-        check_and_start_service docker.service || log "警告: 启用/启动 Docker 服务失败." "warn"
+        check_and_start_service docker.service || log "警告: 启用/启动 Docker 服务失败." "wan"
     else
         log "错误: Docker 安装失败." "error"
     fi
@@ -527,6 +460,7 @@ else
     log "Docker 已安装 (版本: ${docker_version:-未知})." "info"
     check_and_start_service docker.service || log "Docker 服务检查/启动失败." "error"
 fi
+
 # 低内存环境优化 Docker 日志
 if [ "$MEM_TOTAL" -lt 1024 ]; then
     if [ ! -f /etc/docker/daemon.json ] || ! grep -q "max-size" /etc/docker/daemon.json; then
@@ -539,6 +473,7 @@ if [ "$MEM_TOTAL" -lt 1024 ]; then
         log "Docker 日志优化配置已存在." "info"
     fi
 fi
+
 # 安装 NextTrace
 if command -v nexttrace &>/dev/null; then
     log "NextTrace 已安装." "info"
@@ -557,6 +492,7 @@ step_start 7 "检查并启动 Docker Compose 定义的容器"
 SUCCESSFUL_RUNNING_CONTAINERS=0
 FAILED_DIRS=""
 COMPOSE_CMD=""
+
 if command -v docker-compose &>/dev/null; then
     COMPOSE_CMD="docker-compose"
 elif docker compose version &>/dev/null; then
@@ -572,6 +508,7 @@ else
             log "目录 '$dir' 不存在。跳过." "warn"
             continue
         fi
+        
         COMPOSE_FILE=""
         for file in compose.yaml docker-compose.yml; do
             if [ -f "$dir/$file" ]; then
@@ -579,6 +516,7 @@ else
                 break
             fi
         done
+        
         if [ -n "$COMPOSE_FILE" ]; then
             log "进入目录 '$dir' 检查 Compose 文件 '$COMPOSE_FILE'." "info"
             if cd "$dir"; then
@@ -588,6 +526,7 @@ else
                     cd - >/dev/null
                     continue
                 fi
+                
                 CURRENT_RUNNING_COUNT=$($COMPOSE_CMD -f "$COMPOSE_FILE" ps --filter status=running --quiet 2>/dev/null | wc -l)
                 if [ "$CURRENT_RUNNING_COUNT" -ge "$EXPECTED_SERVICES" ]; then
                      log "目录 '$dir': 已检测到至少 $EXPECTED_SERVICES 个容器运行中。跳过启动." "info"
@@ -613,6 +552,7 @@ else
             log "目录 '$dir': 未找到 Compose 文件。跳过." "warn"
         fi
     done
+    
     ACTUAL_TOTAL_RUNNING=$(docker ps -q 2>/dev/null | wc -l || echo 0)
     log "容器检查汇总: 系统上实际运行容器总数: $ACTUAL_TOTAL_RUNNING." "info"
     if [ -n "$FAILED_DIRS" ]; then
@@ -622,14 +562,10 @@ fi
 step_end 7 "Docker Compose 容器检查完成"
 
 # --- 步骤 8: 系统服务与性能优化 ---
-step_start 8 "系统服务与性能优化 (时区, Tuned, Timesync)"
-# 确保 tuned 已启用并启动 (非致命)
-if systemctl list-unit-files --type=service | grep -q tuned.service; then
-    check_and_start_service tuned.service || log "警告: tuned 服务启动失败." "warn"
-else
-    log "未检测到 tuned 服务. 跳过调优配置." "warn"
-fi
-# 设置系统时区为亚洲/上海 (非致命)
+step_start 8 "系统服务与性能优化"
+check_and_start_service tuned.service || log "警告: tuned 服务启动失败." "warn"
+
+# 设置时区
 if command -v timedatectl >/dev/null 2>&1; then
     CURRENT_TZ=$(timedatectl | grep "Time zone" | awk '{print $3}')
     if [ "$CURRENT_TZ" != "Asia/Shanghai" ]; then
@@ -641,21 +577,19 @@ if command -v timedatectl >/dev/null 2>&1; then
 else
     log "未检测到 timedatectl 命令。跳过时区设置." "warn"
 fi
-# 确保 systemd-timesyncd 已启动 (如果存在) (非致命)
-check_and_start_service systemd-timesyncd.service || log "systemd-timesyncd 服务检查失败或不存在." "info"
 
+check_and_start_service systemd-timesyncd.service || log "systemd-timesyncd 服务检查失败或不存在." "info"
 step_end 8 "系统服务与性能优化完成"
 
-# --- 步骤 9: 配置 TCP 性能 (BBR) 和 Qdisc (fq_codel) ---
+# --- 步骤 9: 配置网络性能优化 ---
 step_start 9 "配置 TCP 性能 (BBR) 和 Qdisc (fq_codel)"
-QDISC_TYPE="fq_codel"
-read -p "启用 BBR + $QDISC_TYPE 网络拥塞控制? (Y/n): " bbr_choice
+read -p "启用 BBR + fq_codel 网络拥塞控制? (Y/n): " bbr_choice
 bbr_choice="${bbr_choice:-y}"
 
 if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
-    log "用户选择启用 BBR + $QDISC_TYPE." "info"
+    log "用户选择启用 BBR + fq_codel." "info"
     SKIP_SYSCTL_CONFIG=false
-    # 检查并加载 tcp_bbr 模块
+    
     if ! /sbin/modprobe -n -q tcp_bbr >/dev/null 2>&1 || ! run_cmd /sbin/modprobe tcp_bbr; then
         log "警告: 未找到或无法加载 'tcp_bbr' 模块." "warn"
         if [ -f "/proc/config.gz" ] && (zcat /proc/config.gz | grep -q CONFIG_TCP_BBR=y || zcat /proc/config.gz | grep -q CONFIG_TCP_BBR=m); then
@@ -667,25 +601,24 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
     fi
 
     if [ "$SKIP_SYSCTL_CONFIG" != true ]; then
-        [ ! -f /etc/sysctl.conf.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/sysctl.conf /etc/sysctl.conf.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/sysctl.conf." "info"
-        log "配置 sysctl 参数 for BBR and $QDISC_TYPE..." "info"
+        backup_config /etc/sysctl.conf
+        log "配置 sysctl 参数 for BBR and fq_codel..." "info"
 
-        # 幂等删除旧配置并行，使用 '|' 分隔符，然后追加
-        sed -i '\| *#\? *net\.ipv4\.tcp_congestion_control=|d' /etc/sysctl.conf && log "已移除旧的 tcp_congestion_control 行." "info" || true
-        echo "net.ipv4.tcp_congestion_control=bbr" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.ipv4.tcp_congestion_control=bbr." "info" || log "追加 tcp_congestion_control 失败." "error"
+        sed -i '\| *#\? *net\.ipv4\.tcp_congestion_control=|d' /etc/sysctl.conf && log "已移除旧的 tcp_congestion_control 行." "info"
+        echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf && log "已追加 net.ipv4.tcp_congestion_control=bbr." "info"
 
-        sed -i '\| *#\? *net\.core\.default_qdisc=|d' /etc/sysctl.conf && log "已移除旧的 default_qdisc 行." "info" || true
-        echo "net.core.default_qdisc=fq_codel" | run_cmd tee -a /etc/sysctl.conf > /dev/null && log "已追加 net.core.default_qdisc=fq_codel." "info" || log "追加 default_qdisc 失败." "error"
+        sed -i '\| *#\? *net\.core\.default_qdisc=|d' /etc/sysctl.conf && log "已移除旧的 default_qdisc 行." "info"
+        echo "net.core.default_qdisc=fq_codel" >> /etc/sysctl.conf && log "已追加 net.core.default_qdisc=fq_codel." "info"
 
         log "应用 sysctl 配置..." "warn"
         run_cmd sysctl -p || log "警告: 'sysctl -p' 失败. 检查配置语法." "warn"
 
-        # 验证当前设置
         CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败/未设置")
         CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败/未设置")
         log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
-        if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "$QDISC_TYPE" ]; then
-            log "BBR 和 $QDISC_TYPE 参数已生效." "info"
+        
+        if [ "$CURR_CC" = "bbr" ] && [ "$CURR_QDISC" = "fq_codel" ]; then
+            log "BBR 和 fq_codel 参数已生效." "info"
         else
             log "警告: 网络参数验证可能不匹配." "warn"
         fi
@@ -693,26 +626,23 @@ if [[ ! "$bbr_choice" =~ ^[nN]$ ]]; then
         log "因 BBR 模块问题，跳过 sysctl 配置." "warn"
     fi
 else
-    log "跳过 BBR + $QDISC_TYPE 配置." "warn"
-    CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败/未设置")
-    CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败/未设置")
-    log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
+    log "跳过 BBR + fq_codel 配置." "warn"
 fi
+
+CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败/未设置")
+CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败/未设置")
+log "当前活动 CC: $CURR_CC, Qdisc: $CURR_QDISC" "info"
 step_end 9 "网络性能参数配置完成"
 
 # --- 步骤 10: 管理 SSH 安全端口 ---
 step_start 10 "管理 SSH 服务端口"
-[ ! -f /etc/ssh/sshd_config.bak.orig.v${SCRIPT_VERSION} ] && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.orig.v${SCRIPT_VERSION} && log "已备份 /etc/ssh/sshd_config." "info"
-# 查找当前 SSH 端口
-CURRENT_SSH_PORT=$(grep "^Port " /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
-[ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT="22" && log "未找到 Port 配置，假定默认 22." "info" || log "当前配置 SSH 端口为 $CURRENT_SSH_PORT." "info"
+backup_config /etc/ssh/sshd_config
 
-# 提示用户修改端口
-if $RERUN_MODE; then
-    read -p "当前 SSH 端口为 $CURRENT_SSH_PORT。输入新端口或 Enter 跳过 (1024-65535): " new_port_input
-else
-    read -p "当前 SSH 端口为 $CURRENT_SSH_PORT。输入新端口或 Enter 跳过 (1024-65535): " new_port_input
-fi
+CURRENT_SSH_PORT=$(grep "^Port " /etc/ssh/sshd_config | awk '{print $2}' | head -n 1)
+[ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT="22"
+log "当前配置 SSH 端口为 $CURRENT_SSH_PORT." "info"
+
+read -p "当前 SSH 端口为 $CURRENT_SSH_PORT。输入新端口或 Enter 跳过 (1024-65535): " new_port_input
 
 NEW_SSH_PORT_SET="$CURRENT_SSH_PORT"
 CHANGE_PORT_REQUESTED=false
@@ -727,9 +657,8 @@ if [ -n "$new_port_input" ]; then
         log "警告: 端口 $new_port_input 已被占用. 端口未更改." "warn"
     else
         log "正在更改 SSH 端口为 $new_port_input..." "warn"
-        # 移除旧的 Port 行并添加新行
-        sed -i '\| *#\? *Port |d' /etc/ssh/sshd_config && log "已移除旧的 Port 行." "info" || true
-        echo "Port $new_port_input" >> /etc/ssh/sshd_config && log "已添加 Port $new_port_input 到 sshd_config." "info" || log "添加 Port 行失败." "error"
+        sed -i '\| *#\? *Port |d' /etc/ssh/sshd_config
+        echo "Port $new_port_input" >> /etc/ssh/sshd_config && log "已添加 Port $new_port_input 到 sshd_config." "info"
 
         log "重启 SSH 服务应用新端口..." "warn"
         if systemctl restart sshd; then
@@ -746,35 +675,24 @@ step_end 10 "SSH 端口管理完成"
 # --- 步骤 11: 部署自动更新脚本和 Cron 任务 ---
 step_start 11 "部署自动更新脚本和 Crontab 任务"
 UPDATE_SCRIPT="/root/auto-update.sh"
-# 写入自动更新脚本内容
+
 cat > "$UPDATE_SCRIPT" <<'EOF'
 #!/bin/bash
-# -----------------------------------------------------------------------------
-# 自动化系统更新与内核重启脚本 (修复版 v1.6 - 日志覆盖 + pseudo-TTY)
-# 更新软件包，检查新内核，必要时重启。每次运行时覆盖旧日志。
-# 使用 apt-get dist-upgrade. 通过 `script` 命令模拟 TTY 环境运行 apt-get.
-# -----------------------------------------------------------------------------
+# 自动化系统更新与内核重启脚本 v1.6
+# 更新软件包，检查新内核，必要时重启。每次运行时覆盖旧日志
 
-# --- 配置 ---
 LOGFILE="/var/log/auto-update.log"
-# 为 apt-get dist-upgrade 准备选项
 APT_GET_OPTIONS="-y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" -o APT::ListChanges::Frontend=none"
-# script 命令需要一个文件来记录输出
 SCRIPT_OUTPUT_DUMMY="/tmp/auto_update_script_cmd_output.log"
 
-# --- 自动更新脚本内部日志函数 ---
 log_update() {
-    # 注意：确保日志函数使用追加模式 '>>'
     echo "[$(date '+%Y-%m-%d %H:%M:%S (%Z)')] $1" >>"$LOGFILE"
 }
 
-# --- 主逻辑 ---
-
-# --- 关键修改：覆盖旧日志 ---
-# 在记录第一条日志前，清空日志文件
+# 覆盖旧日志
 > "$LOGFILE"
 
-log_update "启动自动化系统更新 (修复版 v1.6 - 日志覆盖 + pseudo-TTY)."
+log_update "启动自动化系统更新 v1.6."
 
 log_update "运行 /usr/bin/apt-get update..."
 /usr/bin/apt-get update -o APT::ListChanges::Frontend=none >>"$LOGFILE" 2>&1
@@ -783,16 +701,15 @@ if [ $UPDATE_EXIT_STATUS -ne 0 ]; then
     log_update "警告: /usr/bin/apt-get update 失败， exits $UPDATE_EXIT_STATUS."
 fi
 
-# 运行前清理旧的 script 输出文件
 /bin/rm -f "$SCRIPT_OUTPUT_DUMMY"
 
-log_update "运行 /usr/bin/apt-get dist-upgrade (尝试通过 'script' 命令模拟 TTY)..."
+log_update "运行 /usr/bin/apt-get dist-upgrade (通过 'script' 命令模拟 TTY)..."
 COMMAND_TO_RUN="DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get dist-upgrade $APT_GET_OPTIONS"
 /usr/bin/script -q -c "$COMMAND_TO_RUN" "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE" 2>&1
 UPGRADE_EXIT_STATUS=$?
 
 if [ -f "$SCRIPT_OUTPUT_DUMMY" ]; then
-    log_update "--- Output captured by 'script' command (from $SCRIPT_OUTPUT_DUMMY) ---"
+    log_update "--- Output captured by 'script' command ---"
     /bin/cat "$SCRIPT_OUTPUT_DUMMY" >> "$LOGFILE"
     log_update "--- End of 'script' command output ---"
 else
@@ -800,7 +717,7 @@ else
 fi
 
 if [ $UPGRADE_EXIT_STATUS -eq 0 ]; then
-    log_update "apt-get dist-upgrade (via script) 命令执行完成 (script 命令退出码 0)."
+    log_update "apt-get dist-upgrade 命令执行完成."
 
     RUNNING_KERNEL="$(/bin/uname -r)"
     log_update "当前运行内核: $RUNNING_KERNEL"
@@ -829,26 +746,22 @@ if [ $UPGRADE_EXIT_STATUS -eq 0 ]; then
         /sbin/reboot >>"$LOGFILE" 2>&1
         /bin/sleep 15
         log_update "警告: 重启命令已发出，但脚本仍在运行？"
-
     else
         log_update "内核已是最新 ($RUNNING_KERNEL) 或无法确定新内核，无需重启。"
     fi
-
 else
-    log_update "错误: apt-get dist-upgrade (via script) 未成功完成 (script 命令退出码: $UPGRADE_EXIT_STATUS). 跳过内核检查和重启。"
-    log_update "请检查上面由 'script' 命令捕获的具体输出，以了解内部错误。"
+    log_update "错误: apt-get dist-upgrade 未成功完成 (退出码: $UPGRADE_EXIT_STATUS). 跳过内核检查和重启。"
 fi
 
 log_update "自动更新脚本执行完毕."
 exit 0
 EOF
 
-chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info" || log "设置脚本可执行失败." "error"
+chmod +x "$UPDATE_SCRIPT" && log "自动更新脚本已创建并可执行." "info"
 
 CRON_CMD="5 0 * * 0 $UPDATE_SCRIPT"
 (crontab -l 2>/dev/null | grep -v "$UPDATE_SCRIPT" | grep -v "auto-update.log"; echo "$CRON_CMD") | sort -u | crontab -
 log "Crontab 已配置每周日 00:05 执行，并确保唯一性." "info"
-
 step_end 11 "自动更新脚本与 Crontab 任务部署完成"
 
 # --- 步骤 12: 系统部署信息摘要 ---
@@ -863,9 +776,8 @@ show_info "部署模式" "$(if $RERUN_MODE; then echo "重运行 / 更新"; else
 show_info "脚本版本" "$SCRIPT_VERSION"
 
 OS_PRETTY_NAME="未知 Debian 版本"
-[ -f /etc/os-release ] && OS_PRETTY_NAME=$(grep 'PRETTY_NAME' /etc/os-release |cut -d= -f2 | tr -d '"' || echo '未知 Debian 版本')
+[ -f /etc/os-release ] && OS_PRETTY_NAME=$(grep 'PRETTY_NAME' /etc/os-release | cut -d= -f2 | tr -d '"' || echo '未知 Debian 版本')
 show_info "操作系统" "$OS_PRETTY_NAME"
-
 show_info "当前运行内核" "$(uname -r)"
 show_info "CPU 核心数" "$(nproc)"
 
@@ -873,19 +785,17 @@ MEM_USAGE=$(free -h | grep Mem | awk '{print $2}' || echo '未知')
 show_info "总内存大小" "$MEM_USAGE"
 
 DISK_USAGE_ROOT="未知"
-df -h / >/dev/null 2>&1 && DISK_USAGE_ROOT=$(df -h / | tail -1 | awk '{print $3 "/" $2 " (" "$5" ")"}')
+df -h / >/dev/null 2>&1 && DISK_USAGE_ROOT=$(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')
 show_info "磁盘使用 (/)" "$DISK_USAGE_ROOT"
-
 show_info "Zram Swap 状态" "$ZRAM_SWAP_STATUS"
 
-# Zsh Shell 状态
+# Zsh 状态详情
 show_info "Zsh Shell 状态" "$ZSH_INSTALL_STATUS"
 if command -v zsh &>/dev/null; then
     ZSH_PATH_SUMMARY=$(which zsh)
     show_info "Zsh Shell 路径" "$ZSH_PATH_SUMMARY"
     show_info "Zsh Shell 版本" "$(zsh --version 2>/dev/null | awk '{print $2}' || echo '未知')"
     
-    # 检查是否为默认shell
     ROOT_SHELL=$(getent passwd root | cut -d: -f7)
     if [ "$ROOT_SHELL" = "$ZSH_PATH_SUMMARY" ]; then
         show_info "默认 Shell 状态" "Zsh (已设为默认)"
@@ -893,27 +803,14 @@ if command -v zsh &>/dev/null; then
         show_info "默认 Shell 状态" "Bash (Zsh 未设为默认)"
     fi
     
-    # 检查 Oh My Zsh
-    if [ -d "$HOME/.oh-my-zsh" ]; then
-        show_info "Oh My Zsh" "已安装"
-    else
-        show_info "Oh My Zsh" "未安装"
-    fi
-    
-    # 检查 Powerlevel10k
-    if [ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]; then
-        show_info "Powerlevel10k 主题" "已安装"
-    else
-        show_info "Powerlevel10k 主题" "未安装"
-    fi
+    [ -d "$HOME/.oh-my-zsh" ] && show_info "Oh My Zsh" "已安装" || show_info "Oh My Zsh" "未安装"
+    [ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ] && show_info "Powerlevel10k 主题" "已安装" || show_info "Powerlevel10k 主题" "未安装"
 fi
 
 # Mise 和 Python 状态
 show_info "Mise 版本管理器" "$MISE_INSTALL_STATUS"
 if [ -f "$MISE_PATH" ]; then
     show_info "Mise 路径" "$MISE_PATH"
-    
-    # 检查 Python 配置
     if $MISE_PATH list python 2>/dev/null | grep -q "3.10"; then
         PYTHON_VERSION=$($MISE_PATH which python 2>/dev/null && $($MISE_PATH which python) --version 2>/dev/null || echo "已配置但版本获取失败")
         show_info "Python (Mise)" "$PYTHON_VERSION"
@@ -937,10 +834,13 @@ else
 fi
 show_info "SSH 端口" "$DISPLAY_SSH_PORT_SUMMARY$SSH_PORT_WARNING"
 
-# Docker 状态
+# Docker 和容器状态
 DOCKER_VER_SUMMARY="未安装"
 ACTIVE_CONTAINERS_COUNT="N/A"
-command -v docker >/dev/null 2>&1 && DOCKER_VER_SUMMARY=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未知版本') && ACTIVE_CONTAINERS_COUNT=$(docker ps -q 2>/dev/null | wc -l || echo '检查失败') || true
+if command -v docker >/dev/null 2>&1; then
+    DOCKER_VER_SUMMARY=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo '未知版本')
+    ACTIVE_CONTAINERS_COUNT=$(docker ps -q 2>/dev/null | wc -l || echo '检查失败')
+fi
 show_info "Docker 版本" "$DOCKER_VER_SUMMARY"
 show_info "活跃 Docker 容器数" "$ACTIVE_CONTAINERS_COUNT"
 
@@ -955,8 +855,6 @@ fi
 show_info "NextTrace 版本" "$NEXTTRACE_VER_SUMMARY"
 
 # 网络优化参数
-CURR_CC=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "获取失败")
-CURR_QDISC=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "获取失败")
 show_info "网络参数 (sysctl)" "CC=$CURR_CC, Qdisc=$CURR_QDISC"
 
 BBR_MODULE_STATUS="未知"
@@ -969,17 +867,15 @@ else
 fi
 show_info "BBR 内核模块状态" "$BBR_MODULE_STATUS"
 
-# 时区设置
+# 系统服务状态
 TIMEZONE_SUMMARY="未知"
 command -v timedatectl >/dev/null 2>&1 && TIMEZONE_SUMMARY=$(timedatectl | grep "Time zone" | awk '{print $3}')
 show_info "系统时区设置" "$TIMEZONE_SUMMARY"
 
-# Shell 信息
 show_info "当前脚本 Shell" "$SHELL"
 ROOT_LOGIN_SHELL=$(getent passwd root | cut -d: -f7 || echo "获取失败")
 show_info "Root 用户默认登录 Shell" "$ROOT_LOGIN_SHELL"
 
-# Tuned Profile
 TUNED_PROFILE_SUMMARY=$(tuned-adm active 2>/dev/null | grep 'Current active profile:' | awk -F': ' '{print $NF}')
 [ -z "$TUNED_PROFILE_SUMMARY" ] && TUNED_PROFILE_SUMMARY="(未检测到活跃 Profile)"
 show_info "活跃 Tuned Profile" "$TUNED_PROFILE_SUMMARY"
@@ -999,42 +895,27 @@ log "─────────────────────────
 step_end 12 "摘要报告已生成"
 
 # --- 保存部署状态 ---
-printf '{
-  "script_version": "%s",
-  "last_run": "%s",
-  "ssh_port": "%s",
-  "system": "%s",
-  "zram_status": "%s",
-  "zsh_status": "%s",
-  "mise_status": "%s",
+cat > "$STATUS_FILE" << EOF
+{
+  "script_version": "$SCRIPT_VERSION",
+  "last_run": "$(date '+%Y-%m-%d %H:%M:%S')",
+  "ssh_port": "$NEW_SSH_PORT_SET",
+  "system": "$OS_PRETTY_NAME",
+  "zram_status": "$ZRAM_SWAP_STATUS",
+  "zsh_status": "$ZSH_INSTALL_STATUS",
+  "mise_status": "$MISE_INSTALL_STATUS",
   "network_optimization": {
-    "tcp_congestion_control": "%s",
-    "default_qdisc": "%s"
+    "tcp_congestion_control": "$CURR_CC",
+    "default_qdisc": "$CURR_QDISC"
   },
   "container_status": {
-    "successful_running": %d,
-    "failed_dirs": "%s"
+    "successful_running": $SUCCESSFUL_RUNNING_CONTAINERS,
+    "failed_dirs": "$FAILED_DIRS"
   }
-}\n' \
-"$SCRIPT_VERSION" \
-"$(date '+%Y-%m-%d %H:%M:%S')" \
-"$NEW_SSH_PORT_SET" \
-"$OS_PRETTY_NAME" \
-"$ZRAM_SWAP_STATUS" \
-"$ZSH_INSTALL_STATUS" \
-"$MISE_INSTALL_STATUS" \
-"$CURR_CC" \
-"$CURR_QDISC" \
-"$SUCCESSFUL_RUNNING_CONTAINERS" \
-"$FAILED_DIRS" \
-> "$STATUS_FILE"
+}
+EOF
 
-# 验证状态文件创建
-if [ -f "$STATUS_FILE" ]; then
-    log "部署状态已保存至文件: $STATUS_FILE" "info"
-else
-    log "警告: 无法创建状态文件 $STATUS_FILE." "error"
-fi
+[ -f "$STATUS_FILE" ] && log "部署状态已保存至文件: $STATUS_FILE" "info" || log "警告: 无法创建状态文件 $STATUS_FILE." "error"
 
 # --- 最终提示 ---
 log "✅ 脚本执行完毕." "title"
@@ -1044,23 +925,16 @@ if [ "$CHANGE_PORT_REQUESTED" = true ] && [ "$NEW_SSH_PORT_SET" = "$new_port_inp
     log "   示例: ssh -p $NEW_SSH_PORT_SET 您的用户名@您的服务器IP地址" "warn"
 fi
 
-if $RERUN_MODE; then
-    log "➡️  重运行模式: 已按需更新配置和服务." "info"
-else
-    log "🎉 初始部署完成!" "info"
-fi
+$RERUN_MODE && log "➡️  重运行模式: 已按需更新配置和服务." "info" || log "🎉 初始部署完成!" "info"
 
-# Zsh 使用提示
+# 使用提示
 if command -v zsh &>/dev/null; then
     log "🐚 Zsh Shell 使用提示:" "info"
     log "   立即体验 Zsh: exec zsh" "info"
     log "   配置 Powerlevel10k 主题: p10k configure" "info"
-    if [ "$(getent passwd root | cut -d: -f7)" != "$(which zsh)" ]; then
-        log "   如需设为默认: chsh -s $(which zsh) root" "info"
-    fi
+    [ "$(getent passwd root | cut -d: -f7)" != "$(which zsh)" ] && log "   如需设为默认: chsh -s $(which zsh) root" "info"
 fi
 
-# Mise 使用提示
 if [ -f "$MISE_PATH" ]; then
     log "🔧 Mise 使用提示:" "info"
     log "   要激活 Mise 环境: source ~/.bashrc 或 exec zsh" "info"
