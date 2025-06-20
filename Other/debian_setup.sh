@@ -314,7 +314,7 @@ fi
 if [[ " ${EXECUTED_MODULES[@]} " =~ " zsh-setup " ]]; then
     log "🐚 Zsh 使用提示:" "info"
     log "   体验 Zsh: exec zsh" "info"
-    log "   配置主题: p10k configure" "info"
+    log "   Powerlevel10k (Rainbow) 主题已就绪，无需手动配置。" "info" # 这一行是修改过的
 fi
 
 log "🔄 可随时重新运行此脚本进行更新或维护" "info"
