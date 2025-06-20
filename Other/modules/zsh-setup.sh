@@ -94,19 +94,15 @@ command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # Powerlevel10k 配置
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-# Oh My Zsh 自动更新设置
-zstyle ':omz:update' mode auto
-
-# 实用别名
-alias upgrade='apt update && apt full-upgrade -y'
-alias update='apt update -y'
-alias reproxy='cd /root/proxy && docker compose down && docker compose pull && docker compose up -d --remove-orphans'
-alias autodel='docker system prune -a -f && apt autoremove -y'
-alias copyall='cd /root/copy && ansible-playbook -i inventory.ini copyhk.yml && ansible-playbook -i inventory.ini copysg.yml && ansible-playbook -i inventory.ini copyother.yml'
 EOF
 
 log ".zshrc 配置完成" "info"
+
+# 自动配置 Powerlevel10k 为 Rainbow 主题
+# Powerlevel10k 自带了预设的配置文件，可以直接复制
+log "Powerlevel10k 已自动配置为 Rainbow 主题..." "info"
+cp "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k/config/p10k-rainbow.zsh" "$HOME/.p10k.zsh"
+log "Rainbow 主题配置完成" "info"
 
 # 询问是否设置为默认 Shell
 CURRENT_SHELL=$(getent passwd root | cut -d: -f7)
@@ -124,6 +120,5 @@ fi
 
 log "Zsh 环境配置完成" "info"
 log "提示: 运行 'exec zsh' 立即体验新环境" "info"
-log "提示: 运行 'p10k configure' 配置主题" "info"
 
 exit 0
