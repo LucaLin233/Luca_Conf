@@ -36,10 +36,10 @@ declare -A PARAMS=(
     ["net.ipv4.conf.default.rp_filter"]="0"
     # 以下是之前可能导致问题的转发参数。
     # 如果你的服务器不需要作为路由器/网关来转发流量，这些参数就不需要开启。
-    # 如果开启，会默认禁用路由器广告接收（RA），导致依赖RA获取IPv6网关的系统无法正常工作。
-    # ["net.ipv4.ip_forward"]="1"             # 如果不需要IPv4转发，请不要开启或注释掉
+    # 如果开启，会默认禁用路由器广告接收（RA），导致依赖RA获取IPv6网关的系统无法正常工作
     # ["net.ipv6.conf.all.forwarding"]="1"    # 如果不需要IPv6转发，请不要开启或注释掉
     # ["net.ipv6.conf.default.forwarding"]="1" # 同上
+    ["net.ipv4.ip_forward"]="1"
     ["net.ipv4.conf.all.route_localnet"]="1"
 )
 
