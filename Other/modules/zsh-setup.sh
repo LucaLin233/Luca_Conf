@@ -7,7 +7,7 @@ log() {
         "warn") color="\033[0;33m" ;;
         "error") color="\033[0;31m" ;;
         "info") color="\033[0;36m" ;;
-    esac
+    esolac
     echo -e "${color}$1\033[0m"
 }
 
@@ -70,6 +70,10 @@ cat > "$HOME/.zshrc" << 'EOF'
 # Oh My Zsh 配置
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# 新增：禁用 Oh My Zsh 自动更新提示，并设置更新频率
+DISABLE_UPDATE_PROMPT="true"
+UPDATE_ZSH_DAYS=7
 
 plugins=(
     git
