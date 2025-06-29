@@ -7,7 +7,7 @@ log() {
         "warn") color="\033[0;33m" ;;
         "error") color="\033[0;31m" ;;
         "info") color="\033[0;36m" ;;
-    esac # 这里是修复过的，esac 是正确的
+    esac
     echo -e "${color}$1\033[0m"
 }
 
@@ -98,6 +98,13 @@ command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # Powerlevel10k 配置
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# 实用别名
+alias upgrade='apt update && apt full-upgrade -y'
+alias update='apt update -y'
+alias reproxy='cd /root/proxy && docker compose down && docker compose pull && docker compose up -d --remove-orphans'
+alias autodel='docker system prune -a -f && apt autoremove -y'
+alias copyall='cd /root/copy && ansible-playbook -i inventory.ini copyhk.yml && ansible-playbook -i inventory.ini copysg.yml && ansible-playbook -i inventory.ini copyother.yml'
 EOF
 
 log ".zshrc 配置完成" "info"
