@@ -7,7 +7,7 @@ log() {
         "warn") color="\033[0;33m" ;;
         "error") color="\033[0;31m" ;;
         "info") color="\033[0;36m" ;;
-    esolac
+    esac # 这里是修复过的，esac 是正确的
     echo -e "${color}$1\033[0m"
 }
 
