@@ -130,8 +130,8 @@ else
     apt full-upgrade -y
 fi
 
-# 安装核心软件包
-CORE_PACKAGES=(dnsutils wget curl rsync chrony cron tuned)
+# 安装核心软件包（已去除 tuned）
+CORE_PACKAGES=(dnsutils wget curl rsync chrony cron)
 MISSING_PACKAGES=()
 
 for pkg in "${CORE_PACKAGES[@]}"; do
@@ -158,9 +158,9 @@ step_end 2 "系统更新完成"
 # --- 步骤 3: 模块化部署 ---
 step_start 3 "模块化功能部署"
 
-# 定义可用模块
+# 定义可用模块（描述优化下）
 declare -A MODULES=(
-    ["system-optimize"]="系统优化 (Zram, 时区, 服务管理)"
+    ["system-optimize"]="系统优化 (Zram, 时区)"
     ["zsh-setup"]="Zsh Shell 环境 (Oh-My-Zsh + 主题插件)"
     ["mise-setup"]="Mise 版本管理器 (Python 环境)"
     ["docker-setup"]="Docker 容器化平台"
@@ -302,7 +302,6 @@ rm -rf "$TEMP_DIR"
 
 log "✅ 所有部署任务完成!" "title"
 
-# 特殊提示
 if [[ " ${EXECUTED_MODULES[@]} " =~ " ssh-security " ]]; then
     NEW_SSH_PORT=$(grep "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
     if [ "$NEW_SSH_PORT" != "22" ] && [ -n "$NEW_SSH_PORT" ]; then
@@ -314,7 +313,7 @@ fi
 if [[ " ${EXECUTED_MODULES[@]} " =~ " zsh-setup " ]]; then
     log "🐚 Zsh 使用提示:" "info"
     log "   体验 Zsh: exec zsh" "info"
-    log "   Powerlevel10k (Rainbow) 主题已就绪，无需手动配置。" "info" # 这一行是修改过的
+    log "   Powerlevel10k (Rainbow) 主题已就绪，无需手动配置。" "info"
 fi
 
 log "🔄 可随时重新运行此脚本进行更新或维护" "info"
