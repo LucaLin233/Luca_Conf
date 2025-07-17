@@ -1,5 +1,5 @@
 #!/bin/bash
-# 系统优化模块: Zram, 时区, 服务管理
+# 系统优化模块: Zram, 时区, 服务管理（已移除 tuned 和 timesyncd，适用于已用 chrony 的系统）
 
 log() {
     local color="\033[0;32m"
@@ -34,15 +34,6 @@ if command -v timedatectl >/dev/null 2>&1; then
         log "时区已是 Asia/Shanghai" "info"
     fi
 fi
-
-# 服务管理
-log "优化系统服务..." "info"
-for service in tuned systemd-timesyncd; do
-    if systemctl list-unit-files --type=service | grep -q "${service}.service"; then
-        systemctl enable --now "${service}.service" 2>/dev/null
-        log "服务 $service 已启用" "info"
-    fi
-done
 
 log "系统优化模块完成" "info"
 exit 0
