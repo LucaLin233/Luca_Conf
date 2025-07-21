@@ -55,6 +55,31 @@ else
     fi
 fi
 
+# 把 mise 管理的 python 链接到 /usr/bin/python 和 /usr/bin/python3
+link_python_to_usr_bin() {
+    local mise_python_shim
+    mise_python_shim="$($MISE_PATH which python 2>/dev/null)"
+    # 不直接用shim，找到实际可执行文件
+    if [ -x "$mise_python_shim" ]; then
+        local real_python
+        real_python=$("$mise_python_shim" -c 'import sys; print(sys.executable)')
+        if [ -n "$real_python" ] && [ -x "$real_python" ]; then
+            log "sudo ln -sf $real_python /usr/bin/python" "warn"
+            sudo ln -sf "$real_python" /usr/bin/python
+            log "/usr/bin/python 已指向: $real_python" "info"
+            log "sudo ln -sf $real_python /usr/bin/python3" "warn"
+            sudo ln -sf "$real_python" /usr/bin/python3
+            log "/usr/bin/python3 已指向: $real_python" "info"
+        else
+            log "找不到实际可执行的 Python，未建立链接" "error"
+        fi
+    else
+        log "mise 的 python shim 不可执行，未建立链接" "error"
+    fi
+}
+
+link_python_to_usr_bin
+
 # 配置 Shell 集成
 log "配置 Shell 集成..." "info"
 
