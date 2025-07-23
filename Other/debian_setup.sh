@@ -131,7 +131,7 @@ else
 fi
 
 # 安装核心软件包（已去除 tuned）
-CORE_PACKAGES=(dnsutils wget curl rsync chrony cron)
+CORE_PACKAGES=(dnsutils wget curl rsync chrony cron iproute2)
 MISSING_PACKAGES=()
 
 for pkg in "${CORE_PACKAGES[@]}"; do
@@ -164,7 +164,7 @@ declare -A MODULES=(
     ["zsh-setup"]="Zsh Shell 环境 (Oh-My-Zsh + 主题插件)"
     ["mise-setup"]="Mise 版本管理器 (Python 环境)"
     ["docker-setup"]="Docker 容器化平台"
-    ["network-optimize"]="网络性能优化 (BBR + fq_codel)"
+    ["network-optimize"]="网络性能优化 (BBR + cake)"
     ["ssh-security"]="SSH 安全配置"
     ["auto-update-setup"]="自动更新系统"
 )
