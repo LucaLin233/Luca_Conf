@@ -1,10 +1,19 @@
 #!/bin/bash
 
 # VPS 网络优化脚本 - 强制应用 BBR 拥塞算法 + cake 队列，无需选择
+# 自动检测主用出口网卡，无需改网卡名
 
 SYSCTL_FILE="/etc/sysctl.conf"
 INITIAL_BACKUP_FILE="/etc/sysctl.conf.initial_backup"
-NET_IF="eth0" # 请将 eth0 改成你的真实网卡名！
+
+# 自动识别主用出口网卡
+NET_IF=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++){if($i=="dev"){print $(i+1);exit}}}')
+if [ -z "$NET_IF" ]; then
+    echo "❌ 未检测到主用网卡名，请手动设置 NET_IF 变量！"
+    exit 1
+else
+    echo "✅ 检测到主用网卡: $NET_IF"
+fi
 
 if [ -n "$1" ] && [ "$1" == "restore" ]; then
     echo "🔄 尝试恢复初始sysctl配置..."
