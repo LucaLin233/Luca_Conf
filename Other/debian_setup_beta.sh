@@ -79,20 +79,62 @@ debug() { log "🔍 $1" "debug"; }
 # 添加辅助函数
 show_info() { log "  $1: $2" "info"; }
 
-# --- 进度显示函数 ---
+# --- 安全的进度显示函数 ---
 show_progress() {
     local current=$1 total=$2 task="${3:-处理中}"
-    local percent=$(( current * 100 / total ))
-    local bar_length=40
-    local filled=$(( bar_length * current / total ))
     
+    # 安全检查，避免除零和非法数值
+    if [[ ! "$current" =~ ^[0-9]+$ ]] || [[ ! "$total" =~ ^[0-9]+$ ]] || (( total == 0 )); then
+        log "$task..." "info"
+        return 0
+    fi
+    
+    # 安全的数学运算
+    local percent=0
+    local filled=0
+    local bar_length=30
+    
+    if (( total > 0 )); then
+        percent=$(( current * 100 / total ))
+        filled=$(( bar_length * current / total ))
+    fi
+    
+    # 确保 filled 不会超出范围
+    if (( filled > bar_length )); then
+        filled=$bar_length
+    elif (( filled < 0 )); then
+        filled=0
+    fi
+    
+    # 构建进度条（更安全的方法）
     local bar=""
-    for (( i=0; i<filled; i++ )); do bar+="█"; done
-    for (( i=filled; i<bar_length; i++ )); do bar+="░"; done
+    local i=0
     
-    printf "\r${BLUE}[%s] %3d%% (%d/%d) %s${NC}" "$bar" "$percent" "$current" "$total" "$task"
+    # 填充部分
+    while (( i < filled )); do
+        bar+="█"
+        ((i++))
+    done
     
-    if (( current == total )); then
+    # 空白部分
+    while (( i < bar_length )); do
+        bar+="░"
+        ((i++))
+    done
+    
+    # 安全的 printf，避免格式化错误
+    if [[ -n "$BLUE" ]] && [[ -n "$NC" ]]; then
+        printf "\r%s[%s] %3d%% (%d/%d) %s%s" "$BLUE" "$bar" "$percent" "$current" "$total" "$task" "$NC" 2>/dev/null || {
+            log "$task ($current/$total)" "info"
+        }
+    else
+        printf "\r[%s] %3d%% (%d/%d) %s" "$bar" "$percent" "$current" "$total" "$task" 2>/dev/null || {
+            log "$task ($current/$total)" "info"
+        }
+    fi
+    
+    # 完成时换行
+    if (( current >= total )); then
         echo
     fi
 }
@@ -384,7 +426,7 @@ init_system() {
     
     ok "系统初始化完成"
 }
-# --- 依赖检查和安装 ---
+# --- 改进的依赖检查和安装 ---
 install_dependencies() {
     step "检查系统依赖"
     
@@ -393,21 +435,53 @@ install_dependencies() {
     local total_deps=${#required_deps[@]}
     local current=0
     
-    # 检查缺失的依赖
+    # 检查缺失的依赖 - 使用安全的计数方式
     for dep in "${required_deps[@]}"; do
-        ((current++))
-        show_progress $current $total_deps "检查 $dep"
+        current=$((current + 1))
         
+        # 显示进度（如果进度显示失败，使用简单日志）
+        if ! show_progress "$current" "$total_deps" "检查 $dep"; then
+            log "检查依赖: $dep ($current/$total_deps)" "info"
+        fi
+        
+        # 检查命令是否存在
         if ! command -v "$dep" >/dev/null 2>&1; then
             missing_deps+=("$dep")
+            debug "依赖 $dep 未安装"
+        else
+            debug "依赖 $dep 已安装"
         fi
-        sleep 0.1  # 让进度条更明显
+        
+        # 短暂暂停让用户看到进度
+        sleep 0.1 2>/dev/null || true
     done
+    
+    # 确保进度条完成显示
+    echo 2>/dev/null || true
     
     if (( ${#missing_deps[@]} > 0 )); then
         log "安装缺失依赖: ${missing_deps[*]}" "info"
-        apt-get update -qq
-        apt-get install -y "${missing_deps[@]}" || die "依赖安装失败"
+        
+        # 更安全的 apt 操作
+        if ! apt-get update -qq 2>/dev/null; then
+            warn "软件包列表更新失败，尝试继续..."
+        fi
+        
+        if ! apt-get install -y "${missing_deps[@]}" 2>/dev/null; then
+            die "依赖安装失败，请检查网络连接和软件源配置"
+        fi
+        
+        # 验证安装
+        local failed_deps=()
+        for dep in "${missing_deps[@]}"; do
+            if ! command -v "$dep" >/dev/null 2>&1; then
+                failed_deps+=("$dep")
+            fi
+        done
+        
+        if (( ${#failed_deps[@]} > 0 )); then
+            die "以下依赖安装失败: ${failed_deps[*]}"
+        fi
     fi
     
     ok "依赖检查完成"
