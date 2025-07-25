@@ -1,0 +1,1290 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Debian 系统部署脚本 (完整优化版本 v2.5.0)
+# 适用系统: Debian 12+, 作者: LucaLin233 (Complete Enhanced Version)
+# 功能: 完整模块化部署，包含并发处理、回滚机制、依赖管理等高级功能
+# -----------------------------------------------------------------------------
+
+set -euo pipefail
+
+# --- 全局常量 ---
+readonly SCRIPT_VERSION="2.5.0"
+readonly STATUS_FILE="/var/lib/system-deploy-status.json"
+readonly CONFIG_FILE="$HOME/.debian_setup.conf"
+readonly MODULE_BASE_URL="https://raw.githubusercontent.com/LucaLin233/Luca_Conf/refs/heads/main/Other/modules"
+readonly TEMP_DIR="/tmp/debian_setup_modules"
+readonly LOG_FILE="/var/log/debian_setup.log"
+readonly BACKUP_DIR="/var/backups/debian_setup"
+readonly GPG_KEY_URL="$MODULE_BASE_URL/signing_key.pub"
+
+# 模块定义和依赖关系
+declare -A MODULES=(
+    ["system-optimize"]="系统优化 (Zram, 时区)"
+    ["zsh-setup"]="Zsh Shell 环境"
+    ["mise-setup"]="Mise 版本管理器"
+    ["docker-setup"]="Docker 容器化平台"
+    ["network-optimize"]="网络性能优化"
+    ["ssh-security"]="SSH 安全配置"
+    ["auto-update-setup"]="自动更新系统"
+)
+
+# 模块依赖关系
+declare -A MODULE_DEPS=(
+    ["docker-setup"]="system-optimize"
+    ["mise-setup"]="zsh-setup"
+    ["auto-update-setup"]="system-optimize"
+)
+
+# 执行状态跟踪
+EXECUTED_MODULES=()
+FAILED_MODULES=()
+SKIPPED_MODULES=()
+RERUN_MODE=false
+BACKUP_PATH=""
+CONFIG_MODE="interactive"
+
+# --- 颜色和进度显示 ---
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[0;33m'
+readonly BLUE='\033[0;34m'
+readonly PURPLE='\033[0;35m'
+readonly CYAN='\033[0;36m'
+readonly WHITE='\033[1;37m'
+readonly NC='\033[0m'
+
+# --- 基础日志函数 ---
+log() {
+    local msg="$1" level="${2:-info}" timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    local -A colors=(
+        [info]="$GREEN" [warn]="$YELLOW" [error]="$RED" 
+        [title]="$PURPLE" [debug]="$CYAN" [progress]="$BLUE"
+    )
+    
+    # 控制台输出
+    echo -e "${colors[$level]:-$NC}$msg$NC"
+    
+    # 文件日志
+    echo "[$timestamp] [$level] $msg" >> "$LOG_FILE"
+}
+
+die() { log "✗ 错误: $1" "error"; exit 1; }
+step() { log "\n▶ $1" "title"; }
+ok() { log "✓ $1" "info"; }
+warn() { log "⚠ $1" "warn"; }
+debug() { log "🔍 $1" "debug"; }
+
+# --- 进度显示函数 ---
+show_progress() {
+    local current=$1 total=$2 task="${3:-处理中}"
+    local percent=$(( current * 100 / total ))
+    local bar_length=40
+    local filled=$(( bar_length * current / total ))
+    
+    local bar=""
+    for (( i=0; i<filled; i++ )); do bar+="█"; done
+    for (( i=filled; i<bar_length; i++ )); do bar+="░"; done
+    
+    printf "\r${BLUE}[%s] %3d%% (%d/%d) %s${NC}" "$bar" "$percent" "$current" "$total" "$task"
+    
+    if (( current == total )); then
+        echo
+    fi
+}
+
+# --- 清理和信号处理 ---
+cleanup() {
+    local exit_code=$?
+    
+    debug "执行清理操作..."
+    
+    # 停止所有后台进程
+    jobs -p | xargs -r kill 2>/dev/null || true
+    
+    # 清理临时文件
+    [[ -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
+    
+    # 如果异常退出且有备份，询问是否回滚
+    if (( exit_code != 0 )) && [[ -n "$BACKUP_PATH" ]] && [[ -d "$BACKUP_PATH" ]]; then
+        echo
+        warn "脚本异常退出，检测到备份文件"
+        read -p "是否回滚到执行前状态? [y/N]: " -r rollback_choice
+        if [[ "$rollback_choice" =~ ^[Yy]$ ]]; then
+            perform_rollback
+        fi
+    fi
+    
+    if (( exit_code != 0 )); then
+        log "异常退出，退出码: $exit_code" "error"
+        log "详细日志: $LOG_FILE" "info"
+    fi
+    
+    exit $exit_code
+}
+
+trap cleanup EXIT INT TERM
+# --- 配置文件处理 ---
+load_config() {
+    if [[ -f "$CONFIG_FILE" ]]; then
+        log "加载配置文件: $CONFIG_FILE" "info"
+        source "$CONFIG_FILE"
+        CONFIG_MODE="auto"
+        
+        # 验证配置文件格式
+        if [[ -n "${MODULES_CONFIG:-}" ]]; then
+            log "配置模式: 自动化部署" "info"
+        else
+            warn "配置文件格式异常，回退到交互模式"
+            CONFIG_MODE="interactive"
+        fi
+    else
+        debug "未找到配置文件，使用交互模式"
+    fi
+}
+
+create_sample_config() {
+    cat > "$CONFIG_FILE" << 'EOF'
+# Debian 系统部署配置文件
+# 模块配置格式: module_name:action (action: auto/ask/skip)
+MODULES_CONFIG=(
+    "system-optimize:auto"
+    "zsh-setup:ask"
+    "mise-setup:ask"
+    "docker-setup:skip"
+    "network-optimize:auto"
+    "ssh-security:ask"
+    "auto-update-setup:auto"
+)
+
+# 自定义设置
+CUSTOM_SSH_PORT=2222
+SKIP_NETWORK_CHECK=false
+ENABLE_SIGNATURE_VERIFY=true
+PARALLEL_DOWNLOADS=true
+EOF
+    log "示例配置文件已创建: $CONFIG_FILE" "info"
+}
+
+# --- 系统预检查 ---
+preflight_check() {
+    step "系统预检查"
+    
+    local issues=() warnings=()
+    
+    # 磁盘空间检查 (至少1GB)
+    local free_space_kb
+    free_space_kb=$(df / | awk 'NR==2 {print $4}')
+    if (( free_space_kb < 1048576 )); then
+        issues+=("磁盘空间不足 (可用: $(( free_space_kb / 1024 ))MB, 需要: 1GB)")
+    fi
+    
+    # 内存检查 (至少512MB可用)
+    local free_mem_mb
+    free_mem_mb=$(free -m | awk 'NR==2{print $7}')
+    if (( free_mem_mb < 512 )); then
+        warnings+=("可用内存较低 (${free_mem_mb}MB)")
+    fi
+    
+    # 网络连接检查
+    if [[ "${SKIP_NETWORK_CHECK:-false}" != "true" ]]; then
+        if ! check_network_connectivity; then
+            issues+=("网络连接异常")
+        fi
+    fi
+    
+    # 端口占用检查
+    local occupied_ports=()
+    for port in 2375 8080 80 443; do
+        if ss -tlnp | grep -q ":$port "; then
+            occupied_ports+=("$port")
+        fi
+    done
+    if (( ${#occupied_ports[@]} > 0 )); then
+        warnings+=("检测到端口占用: ${occupied_ports[*]}")
+    fi
+    
+    # 运行中的关键服务检查
+    local services=("docker" "nginx" "apache2")
+    local running_services=()
+    for service in "${services[@]}"; do
+        if systemctl is-active --quiet "$service" 2>/dev/null; then
+            running_services+=("$service")
+        fi
+    done
+    if (( ${#running_services[@]} > 0 )); then
+        warnings+=("检测到运行中的服务: ${running_services[*]}")
+    fi
+    
+    # 显示检查结果
+    if (( ${#issues[@]} > 0 )); then
+        log "❌ 发现严重问题:" "error"
+        printf '   • %s\n' "${issues[@]}"
+        die "预检查失败，请解决问题后重试"
+    fi
+    
+    if (( ${#warnings[@]} > 0 )); then
+        log "⚠️ 发现警告信息:" "warn"
+        printf '   • %s\n' "${warnings[@]}"
+        echo
+        read -p "继续执行? [y/N]: " -r continue_choice
+        [[ "$continue_choice" =~ ^[Yy]$ ]] || exit 0
+    fi
+    
+    ok "预检查通过"
+}
+
+# --- 网络连接检查 ---
+check_network_connectivity() {
+    local test_hosts=("8.8.8.8" "1.1.1.1" "114.114.114.114" "223.5.5.5")
+    local timeout=3
+    local success_count=0
+    
+    debug "测试网络连接..."
+    
+    for host in "${test_hosts[@]}"; do
+        if ping -c 1 -W $timeout "$host" &>/dev/null; then
+            ((success_count++))
+            [[ $success_count -ge 2 ]] && return 0
+        fi
+    done
+    
+    return 1
+}
+
+# --- 初始化检查 ---
+init_system() {
+    # 创建日志文件
+    mkdir -p "$(dirname "$LOG_FILE")"
+    : > "$LOG_FILE"
+    log "=== Debian 系统部署脚本启动 - 版本 $SCRIPT_VERSION ===" "title"
+    
+    # 权限检查
+    (( EUID == 0 )) || die "需要 root 权限运行"
+    
+    # 系统检查
+    [[ -f /etc/debian_version ]] || die "仅支持 Debian 系统"
+    
+    # 版本检查
+    local debian_ver
+    debian_ver=$(cut -d. -f1 < /etc/debian_version 2>/dev/null || echo "0")
+    if (( debian_ver > 0 && debian_ver < 12 )); then
+        warn "当前系统: Debian $debian_ver (建议使用 Debian 12+)"
+        read -p "继续执行? [y/N]: " -r choice
+        [[ "$choice" =~ ^[Yy]$ ]] || exit 0
+    fi
+    
+    # 检查重运行模式
+    if [[ -f "$STATUS_FILE" ]]; then
+        RERUN_MODE=true
+        log "检测到部署记录，以更新模式运行" "info"
+        
+        if command -v jq &>/dev/null && [[ -s "$STATUS_FILE" ]]; then
+            local last_run
+            last_run=$(jq -r '.last_run // "未知"' "$STATUS_FILE" 2>/dev/null || echo "未知")
+            log "上次运行: $last_run" "debug"
+        fi
+    fi
+    
+    # 创建工作目录
+    mkdir -p "$TEMP_DIR" "$BACKUP_DIR"
+    
+    # 加载配置
+    load_config
+    
+    ok "系统初始化完成"
+}
+# --- 依赖检查和安装 ---
+install_dependencies() {
+    step "检查系统依赖"
+    
+    local required_deps=(curl wget git jq rsync gpg)
+    local missing_deps=()
+    local total_deps=${#required_deps[@]}
+    local current=0
+    
+    # 检查缺失的依赖
+    for dep in "${required_deps[@]}"; do
+        ((current++))
+        show_progress $current $total_deps "检查 $dep"
+        
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            missing_deps+=("$dep")
+        fi
+        sleep 0.1  # 让进度条更明显
+    done
+    
+    if (( ${#missing_deps[@]} > 0 )); then
+        log "安装缺失依赖: ${missing_deps[*]}" "info"
+        apt-get update -qq
+        apt-get install -y "${missing_deps[@]}" || die "依赖安装失败"
+    fi
+    
+    ok "依赖检查完成"
+}
+
+# --- 模块依赖解析 (拓扑排序) ---
+resolve_module_dependencies() {
+    local -a selected_modules=("$@")
+    local -a resolved_order=()
+    local -A visited=()
+    local -A visiting=()
+    
+    # 递归依赖解析函数
+    visit_module() {
+        local module="$1"
+        
+        # 检查循环依赖
+        if [[ -n "${visiting[$module]:-}" ]]; then
+            die "检测到循环依赖: $module"
+        fi
+        
+        # 已访问过的跳过
+        if [[ -n "${visited[$module]:-}" ]]; then
+            return
+        fi
+        
+        visiting[$module]=1
+        
+        # 处理依赖
+        local dep="${MODULE_DEPS[$module]:-}"
+        if [[ -n "$dep" ]]; then
+            # 检查依赖是否在选择列表中
+            if [[ " ${selected_modules[*]} " =~ " $dep " ]]; then
+                visit_module "$dep"
+            else
+                log "模块 $module 需要依赖 $dep，自动添加" "info"
+                selected_modules+=("$dep")
+                visit_module "$dep"
+            fi
+        fi
+        
+        unset visiting[$module]
+        visited[$module]=1
+        resolved_order+=("$module")
+    }
+    
+    # 解析所有选中的模块
+    for module in "${selected_modules[@]}"; do
+        visit_module "$module"
+    done
+    
+    # 返回解析后的顺序
+    printf '%s\n' "${resolved_order[@]}"
+}
+
+# --- GPG 密钥管理 ---
+setup_gpg_verification() {
+    if [[ "${ENABLE_SIGNATURE_VERIFY:-false}" == "true" ]]; then
+        step "设置 GPG 签名验证"
+        
+        local gpg_home="$TEMP_DIR/.gnupg"
+        mkdir -p "$gpg_home"
+        chmod 700 "$gpg_home"
+        
+        # 下载公钥
+        if curl -fsSL --connect-timeout 10 "$GPG_KEY_URL" -o "$gpg_home/signing_key.pub"; then
+            export GNUPGHOME="$gpg_home"
+            gpg --import "$gpg_home/signing_key.pub" 2>/dev/null || {
+                warn "GPG 公钥导入失败，禁用签名验证"
+                ENABLE_SIGNATURE_VERIFY=false
+                return
+            }
+            ok "GPG 签名验证已启用"
+        else
+            warn "无法下载 GPG 公钥，禁用签名验证"
+            ENABLE_SIGNATURE_VERIFY=false
+        fi
+    fi
+}
+
+# --- 安全的模块下载 (支持并发和签名验证) ---
+download_module() {
+    local module="$1"
+    local module_file="$TEMP_DIR/${module}.sh"
+    local sig_file="$TEMP_DIR/${module}.sh.sig"
+    local max_retries=3
+    
+    for (( retry=1; retry<=max_retries; retry++ )); do
+        # 下载模块文件
+        if curl -fsSL --connect-timeout 10 --max-time 30 \
+           "$MODULE_BASE_URL/${module}.sh" -o "$module_file"; then
+            
+            # 基本内容验证
+            if [[ -s "$module_file" ]] && head -1 "$module_file" | grep -q "#!/bin/bash"; then
+                
+                # GPG 签名验证 (如果启用)
+                if [[ "${ENABLE_SIGNATURE_VERIFY:-false}" == "true" ]]; then
+                    if curl -fsSL --connect-timeout 5 \
+                       "$MODULE_BASE_URL/${module}.sh.sig" -o "$sig_file" 2>/dev/null; then
+                        
+                        if ! gpg --verify "$sig_file" "$module_file" 2>/dev/null; then
+                            warn "模块 $module 签名验证失败"
+                            rm -f "$module_file" "$sig_file"
+                            continue
+                        else
+                            debug "模块 $module 签名验证成功"
+                        fi
+                    else
+                        warn "模块 $module 签名文件下载失败"
+                    fi
+                fi
+                
+                chmod +x "$module_file"
+                return 0
+            else
+                debug "模块 $module 内容格式异常"
+                rm -f "$module_file"
+            fi
+        fi
+        
+        if (( retry < max_retries )); then
+            debug "重试下载 $module ($retry/$max_retries)"
+            sleep $((retry * 2))
+        fi
+    done
+    
+    log "模块 $module 下载失败" "error"
+    return 1
+}
+
+# --- 并发下载管理 ---
+download_modules_parallel() {
+    local -a modules=("$@")
+    local total=${#modules[@]}
+    local current=0
+    local -a pids=()
+    local -a results=()
+    
+    step "并发下载模块"
+    
+    # 启动并发下载
+    for module in "${modules[@]}"; do
+        if [[ "${PARALLEL_DOWNLOADS:-true}" == "true" ]]; then
+            download_module "$module" &
+            pids+=($!)
+        else
+            ((current++))
+            show_progress $current $total "下载 $module"
+            download_module "$module"
+            results+=($?)
+        fi
+    done
+    
+    # 等待并发下载完成
+    if [[ "${PARALLEL_DOWNLOADS:-true}" == "true" ]]; then
+        for i in "${!pids[@]}"; do
+            local pid=${pids[$i]}
+            local module=${modules[$i]}
+            ((current++))
+            
+            show_progress $current $total "等待 $module"
+            
+            if wait "$pid"; then
+                results+=(0)
+                debug "模块 $module 下载成功"
+            else
+                results+=(1)
+                debug "模块 $module 下载失败"
+            fi
+        done
+    fi
+    
+    # 统计结果
+    local success_count=0 fail_count=0
+    for result in "${results[@]}"; do
+        if (( result == 0 )); then
+            ((success_count++))
+        else
+            ((fail_count++))
+        fi
+    done
+    
+    if (( fail_count > 0 )); then
+        warn "模块下载完成: 成功 $success_count, 失败 $fail_count"
+    else
+        ok "所有模块下载成功 ($success_count/$total)"
+    fi
+    
+    return $(( fail_count > 0 ? 1 : 0 ))
+}
+# --- 系统备份机制 ---
+create_system_backup() {
+    step "创建系统备份"
+    
+    local timestamp
+    timestamp=$(date '+%Y%m%d_%H%M%S')
+    BACKUP_PATH="$BACKUP_DIR/backup_$timestamp"
+    
+    mkdir -p "$BACKUP_PATH"
+    
+    # 备份关键配置文件
+    local config_files=(
+        "/etc/ssh/sshd_config"
+        "/etc/sysctl.conf"
+        "/etc/security/limits.conf"
+        "/etc/systemd/system.conf"
+        "/etc/apt/sources.list"
+        "/root/.bashrc"
+        "/root/.profile"
+    )
+    
+    local backup_count=0
+    local total_files=${#config_files[@]}
+    
+    for config in "${config_files[@]}"; do
+        ((backup_count++))
+        show_progress $backup_count $total_files "备份 $(basename "$config")"
+        
+        if [[ -f "$config" ]]; then
+            cp "$config" "$BACKUP_PATH/" 2>/dev/null || true
+        fi
+    done
+    
+    # 备份当前用户 shell 配置
+    if [[ -f "/root/.zshrc" ]]; then
+        cp "/root/.zshrc" "$BACKUP_PATH/" 2>/dev/null || true
+    fi
+    
+    # 记录当前系统状态
+    cat > "$BACKUP_PATH/system_info.txt" << EOF
+备份时间: $(date)
+内核版本: $(uname -r)
+系统版本: $(cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2 | tr -d '"')
+当前用户Shell: $(getent passwd root | cut -d: -f7)
+网络配置: $(ip route | grep default)
+已安装软件包数量: $(dpkg -l | wc -l)
+EOF
+    
+    # 创建恢复脚本
+    cat > "$BACKUP_PATH/restore.sh" << 'EOF'
+#!/bin/bash
+echo "开始系统恢复..."
+BACKUP_DIR=$(dirname "$0")
+
+# 恢复配置文件
+for file in "$BACKUP_DIR"/*.conf "$BACKUP_DIR"/*config "$BACKUP_DIR"/.??*; do
+    [[ -f "$file" ]] || continue
+    filename=$(basename "$file")
+    
+    case "$filename" in
+        "sshd_config") cp "$file" /etc/ssh/ ;;
+        "sysctl.conf") cp "$file" /etc/ ;;
+        "limits.conf") cp "$file" /etc/security/ ;;
+        "system.conf") cp "$file" /etc/systemd/ ;;
+        "sources.list") cp "$file" /etc/apt/ ;;
+        ".bashrc"|".profile"|".zshrc") cp "$file" /root/ ;;
+    esac
+done
+
+# 重启相关服务
+systemctl reload ssh 2>/dev/null || true
+sysctl -p 2>/dev/null || true
+
+echo "系统恢复完成"
+EOF
+    
+    chmod +x "$BACKUP_PATH/restore.sh"
+    
+    ok "备份创建完成: $BACKUP_PATH"
+}
+
+# --- 回滚操作 ---
+perform_rollback() {
+    if [[ -z "$BACKUP_PATH" ]] || [[ ! -d "$BACKUP_PATH" ]]; then
+        warn "未找到备份文件，无法回滚"
+        return 1
+    fi
+    
+    step "执行系统回滚"
+    
+    log "回滚到: $BACKUP_PATH" "info"
+    
+    # 执行恢复脚本
+    if [[ -x "$BACKUP_PATH/restore.sh" ]]; then
+        bash "$BACKUP_PATH/restore.sh"
+        ok "系统回滚完成"
+    else
+        warn "恢复脚本不存在或无执行权限"
+        return 1
+    fi
+}
+
+# --- 清理旧备份 ---
+cleanup_old_backups() {
+    local max_backups=5
+    local backup_count
+    
+    backup_count=$(find "$BACKUP_DIR" -maxdepth 1 -type d -name "backup_*" | wc -l)
+    
+    if (( backup_count > max_backups )); then
+        debug "清理旧备份文件 (保留 $max_backups 个)"
+        find "$BACKUP_DIR" -maxdepth 1 -type d -name "backup_*" -printf '%T@ %p\n' | \
+            sort -n | head -n -$max_backups | cut -d' ' -f2- | \
+            xargs -r rm -rf
+    fi
+}
+# --- 用户交互和模块选择 ---
+ask_module_execution() {
+    local module="$1" description="$2"
+    local config_action=""
+    
+    # 检查配置文件中的设置
+    if [[ "$CONFIG_MODE" == "auto" ]] && [[ -n "${MODULES_CONFIG:-}" ]]; then
+        for config_item in "${MODULES_CONFIG[@]}"; do
+            if [[ "$config_item" =~ ^${module}:(.+)$ ]]; then
+                config_action="${BASH_REMATCH[1]}"
+                break
+            fi
+        done
+    fi
+    
+    # 根据配置决定行为
+    case "$config_action" in
+        "auto")
+            log "自动执行: $description" "info"
+            return 0
+            ;;
+        "skip")
+            log "配置跳过: $description" "info"
+            return 1
+            ;;
+        "ask"|"")
+            # 更新模式智能跳过已执行模块
+            if $RERUN_MODE && command -v jq &>/dev/null; then
+                if jq -e --arg m "$module" '.executed_modules[]? | select(. == $m)' "$STATUS_FILE" >/dev/null 2>&1; then
+                    log "跳过已执行: $description" "info"
+                    SKIPPED_MODULES+=("$module")
+                    return 1
+                fi
+            fi
+            
+            # 交互询问
+            echo
+            log "模块: $description" "title"
+            read -p "是否执行此模块? [Y/n]: " -r choice
+            choice="${choice:-Y}"
+            [[ "$choice" =~ ^[Yy]$ ]]
+            ;;
+        *)
+            warn "未知配置动作: $config_action，使用交互模式"
+            read -p "执行 $description? [Y/n]: " -r choice
+            choice="${choice:-Y}"
+            [[ "$choice" =~ ^[Yy]$ ]]
+            ;;
+    esac
+}
+
+# --- 模块执行器 ---
+execute_module() {
+    local module="$1"
+    local module_file="$TEMP_DIR/${module}.sh"
+    local start_time end_time duration
+    
+    if [[ ! -f "$module_file" ]]; then
+        log "模块文件不存在: $module" "error"
+        FAILED_MODULES+=("$module")
+        return 1
+    fi
+    
+    log "开始执行模块: $module" "info"
+    start_time=$(date +%s)
+    
+    # 创建模块执行环境
+    local module_log="$TEMP_DIR/${module}.log"
+    local module_env="$TEMP_DIR/${module}.env"
+    
+    # 设置模块环境变量
+    cat > "$module_env" << EOF
+export MODULE_NAME="$module"
+export TEMP_DIR="$TEMP_DIR"
+export LOG_FILE="$module_log"
+export BACKUP_PATH="$BACKUP_PATH"
+export SCRIPT_VERSION="$SCRIPT_VERSION"
+EOF
+    
+    # 执行模块
+    if (
+        source "$module_env"
+        bash "$module_file" 2>&1 | tee -a "$module_log"
+    ); then
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        
+        EXECUTED_MODULES+=("$module")
+        ok "模块 $module 执行成功 (耗时: ${duration}s)"
+        return 0
+    else
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        
+        FAILED_MODULES+=("$module")
+        log "模块 $module 执行失败 (耗时: ${duration}s)" "error"
+        
+        # 显示模块错误日志
+        if [[ -f "$module_log" ]]; then
+            log "模块错误日志:" "error"
+            tail -10 "$module_log" | sed 's/^/  /'
+        fi
+        
+        return 1
+    fi
+}
+
+# --- 模块部署主流程 ---
+deploy_modules() {
+    step "模块化功能部署"
+    
+    local selected_modules=()
+    local available_modules=()
+    
+    # 获取所有可用模块
+    for module in "${!MODULES[@]}"; do
+        available_modules+=("$module")
+    done
+    
+    # 用户选择模块
+    log "可用模块列表:" "info"
+    for module in "${available_modules[@]}"; do
+        echo "  • $module: ${MODULES[$module]}"
+    done
+    echo
+    
+    # 批量选择模式
+    if [[ "$CONFIG_MODE" == "auto" ]]; then
+        log "配置文件模式: 自动选择模块" "info"
+        for module in "${available_modules[@]}"; do
+            if ask_module_execution "$module" "${MODULES[$module]}"; then
+                selected_modules+=("$module")
+            fi
+        done
+    else
+        # 交互选择模式
+        for module in "${available_modules[@]}"; do
+            if ask_module_execution "$module" "${MODULES[$module]}"; then
+                selected_modules+=("$module")
+            fi
+        done
+        
+        # 提供一键选择选项
+        if (( ${#selected_modules[@]} == 0 )); then
+            echo
+            read -p "未选择任何模块，是否安装推荐模块? (system-optimize, zsh-setup, network-optimize) [y/N]: " -r choice
+            if [[ "$choice" =~ ^[Yy]$ ]]; then
+                selected_modules=("system-optimize" "zsh-setup" "network-optimize")
+            fi
+        fi
+    fi
+    
+    if (( ${#selected_modules[@]} == 0 )); then
+        warn "未选择任何模块，跳过部署"
+        return 0
+    fi
+    
+    # 解析模块依赖关系
+    log "解析模块依赖..." "info"
+    local -a resolved_modules
+    readarray -t resolved_modules < <(resolve_module_dependencies "${selected_modules[@]}")
+    
+    if (( ${#resolved_modules[@]} != ${#selected_modules[@]} )); then
+        log "依赖解析后的执行顺序: ${resolved_modules[*]}" "info"
+        echo
+        read -p "继续执行? [Y/n]: " -r choice
+        choice="${choice:-Y}"
+        [[ "$choice" =~ ^[Yy]$ ]] || return 0
+    fi
+    
+    # 下载模块
+    if ! download_modules_parallel "${resolved_modules[@]}"; then
+        warn "部分模块下载失败，继续执行已下载的模块"
+    fi
+    
+    # 执行模块
+    local total_modules=${#resolved_modules[@]}
+    local current_module=0
+    
+    for module in "${resolved_modules[@]}"; do
+        ((current_module++))
+        
+        if [[ -f "$TEMP_DIR/${module}.sh" ]]; then
+            log "\n[$current_module/$total_modules] 执行模块: ${MODULES[$module]}" "title"
+            execute_module "$module"
+        else
+            log "跳过未下载的模块: $module" "warn"
+            SKIPPED_MODULES+=("$module")
+        fi
+    done
+    
+    ok "模块部署完成"
+}
+
+# --- 系统更新 ---
+system_update() {
+    step "系统更新"
+    
+    # 更新软件包列表
+    log "更新软件包列表..." "info"
+    apt-get update || warn "软件包列表更新失败"
+    
+    # 根据运行模式选择更新策略
+    if $RERUN_MODE; then
+        log "更新模式: 执行安全更新" "info"
+        apt-get upgrade -y
+    else
+        log "首次部署: 执行完整系统升级" "info"
+        apt-get full-upgrade -y
+    fi
+    
+    # 安装核心软件包
+    local core_packages=(
+        dnsutils wget curl rsync chrony cron iproute2 
+        htop nano vim unzip zip tar gzip lsof
+    )
+    local missing_packages=()
+    
+    log "检查核心软件包..." "info"
+    for pkg in "${core_packages[@]}"; do
+        if ! dpkg -s "$pkg" &>/dev/null; then
+            missing_packages+=("$pkg")
+        fi
+    done
+    
+    if (( ${#missing_packages[@]} > 0 )); then
+        log "安装核心软件包: ${missing_packages[*]}" "info"
+        apt-get install -y "${missing_packages[@]}" || warn "部分软件包安装失败"
+    fi
+    
+    # 修复系统配置
+    fix_system_config
+    
+    # 清理不需要的软件包
+    log "清理系统..." "info"
+    apt-get autoremove -y
+    apt-get autoclean
+    
+    ok "系统更新完成"
+}
+
+# --- 修复系统配置 ---
+fix_system_config() {
+    local hostname
+    hostname=$(hostname)
+    
+    # 修复 hosts 文件
+    if ! grep -q "^127.0.1.1.*$hostname" /etc/hosts; then
+        log "修复 hosts 文件" "debug"
+        sed -i "/^127.0.1.1/d" /etc/hosts
+        echo "127.0.1.1 $hostname" >> /etc/hosts
+    fi
+    
+    # 确保时区正确设置
+    if [[ ! -f /etc/timezone ]] || [[ "$(cat /etc/timezone)" != "Asia/Shanghai" ]]; then
+        log "设置时区为 Asia/Shanghai" "debug"
+        timedatectl set-timezone Asia/Shanghai 2>/dev/null || true
+    fi
+    
+    # 启用必要的系统服务
+    local essential_services=(cron rsyslog)
+    for service in "${essential_services[@]}"; do
+        if systemctl is-enabled "$service" >/dev/null 2>&1; then
+            systemctl enable "$service" 2>/dev/null || true
+        fi
+    done
+}
+# --- 状态保存 ---
+save_deployment_status() {
+    step "保存部署状态"
+    
+    local executed_json failed_json skipped_json
+    
+    # 转换数组为 JSON 格式
+    if (( ${#EXECUTED_MODULES[@]} > 0 )); then
+        executed_json=$(printf '%s\n' "${EXECUTED_MODULES[@]}" | jq -R . | jq -s .)
+    else
+        executed_json="[]"
+    fi
+    
+    if (( ${#FAILED_MODULES[@]} > 0 )); then
+        failed_json=$(printf '%s\n' "${FAILED_MODULES[@]}" | jq -R . | jq -s .)
+    else
+        failed_json="[]"
+    fi
+    
+    if (( ${#SKIPPED_MODULES[@]} > 0 )); then
+        skipped_json=$(printf '%s\n' "${SKIPPED_MODULES[@]}" | jq -R . | jq -s .)
+    else
+        skipped_json="[]"
+    fi
+    
+    # 获取系统信息
+    local ssh_port
+    ssh_port=$(grep "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo "22")
+    
+    # 创建状态文件
+    jq -n \
+        --arg version "$SCRIPT_VERSION" \
+        --arg timestamp "$(date -Iseconds)" \
+        --arg mode "$(if $RERUN_MODE; then echo "update"; else echo "initial"; fi)" \
+        --argjson executed "$executed_json" \
+        --argjson failed "$failed_json" \
+        --argjson skipped "$skipped_json" \
+        --arg os "$(grep 'PRETTY_NAME' /etc/os-release | cut -d= -f2 | tr -d '"' 2>/dev/null || echo 'Debian')" \
+        --arg kernel "$(uname -r)" \
+        --arg ssh_port "$ssh_port" \
+        --arg backup_path "$BACKUP_PATH" \
+        '{
+            script_version: $version,
+            last_run: $timestamp,
+            deployment_mode: $mode,
+            executed_modules: $executed,
+            failed_modules: $failed,
+            skipped_modules: $skipped,
+            system_info: {
+                os: $os,
+                kernel: $kernel,
+                ssh_port: $ssh_port,
+                backup_path: $backup_path
+            },
+            statistics: {
+                total_modules: ($executed | length) + ($failed | length) + ($skipped | length),
+                success_rate: (($executed | length) * 100 / (($executed | length) + ($failed | length) + ($skipped | length) | if . == 0 then 1 else . end))
+            }
+        }' > "$STATUS_FILE"
+    
+    ok "状态已保存到: $STATUS_FILE"
+}
+
+# --- 详细系统状态检查 ---
+get_system_status() {
+    local status_lines=()
+    
+    # Zsh 状态
+    if command -v zsh &>/dev/null; then
+        local zsh_version root_shell
+        zsh_version=$(zsh --version 2>/dev/null | awk '{print $2}' || echo "未知")
+        root_shell=$(getent passwd root | cut -d: -f7)
+        
+        if [[ "$root_shell" == "$(which zsh)" ]]; then
+            status_lines+=("Zsh Shell: 已安装并设为默认 (v$zsh_version)")
+        else
+            status_lines+=("Zsh Shell: 已安装但未设为默认 (v$zsh_version)")
+        fi
+    else
+        status_lines+=("Zsh Shell: 未安装")
+    fi
+    
+    # Docker 状态
+    if command -v docker &>/dev/null; then
+        local docker_version containers_count images_count
+        docker_version=$(docker --version 2>/dev/null | awk '{print $3}' | tr -d ',' || echo "未知")
+        containers_count=$(docker ps -q 2>/dev/null | wc -l || echo "0")
+        images_count=$(docker images -q 2>/dev/null | wc -l || echo "0")
+        
+        status_lines+=("Docker: 已安装 (v$docker_version, 容器:$containers_count, 镜像:$images_count)")
+        
+        if systemctl is-active --quiet docker 2>/dev/null; then
+            status_lines+=("Docker 服务: 运行中")
+        else
+            status_lines+=("Docker 服务: 未运行")
+        fi
+    else
+        status_lines+=("Docker: 未安装")
+    fi
+    
+    # Mise 状态
+    if [[ -f "$HOME/.local/bin/mise" ]]; then
+        local mise_version
+        mise_version=$("$HOME/.local/bin/mise" --version 2>/dev/null || echo "未知")
+        status_lines+=("Mise: 已安装 ($mise_version)")
+    else
+        status_lines+=("Mise: 未安装")
+    fi
+    
+    # 网络优化状态
+    local curr_cc curr_qdisc
+    curr_cc=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null || echo "未知")
+    curr_qdisc=$(sysctl -n net.core.default_qdisc 2>/dev/null || echo "未知")
+    status_lines+=("网络优化: 拥塞控制=$curr_cc, 队列调度=$curr_qdisc")
+    
+    # SSH 配置
+    local ssh_port ssh_root_login
+    ssh_port=$(grep "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo "22")
+    ssh_root_login=$(grep "^PermitRootLogin " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo "未知")
+    status_lines+=("SSH: 端口=$ssh_port, Root登录=$ssh_root_login")
+    
+    # 系统资源
+    local cpu_cores total_mem free_mem disk_usage
+    cpu_cores=$(nproc)
+    total_mem=$(free -h | grep Mem | awk '{print $2}')
+    free_mem=$(free -h | grep Mem | awk '{print $7}')
+    disk_usage=$(df -h / | awk 'NR==2 {print $5}')
+    status_lines+=("系统资源: CPU=${cpu_cores}核, 内存=${total_mem}(可用${free_mem}), 磁盘使用=${disk_usage}")
+    
+    printf '%s\n' "${status_lines[@]}"
+}
+
+# --- 综合部署摘要 ---
+show_deployment_summary() {
+    step "部署完成摘要"
+    
+    echo
+    log "╔══════════════════════════════════════════════════════╗" "title"
+    log "║                系统部署完成摘要                        ║" "title"
+    log "╚══════════════════════════════════════════════════════╝" "title"
+    
+    # 基本信息
+    local show_info() { log "  $1: $2" "info"; }
+    
+    show_info "脚本版本" "$SCRIPT_VERSION"
+    show_info "部署模式" "$(if $RERUN_MODE; then echo "更新模式"; else echo "首次部署"; fi)"
+    show_info "操作系统" "$(grep 'PRETTY_NAME' /etc/os-release | cut -d= -f2 | tr -d '"' 2>/dev/null || echo 'Debian')"
+    show_info "内核版本" "$(uname -r)"
+    show_info "部署时间" "$(date '+%Y-%m-%d %H:%M:%S %Z')"
+    
+    # 执行统计
+    local total_modules=$(( ${#EXECUTED_MODULES[@]} + ${#FAILED_MODULES[@]} + ${#SKIPPED_MODULES[@]} ))
+    local success_rate=0
+    if (( total_modules > 0 )); then
+        success_rate=$(( ${#EXECUTED_MODULES[@]} * 100 / total_modules ))
+    fi
+    
+    echo
+    log "📊 执行统计:" "title"
+    show_info "总模块数" "$total_modules"
+    show_info "成功执行" "${#EXECUTED_MODULES[@]} 个"
+    show_info "执行失败" "${#FAILED_MODULES[@]} 个"
+    show_info "跳过执行" "${#SKIPPED_MODULES[@]} 个"
+    show_info "成功率" "${success_rate}%"
+    
+    # 成功执行的模块
+    if (( ${#EXECUTED_MODULES[@]} > 0 )); then
+        echo
+        log "✅ 成功执行的模块:" "info"
+        for module in "${EXECUTED_MODULES[@]}"; do
+            log "   • $module: ${MODULES[$module]}" "info"
+        done
+    fi
+    
+    # 失败的模块
+    if (( ${#FAILED_MODULES[@]} > 0 )); then
+        echo
+        log "❌ 执行失败的模块:" "error"
+        for module in "${FAILED_MODULES[@]}"; do
+            log "   • $module: ${MODULES[$module]}" "error"
+        done
+    fi
+    
+    # 跳过的模块
+    if (( ${#SKIPPED_MODULES[@]} > 0 )); then
+        echo
+        log "⏭️ 跳过的模块:" "warn"
+        for module in "${SKIPPED_MODULES[@]}"; do
+            log "   • $module: ${MODULES[$module]}" "warn"
+        done
+    fi
+    
+    # 当前系统状态
+    echo
+    log "🖥️ 当前系统状态:" "title"
+    while IFS= read -r status_line; do
+        log "   • $status_line" "info"
+    done < <(get_system_status)
+    
+    # 文件位置信息
+    echo
+    log "📁 重要文件位置:" "title"
+    show_info "状态文件" "$STATUS_FILE"
+    show_info "日志文件" "$LOG_FILE"
+    show_info "配置文件" "$CONFIG_FILE"
+    if [[ -n "$BACKUP_PATH" ]] && [[ -d "$BACKUP_PATH" ]]; then
+        show_info "备份位置" "$BACKUP_PATH"
+    fi
+    
+    echo
+    log "════════════════════════════════════════════════════════" "title"
+}
+
+# --- 最终提示和建议 ---
+show_final_recommendations() {
+    echo
+    log "🎉 系统部署完成！" "title"
+    
+    # SSH 安全提醒
+    if [[ " ${EXECUTED_MODULES[*]} " =~ " ssh-security " ]]; then
+        local new_ssh_port
+        new_ssh_port=$(grep "^Port " /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
+        if [[ "$new_ssh_port" != "22" ]] && [[ -n "$new_ssh_port" ]]; then
+            echo
+            log "⚠️  重要安全提醒:" "warn"
+            log "   SSH 端口已更改为: $new_ssh_port" "warn"
+            log "   新的连接命令: ssh -p $new_ssh_port user@$(hostname -I | awk '{print $1}')" "warn"
+            log "   请确保防火墙规则已正确配置！" "warn"
+        fi
+    fi
+    
+    # Zsh 使用指南
+    if [[ " ${EXECUTED_MODULES[*]} " =~ " zsh-setup " ]]; then
+        echo
+        log "🐚 Zsh 使用指南:" "info"
+        log "   切换到 Zsh: exec zsh" "info"
+        log "   重新配置主题: p10k configure" "info"
+        log "   查看可用插件: ls ~/.oh-my-zsh/plugins/" "info"
+    fi
+    
+    # Docker 使用提示
+    if [[ " ${EXECUTED_MODULES[*]} " =~ " docker-setup " ]]; then
+        echo
+        log "🐳 Docker 使用提示:" "info"
+        log "   检查状态: docker version" "info"
+        log "   管理服务: systemctl status docker" "info"
+        log "   使用指南: docker --help" "info"
+    fi
+    
+    # 系统维护建议
+    echo
+    log "🔧 系统维护建议:" "info"
+    log "   定期更新: apt update && apt upgrade" "info"
+    log "   重新运行脚本: bash $0 (支持增量更新)" "info"
+    log "   查看日志: tail -f $LOG_FILE" "info"
+    log "   生成配置: bash $0 --create-config" "info"
+    
+    # 故障恢复信息
+    if [[ -n "$BACKUP_PATH" ]] && [[ -d "$BACKUP_PATH" ]]; then
+        echo
+        log "🔄 故障恢复:" "info"
+        log "   回滚命令: bash $BACKUP_PATH/restore.sh" "info"
+        log "   备份位置: $BACKUP_PATH" "info"
+    fi
+    
+    echo
+    log "感谢使用 Debian 系统部署脚本！" "title"
+    log "如有问题，请查看日志文件或重新运行脚本。" "info"
+}
+# --- 命令行参数处理 ---
+handle_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --create-config)
+                create_sample_config
+                exit 0
+                ;;
+            --check-status)
+                if [[ -f "$STATUS_FILE" ]]; then
+                    echo "最近部署状态:"
+                    jq . "$STATUS_FILE" 2>/dev/null || cat "$STATUS_FILE"
+                else
+                    echo "未找到部署状态文件"
+                fi
+                exit 0
+                ;;
+            --rollback)
+                if [[ -n "${2:-}" ]] && [[ -d "$2" ]]; then
+                    BACKUP_PATH="$2"
+                    perform_rollback
+                    exit 0
+                else
+                    echo "用法: $0 --rollback /path/to/backup"
+                    exit 1
+                fi
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            --version|-v)
+                echo "Debian 部署脚本 v$SCRIPT_VERSION"
+                exit 0
+                ;;
+            *)
+                echo "未知参数: $1"
+                echo "使用 --help 查看帮助"
+                exit 1
+                ;;
+        esac
+        shift
+    done
+}
+
+# --- 帮助信息 ---
+show_help() {
+    cat << EOF
+Debian 系统部署脚本 v$SCRIPT_VERSION
+
+用法: $0 [选项]
+
+选项:
+  --create-config    创建示例配置文件
+  --check-status     查看最近的部署状态
+  --rollback <path>  回滚到指定备份
+  --help, -h         显示此帮助信息
+  --version, -v      显示版本信息
+
+功能模块:
+  • system-optimize    系统优化 (Zram, 时区设置)
+  • zsh-setup         Zsh Shell 环境配置
+  • mise-setup        Mise 版本管理器安装
+  • docker-setup      Docker 容器化平台
+  • network-optimize  网络性能优化 (BBR, cake)
+  • ssh-security      SSH 安全加固
+  • auto-update-setup 自动更新系统配置
+
+特性:
+  ✓ 模块化部署      ✓ 并发下载        ✓ 依赖管理
+  ✓ 配置文件支持    ✓ 备份回滚        ✓ 进度显示
+  ✓ 签名验证        ✓ 预检查机制      ✓ 增量更新
+
+配置文件: $CONFIG_FILE
+状态文件: $STATUS_FILE
+日志文件: $LOG_FILE
+
+示例:
+  $0                     # 交互式部署
+  $0 --create-config     # 创建配置文件
+  $0 --check-status      # 查看部署状态
+EOF
+}
+
+# --- 主程序入口 ---
+main() {
+    # 处理命令行参数
+    handle_arguments "$@"
+    
+    # 系统初始化
+    init_system
+    
+    # 预检查
+    preflight_check
+    
+    # 安装基础依赖
+    install_dependencies
+    
+    # 设置 GPG 验证
+    setup_gpg_verification
+    
+    # 创建系统备份
+    create_system_backup
+    
+    # 清理旧备份
+    cleanup_old_backups
+    
+    # 系统更新
+    system_update
+    
+    # 模块化部署
+    deploy_modules
+    
+    # 保存部署状态
+    save_deployment_status
+    
+    # 显示部署摘要
+    show_deployment_summary
+    
+    # 最终建议
+    show_final_recommendations
+    
+    log "🎯 所有部署任务完成！" "title"
+}
+
+# 执行主程序
+main "$@"
