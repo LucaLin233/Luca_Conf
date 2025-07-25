@@ -670,7 +670,7 @@ download_modules_parallel() {
     
     return $(( fail_count > 0 ? 1 : 0 ))
 }
-# --- 系统备份机制 ---
+# --- 修复后的系统备份机制 ---
 create_system_backup() {
     step "创建系统备份"
     
@@ -678,7 +678,11 @@ create_system_backup() {
     timestamp=$(date '+%Y%m%d_%H%M%S')
     BACKUP_PATH="$BACKUP_DIR/backup_$timestamp"
     
-    mkdir -p "$BACKUP_PATH"
+    # 确保备份目录存在
+    if ! mkdir -p "$BACKUP_PATH"; then
+        warn "无法创建备份目录: $BACKUP_PATH"
+        return 1
+    fi
     
     # 备份关键配置文件
     local config_files=(
@@ -695,28 +699,41 @@ create_system_backup() {
     local total_files=${#config_files[@]}
     
     for config in "${config_files[@]}"; do
-        ((backup_count++))
-        show_progress $backup_count $total_files "备份 $(basename "$config")"
+        backup_count=$((backup_count + 1))
         
+        # 安全的进度显示
+        show_progress "$backup_count" "$total_files" "备份 $(basename "$config")" || {
+            log "备份 $(basename "$config") ($backup_count/$total_files)" "info"
+        }
+        
+        # 安全的文件复制
         if [[ -f "$config" ]]; then
-            cp "$config" "$BACKUP_PATH/" 2>/dev/null || true
+            if ! cp "$config" "$BACKUP_PATH/" 2>/dev/null; then
+                debug "备份 $config 失败，但继续执行"
+            else
+                debug "备份 $config 成功"
+            fi
+        else
+            debug "文件 $config 不存在，跳过备份"
         fi
     done
     
     # 备份当前用户 shell 配置
     if [[ -f "/root/.zshrc" ]]; then
-        cp "/root/.zshrc" "$BACKUP_PATH/" 2>/dev/null || true
+        cp "/root/.zshrc" "$BACKUP_PATH/" 2>/dev/null || debug "备份 .zshrc 失败"
     fi
     
-    # 记录当前系统状态
-    cat > "$BACKUP_PATH/system_info.txt" << EOF
-备份时间: $(date)
-内核版本: $(uname -r)
-系统版本: $(cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2 | tr -d '"')
-当前用户Shell: $(getent passwd root | cut -d: -f7)
-网络配置: $(ip route | grep default)
-已安装软件包数量: $(dpkg -l | wc -l)
-EOF
+    # 记录当前系统状态 - 使用更安全的方式
+    {
+        echo "备份时间: $(date)"
+        echo "内核版本: $(uname -r)"
+        echo "系统版本: $(grep 'PRETTY_NAME' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"' || echo "未知")"
+        echo "当前用户Shell: $(getent passwd root 2>/dev/null | cut -d: -f7 || echo "未知")"
+        echo "网络配置: $(ip route 2>/dev/null | grep default | head -1 || echo "未知")"
+        echo "已安装软件包数量: $(dpkg -l 2>/dev/null | wc -l || echo "未知")"
+    } > "$BACKUP_PATH/system_info.txt" 2>/dev/null || {
+        warn "无法创建系统信息文件"
+    }
     
     # 创建恢复脚本
     cat > "$BACKUP_PATH/restore.sh" << 'EOF'
@@ -730,23 +747,72 @@ for file in "$BACKUP_DIR"/*.conf "$BACKUP_DIR"/*config "$BACKUP_DIR"/.??*; do
     filename=$(basename "$file")
     
     case "$filename" in
-        "sshd_config") cp "$file" /etc/ssh/ ;;
-        "sysctl.conf") cp "$file" /etc/ ;;
-        "limits.conf") cp "$file" /etc/security/ ;;
-        "system.conf") cp "$file" /etc/systemd/ ;;
-        "sources.list") cp "$file" /etc/apt/ ;;
-        ".bashrc"|".profile"|".zshrc") cp "$file" /root/ ;;
+        "sshd_config") 
+            if cp "$file" /etc/ssh/ 2>/dev/null; then
+                echo "恢复 SSH 配置成功"
+            else
+                echo "恢复 SSH 配置失败"
+            fi
+            ;;
+        "sysctl.conf") 
+            if cp "$file" /etc/ 2>/dev/null; then
+                echo "恢复 sysctl 配置成功"
+            else
+                echo "恢复 sysctl 配置失败"
+            fi
+            ;;
+        "limits.conf") 
+            if cp "$file" /etc/security/ 2>/dev/null; then
+                echo "恢复 limits 配置成功"
+            else
+                echo "恢复 limits 配置失败"
+            fi
+            ;;
+        "system.conf") 
+            if cp "$file" /etc/systemd/ 2>/dev/null; then
+                echo "恢复 systemd 配置成功"
+            else
+                echo "恢复 systemd 配置失败"
+            fi
+            ;;
+        "sources.list") 
+            if cp "$file" /etc/apt/ 2>/dev/null; then
+                echo "恢复 APT 源配置成功"
+            else
+                echo "恢复 APT 源配置失败"
+            fi
+            ;;
+        ".bashrc"|".profile"|".zshrc") 
+            if cp "$file" /root/ 2>/dev/null; then
+                echo "恢复用户配置 $filename 成功"
+            else
+                echo "恢复用户配置 $filename 失败"
+            fi
+            ;;
     esac
 done
 
 # 重启相关服务
-systemctl reload ssh 2>/dev/null || true
-sysctl -p 2>/dev/null || true
+echo "重新加载服务..."
+if systemctl reload ssh 2>/dev/null; then
+    echo "SSH 服务重新加载成功"
+else
+    echo "SSH 服务重新加载失败"
+fi
+
+if sysctl -p 2>/dev/null; then
+    echo "sysctl 配置重新加载成功"
+else
+    echo "sysctl 配置重新加载失败"
+fi
 
 echo "系统恢复完成"
 EOF
     
-    chmod +x "$BACKUP_PATH/restore.sh"
+    # 设置恢复脚本权限
+    if ! chmod +x "$BACKUP_PATH/restore.sh" 2>/dev/null; then
+        warn "无法设置恢复脚本执行权限"
+    fi
     
     ok "备份创建完成: $BACKUP_PATH"
 }
