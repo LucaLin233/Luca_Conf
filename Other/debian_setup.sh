@@ -96,7 +96,6 @@ step_fail() {
 }
 
 # --- 进度显示函数 ---
-show_progress() {
     local current=$1
     local total=$2
     local desc="${3:-处理中}"
@@ -497,7 +496,6 @@ download_all_modules() {
         if wait "${pids[$idx]}"; then
             ((success_count++))
         fi
-        show_progress $((idx + 1)) ${#pids[@]} "下载模块"
     done
     
     echo
@@ -755,7 +753,6 @@ else
             description="${MODULES[$module]}"
             
             log "\n开始处理模块 ($((i+1))/${#SELECTED_MODULES[@]}): $module" "TITLE"
-            show_progress $((i+1)) ${#SELECTED_MODULES[@]} "执行模块"
             
             if execute_module "$module"; then
                 EXECUTED_MODULES+=("$module")
