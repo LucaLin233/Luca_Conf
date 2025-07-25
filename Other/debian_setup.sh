@@ -79,19 +79,18 @@ log() {
     local level="${2:-info}"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
-    # ✅ 添加关联数组声明并修复索引
-    declare -A colors=(
-        [default]=$'\033[0;32m'  # 改为 default
-        [warn]=$'\033[0;33m'     # 黄色
-        [error]=$'\033[0;31m'    # 红色
-        [info]=$'\033[0;36m'     # 青色
-        [title]=$'\033[1;35m'    # 紫色粗体
-        [debug]=$'\033[0;37m'    # 灰色
-    )
+    # 使用更兼容的颜色定义方式
+    local color=""
+    case "$level" in
+        "default"|"info"|"") color='\033[0;36m' ;;  # 青色
+        "warn") color='\033[0;33m' ;;  # 黄色
+        "error") color='\033[0;31m' ;;  # 红色
+        "title") color='\033[1;35m' ;;  # 紫色粗体
+        "debug") color='\033[0;37m' ;;  # 灰色
+        *) color='\033[0;32m' ;;  # 默认绿色
+    esac
     
-    # ✅ 修改这一行，添加默认值处理
-    local color="${colors[${level:-default}]}"
-    local reset=$'\033[0m'
+    local reset='\033[0m'
     
     # 控制台输出
     echo -e "${color}${message}${reset}"
