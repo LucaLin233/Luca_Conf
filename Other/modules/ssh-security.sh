@@ -928,8 +928,7 @@ ClientAliveCountMax 2
 TCPKeepAlive yes
 # === 访问控制 ===
 PermitRootLogin $([ "$HAS_SSH_KEYS" = "true" ] && echo "prohibit-password" || echo "yes")
-AllowUsers root
-DenyUsers guest
+# 允许任意IP连接 - 移除了限制性的AllowUsers/DenyUsers配置
 # === 安全特性 ===
 StrictModes yes
 IgnoreRhosts yes
@@ -942,7 +941,7 @@ X11Forwarding no
 X11DisplayOffset 10
 X11UseLocalhost yes
 PermitTunnel no
-AllowTcpForwarding local
+AllowTcpForwarding yes
 AllowStreamLocalForwarding no
 GatewayPorts no
 # === 日志配置 ===
@@ -966,10 +965,6 @@ add_custom_ssh_config() {
     
     # 检查是否有自定义配置需要保留
     local custom_settings=(
-        "AllowUsers"
-        "DenyUsers"
-        "AllowGroups"
-        "DenyGroups"
         "Match"
         "Subsystem"
     )
@@ -1201,8 +1196,8 @@ backend = systemd
 destemail = root@localhost
 sendername = Fail2Ban
 mta = sendmail
-# 白名单IP（请根据需要修改）
-ignoreip = 127.0.0.1/8 ::1 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12
+# 白名单IP（仅保留本地回环，允许任意外部IP连接）
+ignoreip = 127.0.0.1/8 ::1
 [sshd]
 enabled = true
 port = $ssh_port
@@ -1358,6 +1353,7 @@ generate_ssh_security_report() {
     log "  • SSH端口: $ssh_port" "info"
     log "  • 服务状态: $service_status" "info"
     log "  • 开机自启: $(systemctl is-enabled "$SSH_SERVICE_NAME" 2>/dev/null || echo "未知")" "info"
+    log "  • 访问控制: 允许任意IP连接" "info"
     
     # 认证配置
     log "🔑 认证配置:" "info"
@@ -1379,6 +1375,7 @@ generate_ssh_security_report() {
         "连接超时控制"
         "登录尝试限制"
         "详细日志记录"
+        "任意IP访问"
     )
     
     for feature in "${security_features[@]}"; do
@@ -1390,6 +1387,7 @@ generate_ssh_security_report() {
         local f2b_status=$(systemctl is-active fail2ban 2>/dev/null || echo "未运行")
         log "🚫 入侵防护:" "info"
         log "  • Fail2ban: $f2b_status" "$([ "$f2b_status" = "active" ] && echo "success" || echo "warn")"
+        log "  • 白名单: 仅本地回环地址" "info"
         
         if [ "$f2b_status" = "active" ] && command -v fail2ban-client &>/dev/null; then
             local banned_count=$(fail2ban-client status sshd 2>/dev/null | grep "Currently banned" | awk '{print $4}' || echo "0")
@@ -1419,6 +1417,8 @@ generate_ssh_security_report() {
         log "  • 需要密码认证" "info"
     fi
     
+    log "  • 支持从任意IP地址连接" "info"
+    
     # 安全建议
     if [ "$SSH_RISK_LEVEL" -gt 0 ] || [ "$HAS_SSH_KEYS" = "false" ]; then
         log "⚠️  安全建议:" "warn"
@@ -1435,6 +1435,8 @@ generate_ssh_security_report() {
         if ! command -v fail2ban-server &>/dev/null; then
             log "  • 安装fail2ban防护工具" "warn"
         fi
+        
+        log "  • 定期监控SSH登录日志" "warn"
     else
         log "✅ 当前SSH配置安全性良好" "success"
     fi
@@ -1496,6 +1498,7 @@ main() {
         log "💡 重要提示:" "warn"
         log "  • 请在新终端测试SSH连接后再关闭当前会话" "warn"
         log "  • 连接命令: ssh -p $ssh_port root@$(hostname -I | awk '{print $1}')" "warn"
+        log "  • 现在支持从任意IP地址连接" "info"
         
         if [ "$HAS_SSH_KEYS" = "false" ]; then
             log "  • 建议尽快配置SSH密钥认证" "warn"
