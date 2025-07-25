@@ -95,28 +95,6 @@ step_fail() {
     exit 1
 }
 
-# --- 进度显示函数 ---
-    local current=$1
-    local total=$2
-    local desc="${3:-处理中}"
-    
-    # 安全检查
-    [[ $total -eq 0 ]] && { echo "$desc: 0/0"; return; }
-    [[ $current -gt $total ]] && current=$total
-    
-    local percent=$((current * 100 / total))
-    local bar_length=30  # 缩短长度减少问题
-    local filled_length=$((percent * bar_length / 100))
-    
-    # 构建进度条
-    local bar=""
-    for ((idx=0; idx<filled_length; idx++)); do bar+="="; done
-    for ((idx=filled_length; idx<bar_length; idx++)); do bar+="-"; done
-    
-    printf "\r%s [%s] %d%% (%d/%d)" "$desc" "$bar" "$percent" "$current" "$total"
-    [[ $current -eq $total ]] && echo
-}
-
 # --- 网络检查函数 ---
 check_network() {
     local test_hosts=("8.8.8.8" "114.114.114.114" "1.1.1.1" "223.5.5.5")
@@ -491,7 +469,7 @@ download_all_modules() {
         pids+=($!)
     done
     
-    # 等待所有下载完成并显示进度
+    # 等待所有下载完成
     for idx in "${!pids[@]}"; do
         if wait "${pids[$idx]}"; then
             ((success_count++))
