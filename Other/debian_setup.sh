@@ -487,11 +487,11 @@ download_all_modules() {
     done
     
     # 等待所有下载完成并显示进度
-    for i in "${!pids[@]}"; do
-        if wait "${pids[$i]}"; then
+    for idx in "${!pids[@]}"; do
+        if wait "${pids[$idx]}"; then
             ((success_count++))
         fi
-        show_progress $((i + 1)) ${#pids[@]} "下载模块"
+        show_progress $((idx + 1)) ${#pids[@]} "下载模块"
     done
     
     echo
