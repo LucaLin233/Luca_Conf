@@ -79,7 +79,7 @@ debug() { log "🔍 $1" "debug"; }
 # 添加辅助函数
 show_info() { log "  $1: $2" "info"; }
 
-# --- 安全的进度显示函数 ---
+# --- 修复颜色显示的进度显示函数 ---
 show_progress() {
     local current=$1 total=$2 task="${3:-处理中}"
     
@@ -106,7 +106,7 @@ show_progress() {
         filled=0
     fi
     
-    # 构建进度条（更安全的方法）
+    # 构建进度条
     local bar=""
     local i=0
     
@@ -122,20 +122,11 @@ show_progress() {
         ((i++))
     done
     
-    # 安全的 printf，避免格式化错误
-    if [[ -n "$BLUE" ]] && [[ -n "$NC" ]]; then
-        printf "\r%s[%s] %3d%% (%d/%d) %s%s" "$BLUE" "$bar" "$percent" "$current" "$total" "$task" "$NC" 2>/dev/null || {
-            log "$task ($current/$total)" "info"
-        }
-    else
-        printf "\r[%s] %3d%% (%d/%d) %s" "$bar" "$percent" "$current" "$total" "$task" 2>/dev/null || {
-            log "$task ($current/$total)" "info"
-        }
-    fi
-    
-    # 完成时换行
+    # 修复颜色显示 - 使用 echo -e 而不是 printf
     if (( current >= total )); then
-        echo
+        echo -e "\r${BLUE}[${bar}] ${percent}% (${current}/${total}) ${task}${NC}"
+    else
+        echo -ne "\r${BLUE}[${bar}] ${percent}% (${current}/${total}) ${task}${NC}"
     fi
 }
 
@@ -537,28 +528,35 @@ resolve_module_dependencies() {
     printf '%s\n' "${resolved_order[@]}"
 }
 
-# --- GPG 密钥管理 ---
+# --- GPG 密钥管理 (临时禁用) ---
 setup_gpg_verification() {
     if [[ "${ENABLE_SIGNATURE_VERIFY:-false}" == "true" ]]; then
         step "设置 GPG 签名验证"
         
         local gpg_home="$TEMP_DIR/.gnupg"
-        mkdir -p "$gpg_home"
-        chmod 700 "$gpg_home"
+        mkdir -p "$gpg_home" 2>/dev/null || {
+            warn "无法创建 GPG 目录，禁用签名验证"
+            ENABLE_SIGNATURE_VERIFY=false
+            return 1
+        }
+        chmod 700 "$gpg_home" 2>/dev/null || true
         
         # 下载公钥
-        if curl -fsSL --connect-timeout 10 "$GPG_KEY_URL" -o "$gpg_home/signing_key.pub"; then
+        if curl -fsSL --connect-timeout 10 "$GPG_KEY_URL" -o "$gpg_home/signing_key.pub" 2>/dev/null; then
             export GNUPGHOME="$gpg_home"
-            gpg --import "$gpg_home/signing_key.pub" 2>/dev/null || {
+            if gpg --import "$gpg_home/signing_key.pub" 2>/dev/null; then
+                ok "GPG 签名验证已启用"
+                return 0
+            else
                 warn "GPG 公钥导入失败，禁用签名验证"
-                ENABLE_SIGNATURE_VERIFY=false
-                return
-            }
-            ok "GPG 签名验证已启用"
+            fi
         else
-            warn "无法下载 GPG 公钥，禁用签名验证"
-            ENABLE_SIGNATURE_VERIFY=false
+            warn "无法下载 GPG 公钥（可能仓库未设置签名），禁用签名验证"
         fi
+        
+        ENABLE_SIGNATURE_VERIFY=false
+    else
+        debug "GPG 签名验证已禁用"
     fi
 }
 
