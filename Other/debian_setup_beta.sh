@@ -76,6 +76,9 @@ ok() { log "✓ $1" "info"; }
 warn() { log "⚠ $1" "warn"; }
 debug() { log "🔍 $1" "debug"; }
 
+# 添加辅助函数
+show_info() { log "  $1: $2" "info"; }
+
 # --- 进度显示函数 ---
 show_progress() {
     local current=$1 total=$2 task="${3:-处理中}"
@@ -1221,6 +1224,7 @@ get_system_status() {
 }
 
 # --- 综合部署摘要 ---
+# --- 综合部署摘要 ---
 show_deployment_summary() {
     step "部署完成摘要"
     
@@ -1230,8 +1234,6 @@ show_deployment_summary() {
     log "╚══════════════════════════════════════════════════════╝" "title"
     
     # 基本信息
-    local show_info() { log "  $1: $2" "info"; }
-    
     show_info "脚本版本" "$SCRIPT_VERSION"
     show_info "部署模式" "$(if $RERUN_MODE; then echo "更新模式"; else echo "首次部署"; fi)"
     show_info "操作系统" "$(grep 'PRETTY_NAME' /etc/os-release | cut -d= -f2 | tr -d '"' 2>/dev/null || echo 'Debian')"
