@@ -125,46 +125,132 @@ cleanup() {
 }
 
 trap cleanup EXIT INT TERM
-# --- 配置文件处理 ---
+# --- 改进的配置文件处理 ---
 load_config() {
-    if [[ -f "$CONFIG_FILE" ]]; then
-        log "加载配置文件: $CONFIG_FILE" "info"
-        source "$CONFIG_FILE"
-        CONFIG_MODE="auto"
+    # 第一次运行，自动生成示例配置文件
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        log "首次运行，创建示例配置文件..." "info"
+        create_sample_config
         
-        # 验证配置文件格式
-        if [[ -n "${MODULES_CONFIG:-}" ]]; then
-            log "配置模式: 自动化部署" "info"
+        echo
+        log "📝 配置文件已生成: $CONFIG_FILE" "title"
+        log "   你可以编辑此文件来自定义部署行为" "info"
+        log "   配置格式: module_name:action (action: auto/ask/skip)" "info"
+        echo
+        
+        # 询问用户是否要编辑配置文件
+        read -p "是否现在编辑配置文件? [y/N]: " -r edit_choice
+        if [[ "$edit_choice" =~ ^[Yy]$ ]]; then
+            edit_config_file
+            echo
+            log "配置文件编辑完成，重新加载配置..." "info"
         else
-            warn "配置文件格式异常，回退到交互模式"
+            log "使用默认配置继续，稍后可通过以下命令编辑:" "info"
+            log "   nano $CONFIG_FILE" "info"
+        fi
+    fi
+    
+    # 加载配置文件
+    if [[ -f "$CONFIG_FILE" ]]; then
+        log "加载配置文件: $CONFIG_FILE" "debug"
+        source "$CONFIG_FILE"
+        
+        # 验证配置文件格式并设置模式
+        if [[ -n "${MODULES_CONFIG:-}" ]]; then
+            CONFIG_MODE="auto"
+            log "配置模式: 自动化部署 (根据配置文件)" "info"
+            
+            # 显示配置摘要
+            show_config_summary
+        else
+            warn "配置文件格式异常，使用交互模式"
             CONFIG_MODE="interactive"
         fi
     else
-        debug "未找到配置文件，使用交互模式"
+        log "配置文件加载失败，使用交互模式" "warn"
+        CONFIG_MODE="interactive"
     fi
 }
-
 create_sample_config() {
-    cat > "$CONFIG_FILE" << 'EOF'
+    cat > "$CONFIG_FILE" << EOF
+#!/bin/bash
+# =============================================================================
 # Debian 系统部署配置文件
-# 模块配置格式: module_name:action (action: auto/ask/skip)
+# 生成时间: $(date '+%Y-%m-%d %H:%M:%S')
+# =============================================================================
+
+# 模块配置 - 格式: "module_name:action"
+# 可用动作:
+#   auto - 自动执行，不询问用户
+#   ask  - 询问用户是否执行（默认）
+#   skip - 跳过此模块
 MODULES_CONFIG=(
-    "system-optimize:auto"
-    "zsh-setup:ask"
-    "mise-setup:ask"
-    "docker-setup:skip"
-    "network-optimize:auto"
-    "ssh-security:ask"
-    "auto-update-setup:auto"
+    "system-optimize:ask"       # 系统优化 (Zram, 时区) - 推荐执行
+    "zsh-setup:ask"            # Zsh Shell 环境 - 开发者推荐
+    "mise-setup:ask"           # Mise 版本管理器 - 开发者推荐
+    "docker-setup:ask"         # Docker 容器化平台 - 按需选择
+    "network-optimize:ask"     # 网络性能优化 (BBR) - 服务器推荐
+    "ssh-security:ask"         # SSH 安全配置 - 生产环境推荐
+    "auto-update-setup:ask"    # 自动更新系统 - 服务器推荐
 )
 
-# 自定义设置
-CUSTOM_SSH_PORT=2222
-SKIP_NETWORK_CHECK=false
-ENABLE_SIGNATURE_VERIFY=true
-PARALLEL_DOWNLOADS=true
+# =============================================================================
+# 高级配置选项
+# =============================================================================
+
+# SSH 配置
+CUSTOM_SSH_PORT=22             # 自定义 SSH 端口 (默认: 22)
+
+# 网络配置
+SKIP_NETWORK_CHECK=false       # 跳过网络连接检查 (默认: false)
+
+# 安全配置
+ENABLE_SIGNATURE_VERIFY=true   # 启用模块签名验证 (默认: true)
+
+# 性能配置
+PARALLEL_DOWNLOADS=true        # 并发下载模块 (默认: true)
+
+# =============================================================================
+# 预设配置模板 (取消注释使用)
+# =============================================================================
+
+# 🖥️ 服务器环境预设 (生产环境)
+# MODULES_CONFIG=(
+#     "system-optimize:auto"
+#     "zsh-setup:skip"
+#     "mise-setup:skip"
+#     "docker-setup:auto"
+#     "network-optimize:auto"
+#     "ssh-security:auto"
+#     "auto-update-setup:auto"
+# )
+# CUSTOM_SSH_PORT=22022
+
+# 💻 开发环境预设 (个人使用)
+# MODULES_CONFIG=(
+#     "system-optimize:auto"
+#     "zsh-setup:auto"
+#     "mise-setup:auto"
+#     "docker-setup:ask"
+#     "network-optimize:ask"
+#     "ssh-security:ask"
+#     "auto-update-setup:skip"
+# )
+
+# 🚀 最小化安装预设 (只安装必需)
+# MODULES_CONFIG=(
+#     "system-optimize:auto"
+#     "zsh-setup:skip"
+#     "mise-setup:skip"
+#     "docker-setup:skip"
+#     "network-optimize:auto"
+#     "ssh-security:auto"
+#     "auto-update-setup:auto"
+# )
 EOF
-    log "示例配置文件已创建: $CONFIG_FILE" "info"
+    
+    chmod 644 "$CONFIG_FILE"
+    log "示例配置文件已创建: $CONFIG_FILE" "debug"
 }
 
 # --- 系统预检查 ---
@@ -290,8 +376,8 @@ init_system() {
     # 创建工作目录
     mkdir -p "$TEMP_DIR" "$BACKUP_DIR"
     
-    # 加载配置
-    load_config
+    # 智能配置管理
+    manage_configuration
     
     ok "系统初始化完成"
 }
@@ -623,6 +709,116 @@ cleanup_old_backups() {
         find "$BACKUP_DIR" -maxdepth 1 -type d -name "backup_*" -printf '%T@ %p\n' | \
             sort -n | head -n -$max_backups | cut -d' ' -f2- | \
             xargs -r rm -rf
+    fi
+}
+# --- 智能配置管理 ---
+manage_configuration() {
+    step "配置文件管理"
+    
+    # 如果是重运行模式且有配置文件，显示上次配置
+    if $RERUN_MODE && [[ -f "$CONFIG_FILE" ]]; then
+        log "检测到现有配置文件" "info"
+        
+        echo
+        read -p "是否使用现有配置文件? [Y/n/e(编辑)]: " -r config_choice
+        config_choice="${config_choice:-Y}"
+        
+        case "$config_choice" in
+            [Ee]*)
+                log "打开配置文件编辑..." "info"
+                edit_config_file
+                ;;
+            [Nn]*)
+                log "重新创建配置文件..." "info"
+                backup_old_config
+                load_config  # 这会创建新的配置文件
+                ;;
+            *)
+                log "使用现有配置文件" "info"
+                ;;
+        esac
+    fi
+    
+    # 加载或创建配置
+    load_config
+}
+
+# --- 显示配置摘要 ---
+show_config_summary() {
+    if [[ "$CONFIG_MODE" == "auto" ]] && [[ -n "${MODULES_CONFIG:-}" ]]; then
+        log "📋 当前配置摘要:" "title"
+        
+        local auto_modules=() ask_modules=() skip_modules=()
+        
+        for config_item in "${MODULES_CONFIG[@]}"; do
+            if [[ "$config_item" =~ ^([^:]+):(.+)$ ]]; then
+                local module="${BASH_REMATCH[1]}"
+                local action="${BASH_REMATCH[2]}"
+                
+                case "$action" in
+                    "auto") auto_modules+=("$module") ;;
+                    "ask") ask_modules+=("$module") ;;
+                    "skip") skip_modules+=("$module") ;;
+                esac
+            fi
+        done
+        
+        if (( ${#auto_modules[@]} > 0 )); then
+            log "   自动执行: ${auto_modules[*]}" "info"
+        fi
+        if (( ${#ask_modules[@]} > 0 )); then
+            log "   询问执行: ${ask_modules[*]}" "info"
+        fi
+        if (( ${#skip_modules[@]} > 0 )); then
+            log "   跳过执行: ${skip_modules[*]}" "warn"
+        fi
+        
+        # 显示其他配置
+        echo
+        log "⚙️  其他配置:" "title"
+        [[ -n "${CUSTOM_SSH_PORT:-}" ]] && log "   SSH端口: $CUSTOM_SSH_PORT" "info"
+        [[ "${SKIP_NETWORK_CHECK:-}" == "true" ]] && log "   跳过网络检查: 是" "info"
+        [[ "${ENABLE_SIGNATURE_VERIFY:-}" == "true" ]] && log "   签名验证: 启用" "info"
+        [[ "${PARALLEL_DOWNLOADS:-}" == "true" ]] && log "   并发下载: 启用" "info"
+        
+        echo
+        read -p "确认使用此配置继续? [Y/n]: " -r confirm_choice
+        confirm_choice="${confirm_choice:-Y}"
+        if [[ ! "$confirm_choice" =~ ^[Yy]$ ]]; then
+            log "用户取消执行" "info"
+            exit 0
+        fi
+    fi
+}
+
+# --- 编辑配置文件 ---
+edit_config_file() {
+    local editors=("nano" "vim" "vi")
+    local editor_found=false
+    
+    for editor in "${editors[@]}"; do
+        if command -v "$editor" >/dev/null 2>&1; then
+            "$editor" "$CONFIG_FILE"
+            editor_found=true
+            break
+        fi
+    done
+    
+    if ! $editor_found; then
+        log "未找到可用编辑器，显示配置文件内容:" "warn"
+        echo "--- 配置文件内容 ---"
+        cat "$CONFIG_FILE"
+        echo "--- 配置文件结束 ---"
+        read -p "按回车键继续..." -r
+    fi
+}
+
+# --- 备份旧配置 ---
+backup_old_config() {
+    if [[ -f "$CONFIG_FILE" ]]; then
+        local backup_config="${CONFIG_FILE}.backup.$(date +%s)"
+        cp "$CONFIG_FILE" "$backup_config"
+        log "旧配置已备份到: $backup_config" "info"
     fi
 }
 # --- 用户交互和模块选择 ---
@@ -1166,7 +1362,17 @@ handle_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             --create-config)
+                if [[ -f "$CONFIG_FILE" ]]; then
+                    log "配置文件已存在: $CONFIG_FILE" "warn"
+                    read -p "是否覆盖现有配置文件? [y/N]: " -r overwrite_choice
+                    if [[ ! "$overwrite_choice" =~ ^[Yy]$ ]]; then
+                        log "操作已取消" "info"
+                        exit 0
+                    fi
+                    backup_old_config
+                fi
                 create_sample_config
+                log "配置文件创建完成，可以编辑后重新运行脚本" "info"
                 exit 0
                 ;;
             --check-status)
