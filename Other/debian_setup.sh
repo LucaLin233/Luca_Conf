@@ -375,7 +375,7 @@ validate_config() {
     fi
     
     # 检查 URL 可访问性
-    if ! curl -fsSL --connect-timeout 5 "$MODULE_BASE_URL" -o /dev/null 2>/dev/null; then
+    if ! curl -fsSL --connect-timeout 5 "$MODULE_BASE_URL/system-optimize.sh" -o /dev/null 2>/dev/null; then
         log "警告: MODULE_BASE_URL 可能不可访问: $MODULE_BASE_URL" "WARN"
     fi
     
