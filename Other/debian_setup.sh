@@ -100,15 +100,21 @@ show_progress() {
     local current=$1
     local total=$2
     local desc="${3:-处理中}"
+    
+    # 安全检查
+    [[ $total -eq 0 ]] && { echo "$desc: 0/0"; return; }
+    [[ $current -gt $total ]] && current=$total
+    
     local percent=$((current * 100 / total))
-    local bar_length=50
+    local bar_length=30  # 缩短长度减少问题
     local filled_length=$((percent * bar_length / 100))
     
-    printf "\r%s [" "$desc"
-    printf "%*s" "$filled_length" | tr ' ' '='
-    printf "%*s" $((bar_length - filled_length)) | tr ' ' '-'
-    printf "] %d%% (%d/%d)" "$percent" "$current" "$total"
+    # 构建进度条
+    local bar=""
+    for ((i=0; i<filled_length; i++)); do bar+="="; done
+    for ((i=filled_length; i<bar_length; i++)); do bar+="-"; done
     
+    printf "\r%s [%s] %d%% (%d/%d)" "$desc" "$bar" "$percent" "$current" "$total"
     [[ $current -eq $total ]] && echo
 }
 
