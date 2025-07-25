@@ -120,7 +120,7 @@ CURRENT_SHELL=$(getent passwd root | cut -d: -f7)
 ZSH_PATH=$(which zsh)
 
 if [ "$CURRENT_SHELL" != "$ZSH_PATH" ]; then
-    set_default="y"  # 自动设置为默认
+    read -p "是否将 Zsh 设置为默认 Shell? (y/n): " set_default
     if [[ "$set_default" =~ ^[Yy]$ ]]; then
         chsh -s "$ZSH_PATH" root
         log "Zsh 已设置为默认 Shell (重新登录后生效)" "info"
