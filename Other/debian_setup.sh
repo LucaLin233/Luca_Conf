@@ -79,17 +79,18 @@ log() {
     local level="${2:-info}"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
-    # 颜色定义
-    local colors=(
-        [""]=$'\033[0;32m'      # 默认绿色
-        ["warn"]=$'\033[0;33m'  # 黄色
-        ["error"]=$'\033[0;31m' # 红色
-        ["info"]=$'\033[0;36m'  # 青色
-        ["title"]=$'\033[1;35m' # 紫色粗体
-        ["debug"]=$'\033[0;37m' # 灰色
+    # ✅ 添加关联数组声明并修复索引
+    declare -A colors=(
+        [default]=$'\033[0;32m'  # 改为 default
+        [warn]=$'\033[0;33m'     # 黄色
+        [error]=$'\033[0;31m'    # 红色
+        [info]=$'\033[0;36m'     # 青色
+        [title]=$'\033[1;35m'    # 紫色粗体
+        [debug]=$'\033[0;37m'    # 灰色
     )
     
-    local color="${colors[$level]}"
+    # ✅ 修改这一行，添加默认值处理
+    local color="${colors[${level:-default}]}"
     local reset=$'\033[0m'
     
     # 控制台输出
