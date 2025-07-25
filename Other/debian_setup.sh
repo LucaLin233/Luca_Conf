@@ -744,8 +744,8 @@ else
         log "所有模块下载成功，开始执行..." "INFO"
         
         # 逐个执行模块
-        for i in "${!SELECTED_MODULES[@]}"; do
-            module="${SELECTED_MODULES[$i]}"
+        for ((i=0; i<${#SELECTED_MODULES[@]}; i++)); do
+            module="${SELECTED_MODULES[i]}"
             description="${MODULES[$module]}"
             
             log "\n开始处理模块 ($((i+1))/${#SELECTED_MODULES[@]}): $module" "TITLE"
