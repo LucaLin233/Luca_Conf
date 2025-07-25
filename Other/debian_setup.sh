@@ -111,8 +111,8 @@ show_progress() {
     
     # 构建进度条
     local bar=""
-    for ((i=0; i<filled_length; i++)); do bar+="="; done
-    for ((i=filled_length; i<bar_length; i++)); do bar+="-"; done
+    for ((idx=0; idx<filled_length; idx++)); do bar+="="; done
+    for ((idx=filled_length; idx<bar_length; idx++)); do bar+="-"; done
     
     printf "\r%s [%s] %d%% (%d/%d)" "$desc" "$bar" "$percent" "$current" "$total"
     [[ $current -eq $total ]] && echo
