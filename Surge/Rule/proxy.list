@@ -1,7 +1,7 @@
 # Rules Merger — VPS edition
 # Name:    proxy
-# Updated: 2026-06-20T14:00:02Z
-# Total:   19924
+# Updated: 2026-06-21T14:00:03Z
+# Total:   19925
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -25,6 +25,7 @@ DOMAIN,faronics.kayako.com
 DOMAIN,firstsearch.oclc.org
 DOMAIN,github-api.arkoselabs.com
 DOMAIN,gitlab-assets.oss-cn-hongkong.aliyuncs.com
+DOMAIN,gog-cdn-lumen.secure2.footprint.net
 DOMAIN,hpstore.corpmerchandise.com
 DOMAIN,hub.slarker.me
 DOMAIN,i.jeded.com
@@ -19897,6 +19898,17 @@ DOMAIN-SUFFIX,seven
 DOMAIN-SUFFIX,bauhaus
 DOMAIN-SUFFIX,latrobe
 DOMAIN-SUFFIX,monash
+DOMAIN-SUFFIX,moscow
+DOMAIN-SUFFIX,ru
+DOMAIN-SUFFIX,su
+DOMAIN-SUFFIX,tatar
+DOMAIN-SUFFIX,xn--80adxhks
+DOMAIN-SUFFIX,xn--80asehdb
+DOMAIN-SUFFIX,xn--80aswg
+DOMAIN-SUFFIX,xn--c1avg
+DOMAIN-SUFFIX,xn--d1acj3b
+DOMAIN-SUFFIX,xn--p1acf
+DOMAIN-SUFFIX,xn--p1ai
 DOMAIN-SUFFIX,meme
 DOMAIN-SUFFIX,ing
 DOMAIN-SUFFIX,foo
@@ -19916,14 +19928,3 @@ DOMAIN-SUFFIX,app
 DOMAIN-SUFFIX,how
 DOMAIN-SUFFIX,soy
 DOMAIN-SUFFIX,xn--q9jyb4c
-DOMAIN-SUFFIX,moscow
-DOMAIN-SUFFIX,ru
-DOMAIN-SUFFIX,su
-DOMAIN-SUFFIX,tatar
-DOMAIN-SUFFIX,xn--80adxhks
-DOMAIN-SUFFIX,xn--80asehdb
-DOMAIN-SUFFIX,xn--80aswg
-DOMAIN-SUFFIX,xn--c1avg
-DOMAIN-SUFFIX,xn--d1acj3b
-DOMAIN-SUFFIX,xn--p1acf
-DOMAIN-SUFFIX,xn--p1ai
