@@ -1,7 +1,7 @@
 # Rules Merger — VPS edition
 # Name:    proxy
-# Updated: 2026-06-21T14:00:03Z
-# Total:   19925
+# Updated: 2026-06-22T14:00:02Z
+# Total:   19927
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -152,7 +152,7 @@ DOMAIN-SUFFIX,apple
 DOMAIN-SUFFIX,android
 DOMAIN-SUFFIX,amazon
 DOMAIN-SUFFIX,jdbimgs.com
-DOMAIN-SUFFIX,mexc.com
+DOMAIN-SUFFIX,opencritic.com
 DOMAIN-SUFFIX,13mei13.top
 DOMAIN-SUFFIX,140033.xyz
 DOMAIN-SUFFIX,141-hk.com
@@ -2711,7 +2711,7 @@ DOMAIN-SUFFIX,beatsheadphones-discount.com
 DOMAIN-SUFFIX,beatsheadphones1.com
 DOMAIN-SUFFIX,beatsheadphones2u.com
 DOMAIN-SUFFIX,beatsheadphonesale.com
-DOMAIN-SUFFIX,beatsheadphonesdealer.com
+DOMAIN-SUFFIX,jiaochuanba25.buzz
 DOMAIN-SUFFIX,beatsheadphonesforcheap.net
 DOMAIN-SUFFIX,beatsheadphonesonline.com
 DOMAIN-SUFFIX,beatsheadphoness.com
@@ -2723,7 +2723,7 @@ DOMAIN-SUFFIX,beatsinsingapore.com
 DOMAIN-SUFFIX,beatsireland.net
 DOMAIN-SUFFIX,beatsjoy.com
 DOMAIN-SUFFIX,beatsmonstersales.com
-DOMAIN-SUFFIX,jiaoyou8.com
+DOMAIN-SUFFIX,beatsmusic.com
 DOMAIN-SUFFIX,beatsmusic.wang
 DOMAIN-SUFFIX,beatsneon.com
 DOMAIN-SUFFIX,beatsnzsale.com
@@ -8197,8 +8197,10 @@ DOMAIN-SUFFIX,gofile.me
 DOMAIN-SUFFIX,gofucker.com
 DOMAIN-SUFFIX,gofuckmenow.com
 DOMAIN-SUFFIX,gofundme.com
+DOMAIN-SUFFIX,gog-services.com
 DOMAIN-SUFFIX,gog-statics.com
 DOMAIN-SUFFIX,gog.com
+DOMAIN-SUFFIX,gogalaxy.com
 DOMAIN-SUFFIX,gogettaxi.org
 DOMAIN-SUFFIX,gogle.com
 DOMAIN-SUFFIX,gogo-load.com
@@ -10502,7 +10504,7 @@ DOMAIN-SUFFIX,javfv.com
 DOMAIN-SUFFIX,javgg.net
 DOMAIN-SUFFIX,javgrown.com
 DOMAIN-SUFFIX,javhard.net
-DOMAIN-SUFFIX,jiaochuanba25.buzz
+DOMAIN-SUFFIX,javhard.org
 DOMAIN-SUFFIX,javhaven.com
 DOMAIN-SUFFIX,javhay.net
 DOMAIN-SUFFIX,javhd.com
@@ -10631,8 +10633,8 @@ DOMAIN-SUFFIX,jhelab.org
 DOMAIN-SUFFIX,jhxl.org
 DOMAIN-SUFFIX,jhzyw.xyz
 DOMAIN-SUFFIX,jiangweiping.com
-DOMAIN-SUFFIX,javhard.org
-DOMAIN-SUFFIX,beatsmusic.com
+DOMAIN-SUFFIX,beatsheadphonesdealer.com
+DOMAIN-SUFFIX,kaydara.com
 DOMAIN-SUFFIX,jiayoulu.com
 DOMAIN-SUFFIX,jibemobile.com
 DOMAIN-SUFFIX,wmfusercontent.org
@@ -10902,7 +10904,7 @@ DOMAIN-SUFFIX,katestube.com
 DOMAIN-SUFFIX,kathmandupost.com
 DOMAIN-SUFFIX,kavkazr.com
 DOMAIN-SUFFIX,kawase.com
-DOMAIN-SUFFIX,kaydara.com
+DOMAIN-SUFFIX,jiaoyou8.com
 DOMAIN-SUFFIX,wipower.com
 DOMAIN-SUFFIX,kbzbank.com
 DOMAIN-SUFFIX,kbzpay.com
@@ -12032,7 +12034,7 @@ DOMAIN-SUFFIX,metrotoons.com
 DOMAIN-SUFFIX,meuhentai.com
 DOMAIN-SUFFIX,mewe.com
 DOMAIN-SUFFIX,mexc.co
-DOMAIN-SUFFIX,jiaochuanba26.buzz
+DOMAIN-SUFFIX,mexc.com
 DOMAIN-SUFFIX,mexcsensors.com
 DOMAIN-SUFFIX,mfg-inspector.com
 DOMAIN-SUFFIX,mfmf.club
@@ -13955,7 +13957,7 @@ DOMAIN-SUFFIX,openapiservice.com
 DOMAIN-SUFFIX,wallpapercasa.com
 DOMAIN-SUFFIX,opencollective.com
 DOMAIN-SUFFIX,opencreate.org
-DOMAIN-SUFFIX,opencritic.com
+DOMAIN-SUFFIX,jiaochuanba26.buzz
 DOMAIN-SUFFIX,opendemocracy.net
 DOMAIN-SUFFIX,opendns.com
 DOMAIN-SUFFIX,opendroneid.org
