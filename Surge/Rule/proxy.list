@@ -1,7 +1,7 @@
 # Rules Merger — VPS edition
 # Name:    proxy
-# Updated: 2026-06-29T14:00:01Z
-# Total:   19954
+# Updated: 2026-06-30T14:00:02Z
+# Total:   19955
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -150,8 +150,8 @@ DOMAIN-SUFFIX,aws
 DOMAIN-SUFFIX,apple
 DOMAIN-SUFFIX,android
 DOMAIN-SUFFIX,amazon
-DOMAIN-SUFFIX,jdforum.net
-DOMAIN-SUFFIX,xvideosincesto.com
+DOMAIN-SUFFIX,jdbstatic.com
+DOMAIN-SUFFIX,hppage5000.com
 DOMAIN-SUFFIX,13mei13.top
 DOMAIN-SUFFIX,140033.xyz
 DOMAIN-SUFFIX,141-hk.com
@@ -5822,7 +5822,7 @@ DOMAIN-SUFFIX,durex-shopline.com
 DOMAIN-SUFFIX,xvideosnovinhas.com
 DOMAIN-SUFFIX,xvideosnovinha.com
 DOMAIN-SUFFIX,xvideosjingxiang.com
-DOMAIN-SUFFIX,jiayoulu.com
+DOMAIN-SUFFIX,xvideosincesto.com
 DOMAIN-SUFFIX,xvideoscom.me
 DOMAIN-SUFFIX,durex.com
 DOMAIN-SUFFIX,xvideosbrasileiro.net
@@ -6519,6 +6519,7 @@ DOMAIN-SUFFIX,exploreintel.com
 DOMAIN-SUFFIX,explorespanking.com
 DOMAIN-SUFFIX,exporntoons.net
 DOMAIN-SUFFIX,exposedlatinas.com
+DOMAIN-SUFFIX,expressnews.com
 DOMAIN-SUFFIX,expressvpn.com
 DOMAIN-SUFFIX,expresswifi.com
 DOMAIN-SUFFIX,exrates.me
@@ -9339,7 +9340,7 @@ DOMAIN-SUFFIX,hpmobile.com
 DOMAIN-SUFFIX,hpofficejetprinter.com
 DOMAIN-SUFFIX,hponlinehelp.com
 DOMAIN-SUFFIX,hponlineprinting.com
-DOMAIN-SUFFIX,hppage5000.com
+DOMAIN-SUFFIX,jibemobile.com
 DOMAIN-SUFFIX,hppavillionlaptop.com
 DOMAIN-SUFFIX,hpphotoscanners.com
 DOMAIN-SUFFIX,hpprinterdrivers.com
@@ -10615,8 +10616,8 @@ DOMAIN-SUFFIX,jdavsp.pw
 DOMAIN-SUFFIX,jdavsp.top
 DOMAIN-SUFFIX,jdavsp.xyz
 DOMAIN-SUFFIX,jdbimgs.com
-DOMAIN-SUFFIX,jdbstatic.com
 DOMAIN-SUFFIX,000webhost.com
+DOMAIN-SUFFIX,jdforum.net
 DOMAIN-SUFFIX,jennylist.xyz
 DOMAIN-SUFFIX,jerk-porn.com
 DOMAIN-SUFFIX,jerk24.com
@@ -10648,7 +10649,8 @@ DOMAIN-SUFFIX,jhzyw.xyz
 DOMAIN-SUFFIX,jiangweiping.com
 DOMAIN-SUFFIX,jiaochuanba25.buzz
 DOMAIN-SUFFIX,jiaochuanba26.buzz
-DOMAIN-SUFFIX,miniso.com
+DOMAIN-SUFFIX,jiaoyou8.com
+DOMAIN-SUFFIX,transparency.org
 DOMAIN-SUFFIX,wmcloud.org
 DOMAIN-SUFFIX,jieav.com
 DOMAIN-SUFFIX,jifangge.com
@@ -12335,7 +12337,7 @@ DOMAIN-SUFFIX,miniso-nz.com
 DOMAIN-SUFFIX,miniso.co
 DOMAIN-SUFFIX,whatisairwatch.com
 DOMAIN-SUFFIX,whatbrowser.org
-DOMAIN-SUFFIX,jiaoyou8.com
+DOMAIN-SUFFIX,miniso.com
 DOMAIN-SUFFIX,whatboyswant.com
 DOMAIN-SUFFIX,whatblocked.com
 DOMAIN-SUFFIX,what-fan.net
@@ -16726,7 +16728,6 @@ DOMAIN-SUFFIX,smartoneholdings.com
 DOMAIN-SUFFIX,smartonerobotics.com
 DOMAIN-SUFFIX,smartonesolutions.hk
 DOMAIN-SUFFIX,smartthings.com
-DOMAIN-SUFFIX,jibemobile.com
 DOMAIN-SUFFIX,volvobuses.hk
 DOMAIN-SUFFIX,smmsp.xyz
 DOMAIN-SUFFIX,smn.news
@@ -18105,7 +18106,7 @@ DOMAIN-SUFFIX,transferwise.com
 DOMAIN-SUFFIX,translatetheweb.com
 DOMAIN-SUFFIX,translatewiki.net
 DOMAIN-SUFFIX,translatewiki.org
-DOMAIN-SUFFIX,transparency.org
+DOMAIN-SUFFIX,jiayoulu.com
 DOMAIN-SUFFIX,transpornsites.com
 DOMAIN-SUFFIX,travelcontroller.com
 DOMAIN-SUFFIX,visa.com
