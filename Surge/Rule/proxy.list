@@ -1,7 +1,7 @@
 # Rules Merger — VPS edition
 # Name:    proxy
-# Updated: 2026-07-01T14:00:02Z
-# Total:   19955
+# Updated: 2026-07-02T14:00:01Z
+# Total:   19964
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -150,8 +150,8 @@ DOMAIN-SUFFIX,aws
 DOMAIN-SUFFIX,apple
 DOMAIN-SUFFIX,android
 DOMAIN-SUFFIX,amazon
-DOMAIN-SUFFIX,jdbstatic.com
-DOMAIN-SUFFIX,hppage5000.com
+DOMAIN-SUFFIX,jdforum.net
+DOMAIN-SUFFIX,bmwusa.com
 DOMAIN-SUFFIX,13mei13.top
 DOMAIN-SUFFIX,140033.xyz
 DOMAIN-SUFFIX,141-hk.com
@@ -217,7 +217,7 @@ DOMAIN-SUFFIX,1917live.red
 DOMAIN-SUFFIX,191porn.com
 DOMAIN-SUFFIX,1984bbs.com
 DOMAIN-SUFFIX,1991way.com
-DOMAIN-SUFFIX,1992qq.xyz
+DOMAIN-SUFFIX,jiaoyou8.com
 DOMAIN-SUFFIX,1bigclub.com
 DOMAIN-SUFFIX,1bokeponline.top
 DOMAIN-SUFFIX,1classtube.com
@@ -3424,7 +3424,7 @@ DOMAIN-SUFFIX,bmwstep.com
 DOMAIN-SUFFIX,bmwstepconnections.com
 DOMAIN-SUFFIX,bmwsummerschool.com
 DOMAIN-SUFFIX,bmwtampabay.com
-DOMAIN-SUFFIX,bmwusa.com
+DOMAIN-SUFFIX,jiayoulu.com
 DOMAIN-SUFFIX,bmwusaservice.com
 DOMAIN-SUFFIX,bmwusatires.com
 DOMAIN-SUFFIX,bmwusfactory.com
@@ -3522,6 +3522,7 @@ DOMAIN-SUFFIX,bossae.com
 DOMAIN-SUFFIX,boswp.com
 DOMAIN-SUFFIX,botanwang.com
 DOMAIN-SUFFIX,botframework.com
+DOMAIN-SUFFIX,botim.me
 DOMAIN-SUFFIX,botorch.org
 DOMAIN-SUFFIX,botstop.com
 DOMAIN-SUFFIX,boulx.com
@@ -9161,6 +9162,9 @@ DOMAIN-SUFFIX,horizontal-llc.com
 DOMAIN-SUFFIX,horizontal-systems.com
 DOMAIN-SUFFIX,horizontalglue.com
 DOMAIN-SUFFIX,horizontalsystems.com
+DOMAIN-SUFFIX,hornet.com
+DOMAIN-SUFFIX,hornetapp.com
+DOMAIN-SUFFIX,hornetx.com
 DOMAIN-SUFFIX,hornyasianmilfs.com
 DOMAIN-SUFFIX,hornybitches.org
 DOMAIN-SUFFIX,hornybutt.com
@@ -9340,7 +9344,7 @@ DOMAIN-SUFFIX,hpmobile.com
 DOMAIN-SUFFIX,hpofficejetprinter.com
 DOMAIN-SUFFIX,hponlinehelp.com
 DOMAIN-SUFFIX,hponlineprinting.com
-DOMAIN-SUFFIX,jibemobile.com
+DOMAIN-SUFFIX,hppage5000.com
 DOMAIN-SUFFIX,hppavillionlaptop.com
 DOMAIN-SUFFIX,hpphotoscanners.com
 DOMAIN-SUFFIX,hpprinterdrivers.com
@@ -10616,8 +10620,8 @@ DOMAIN-SUFFIX,jdavsp.pw
 DOMAIN-SUFFIX,jdavsp.top
 DOMAIN-SUFFIX,jdavsp.xyz
 DOMAIN-SUFFIX,jdbimgs.com
+DOMAIN-SUFFIX,jdbstatic.com
 DOMAIN-SUFFIX,000webhost.com
-DOMAIN-SUFFIX,jdforum.net
 DOMAIN-SUFFIX,jennylist.xyz
 DOMAIN-SUFFIX,jerk-porn.com
 DOMAIN-SUFFIX,jerk24.com
@@ -10649,8 +10653,8 @@ DOMAIN-SUFFIX,jhzyw.xyz
 DOMAIN-SUFFIX,jiangweiping.com
 DOMAIN-SUFFIX,jiaochuanba25.buzz
 DOMAIN-SUFFIX,jiaochuanba26.buzz
-DOMAIN-SUFFIX,jiaoyou8.com
-DOMAIN-SUFFIX,transparency.org
+DOMAIN-SUFFIX,1992qq.xyz
+DOMAIN-SUFFIX,languagetool.org
 DOMAIN-SUFFIX,wmcloud.org
 DOMAIN-SUFFIX,jieav.com
 DOMAIN-SUFFIX,jifangge.com
@@ -11148,7 +11152,7 @@ DOMAIN-SUFFIX,lanasbigboobs.com
 DOMAIN-SUFFIX,landofhope.tv
 DOMAIN-SUFFIX,langchain.com
 DOMAIN-SUFFIX,langsuirs.com
-DOMAIN-SUFFIX,languagetool.org
+DOMAIN-SUFFIX,jibemobile.com
 DOMAIN-SUFFIX,lanmdh.net
 DOMAIN-SUFFIX,lanniser-ylo.shop
 DOMAIN-SUFFIX,lanternal.com
@@ -11366,6 +11370,7 @@ DOMAIN-SUFFIX,listennotes.com
 DOMAIN-SUFFIX,listentoyoutube.com
 DOMAIN-SUFFIX,listinganalytics.net
 DOMAIN-SUFFIX,litbus-anime.com
+DOMAIN-SUFFIX,litecoin.org
 DOMAIN-SUFFIX,litenews.hk
 DOMAIN-SUFFIX,literatumonline.com
 DOMAIN-SUFFIX,literotica.com
@@ -13171,7 +13176,9 @@ DOMAIN-SUFFIX,netflixdnstest9.com
 DOMAIN-SUFFIX,netflixinvestor.com
 DOMAIN-SUFFIX,netflixtechblog.com
 DOMAIN-SUFFIX,netlify.com
+DOMAIN-SUFFIX,netlifydns.com
 DOMAIN-SUFFIX,netlifystatus.com
+DOMAIN-SUFFIX,netlifyusercontent.com
 DOMAIN-SUFFIX,netme.cc
 DOMAIN-SUFFIX,webgirlsonline.net
 DOMAIN-SUFFIX,netpornsex.com
@@ -13602,6 +13609,7 @@ DOMAIN-SUFFIX,waymo.com
 DOMAIN-SUFFIX,ntdtv.org
 DOMAIN-SUFFIX,ntdtvla.com
 DOMAIN-SUFFIX,ntdvn.com
+DOMAIN-SUFFIX,ntl.fyi
 DOMAIN-SUFFIX,waybig.com
 DOMAIN-SUFFIX,waveprotocol.org
 DOMAIN-SUFFIX,wav.tv
@@ -17535,6 +17543,7 @@ DOMAIN-SUFFIX,technogym.com
 DOMAIN-SUFFIX,vivaxnxx.com
 DOMAIN-SUFFIX,technologyandsociety.org
 DOMAIN-SUFFIX,techradar.com
+DOMAIN-SUFFIX,techspot.com
 DOMAIN-SUFFIX,techstreet.com
 DOMAIN-SUFFIX,techtimes.com
 DOMAIN-SUFFIX,techtudo.com
@@ -18106,7 +18115,7 @@ DOMAIN-SUFFIX,transferwise.com
 DOMAIN-SUFFIX,translatetheweb.com
 DOMAIN-SUFFIX,translatewiki.net
 DOMAIN-SUFFIX,translatewiki.org
-DOMAIN-SUFFIX,jiayoulu.com
+DOMAIN-SUFFIX,transparency.org
 DOMAIN-SUFFIX,transpornsites.com
 DOMAIN-SUFFIX,travelcontroller.com
 DOMAIN-SUFFIX,visa.com
