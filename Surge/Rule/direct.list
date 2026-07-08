@@ -1,7 +1,7 @@
 # Rules Merger — VPS edition
 # Name:    direct
-# Updated: 2026-07-07T14:00:07Z
-# Total:   119064
+# Updated: 2026-07-08T14:00:07Z
+# Total:   119065
 
 DOMAIN,instant.arubanetworks.com
 DOMAIN,setmeup.arubanetworks.com
@@ -119048,6 +119048,7 @@ IP-CIDR6,2a0e:b107:740::/44
 IP-CIDR6,2a0e:b107:2440::/44
 IP-CIDR6,2a0f:1cc5:1600::/44
 IP-CIDR6,2a0f:1cc5:4700::/40
+IP-CIDR6,2a0f:9400:6110::/48
 IP-CIDR6,2a12:cb41:1200::/44
 IP-CIDR6,2a12:cb41:1300::/43
 IP-CIDR6,2a12:cb41:13f0::/44
