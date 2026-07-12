@@ -1,7 +1,7 @@
 # Rules Merger — VPS edition
 # Name:    proxy
-# Updated: 2026-07-11T14:00:01Z
-# Total:   19973
+# Updated: 2026-07-12T14:00:02Z
+# Total:   19986
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -150,6 +150,7 @@ DOMAIN-SUFFIX,apple
 DOMAIN-SUFFIX,android
 DOMAIN-SUFFIX,amazon
 DOMAIN-SUFFIX,jdavsp.xyz
+DOMAIN-SUFFIX,tibetfund.org
 DOMAIN-SUFFIX,13mei13.top
 DOMAIN-SUFFIX,140033.xyz
 DOMAIN-SUFFIX,141-hk.com
@@ -2839,6 +2840,8 @@ DOMAIN-SUFFIX,bestbuystores.com
 DOMAIN-SUFFIX,bestbuytradein.com
 DOMAIN-SUFFIX,bestbuyus.com
 DOMAIN-SUFFIX,bestcamsites.net
+DOMAIN-SUFFIX,bestchange.com
+DOMAIN-SUFFIX,bestchange.net
 DOMAIN-SUFFIX,bestclouddrive.com
 DOMAIN-SUFFIX,bestdori.com
 DOMAIN-SUFFIX,besterpornos.com
@@ -4822,6 +4825,7 @@ DOMAIN-SUFFIX,critiquebrainz.org
 DOMAIN-SUFFIX,crixet.com
 DOMAIN-SUFFIX,crmdynint-gcc.com
 DOMAIN-SUFFIX,crmdynint.com
+DOMAIN-SUFFIX,crocoblock.com
 DOMAIN-SUFFIX,crocotube.com
 DOMAIN-SUFFIX,cromite.org
 DOMAIN-SUFFIX,crossborderexpansion.com
@@ -5127,6 +5131,7 @@ DOMAIN-SUFFIX,delcamp.net
 DOMAIN-SUFFIX,delcamtv.com
 DOMAIN-SUFFIX,delcamuniversity.com
 DOMAIN-SUFFIX,delcamusa.com
+DOMAIN-SUFFIX,delets.online
 DOMAIN-SUFFIX,xxxwow.net
 DOMAIN-SUFFIX,xxxvogue.net
 DOMAIN-SUFFIX,xxxvirtualworld.com
@@ -5570,7 +5575,6 @@ DOMAIN-SUFFIX,xxeronetxx.info
 DOMAIN-SUFFIX,dns2go.com
 DOMAIN-SUFFIX,dnscrypt.org
 DOMAIN-SUFFIX,dnssec.net
-DOMAIN-SUFFIX,jiaoyou8.com
 DOMAIN-SUFFIX,dnsvisa.com
 DOMAIN-SUFFIX,dnvod.tv
 DOMAIN-SUFFIX,do.co
@@ -6047,7 +6051,6 @@ DOMAIN-SUFFIX,ebaymag.com
 DOMAIN-SUFFIX,ebaymainstreet.com
 DOMAIN-SUFFIX,ebaymall.com
 DOMAIN-SUFFIX,ebaymarketplace.net
-DOMAIN-SUFFIX,jiayoulu.com
 DOMAIN-SUFFIX,ebaymotors.com
 DOMAIN-SUFFIX,ebaymotors.org
 DOMAIN-SUFFIX,ebaymotorsblog.com
@@ -7491,7 +7494,7 @@ DOMAIN-SUFFIX,framerstatic.com
 DOMAIN-SUFFIX,framerusercontent.com
 DOMAIN-SUFFIX,francecasquebeatssolde.com
 DOMAIN-SUFFIX,francemail.com
-DOMAIN-SUFFIX,jiaochuanba26.buzz
+DOMAIN-SUFFIX,frank2019.me
 DOMAIN-SUFFIX,franklc.com
 DOMAIN-SUFFIX,frcasquesbeats.com
 DOMAIN-SUFFIX,freakshare.com
@@ -8002,6 +8005,7 @@ DOMAIN-SUFFIX,getpocket.com
 DOMAIN-SUFFIX,getporn.tv
 DOMAIN-SUFFIX,getprintersupports.com
 DOMAIN-SUFFIX,getscorecash.com
+DOMAIN-SUFFIX,getsentry.com
 DOMAIN-SUFFIX,getsession.org
 DOMAIN-SUFFIX,getsexgames.com
 DOMAIN-SUFFIX,getsync.com
@@ -8660,6 +8664,7 @@ DOMAIN-SUFFIX,hao21.xyz
 DOMAIN-SUFFIX,hao62.xyz
 DOMAIN-SUFFIX,haori888.com
 DOMAIN-SUFFIX,haplorrhini.com
+DOMAIN-SUFFIX,happ.info
 DOMAIN-SUFFIX,xgmyd.com
 DOMAIN-SUFFIX,happymeal.com
 DOMAIN-SUFFIX,xgirls.webcam
@@ -9964,6 +9969,7 @@ DOMAIN-SUFFIX,infinitetoons.com
 DOMAIN-SUFFIX,infinitetube.com
 DOMAIN-SUFFIX,influencersgonewild.com
 DOMAIN-SUFFIX,infocert.digital
+DOMAIN-SUFFIX,jiaochuanba26.buzz
 DOMAIN-SUFFIX,wuso.me
 DOMAIN-SUFFIX,wunvb.com
 DOMAIN-SUFFIX,infoq.com
@@ -10660,7 +10666,7 @@ DOMAIN-SUFFIX,jhxl.org
 DOMAIN-SUFFIX,jhzyw.xyz
 DOMAIN-SUFFIX,jiangweiping.com
 DOMAIN-SUFFIX,jiaochuanba25.buzz
-DOMAIN-SUFFIX,frank2019.me
+DOMAIN-SUFFIX,visaglobalfinance.com
 DOMAIN-SUFFIX,jibemobile.com
 DOMAIN-SUFFIX,wmcloud.org
 DOMAIN-SUFFIX,jieav.com
@@ -12634,6 +12640,7 @@ DOMAIN-SUFFIX,motherless.com
 DOMAIN-SUFFIX,motiongraphicsandmore.com
 DOMAIN-SUFFIX,motionpictureser.com
 DOMAIN-SUFFIX,moto.com
+DOMAIN-SUFFIX,motocms.com
 DOMAIN-SUFFIX,motolia.com
 DOMAIN-SUFFIX,motopress.com
 DOMAIN-SUFFIX,motorola.co
@@ -13919,6 +13926,7 @@ DOMAIN-SUFFIX,onejapanese.com
 DOMAIN-SUFFIX,onejav.com
 DOMAIN-SUFFIX,onekey-asset.com
 DOMAIN-SUFFIX,onekeycn.com
+DOMAIN-SUFFIX,onemoment.cc
 DOMAIN-SUFFIX,onemozilla.org
 DOMAIN-SUFFIX,onenote.com
 DOMAIN-SUFFIX,onenote.net
@@ -14244,6 +14252,7 @@ DOMAIN-SUFFIX,pawoo.net
 DOMAIN-SUFFIX,paxful.com
 DOMAIN-SUFFIX,paxlicense.org
 DOMAIN-SUFFIX,paydiant.com
+DOMAIN-SUFFIX,payget.pro
 DOMAIN-SUFFIX,paygonline.com
 DOMAIN-SUFFIX,payhulu.com
 DOMAIN-SUFFIX,paylike.com
@@ -14638,6 +14647,7 @@ DOMAIN-SUFFIX,plasma-mobile.org
 DOMAIN-SUFFIX,plasticlabs.com
 DOMAIN-SUFFIX,plastics-cadcam.com
 DOMAIN-SUFFIX,platinumlinks.org
+DOMAIN-SUFFIX,platov.co
 DOMAIN-SUFFIX,play-asia.com
 DOMAIN-SUFFIX,play-bmm.shop
 DOMAIN-SUFFIX,play-bmmer.buzz
@@ -15503,6 +15513,8 @@ DOMAIN-SUFFIX,rakuten.tv
 DOMAIN-SUFFIX,rakutenadvertising.com
 DOMAIN-SUFFIX,voyeurhouse.com
 DOMAIN-SUFFIX,voyeurhit.com
+DOMAIN-SUFFIX,ramon.cash
+DOMAIN-SUFFIX,ramon.money
 DOMAIN-SUFFIX,randyblue.com
 DOMAIN-SUFFIX,rapefilms.net
 DOMAIN-SUFFIX,rapetube.me
@@ -17609,6 +17621,7 @@ DOMAIN-SUFFIX,tellme.pw
 DOMAIN-SUFFIX,tellmewhygame.com
 DOMAIN-SUFFIX,temetube.xyz
 DOMAIN-SUFFIX,temp-mail.org
+DOMAIN-SUFFIX,templatemonster.com
 DOMAIN-SUFFIX,temu.com
 DOMAIN-SUFFIX,tenbyfotolia.com
 DOMAIN-SUFFIX,tenor.com
@@ -17803,7 +17816,7 @@ DOMAIN-SUFFIX,thesimssocial.com
 DOMAIN-SUFFIX,thestandnews.com
 DOMAIN-SUFFIX,thestationbymaker.com
 DOMAIN-SUFFIX,visaicsdirect.com
-DOMAIN-SUFFIX,visaglobalfinance.com
+DOMAIN-SUFFIX,jiayoulu.com
 DOMAIN-SUFFIX,thetatoken.org
 DOMAIN-SUFFIX,thethothub.com
 DOMAIN-SUFFIX,thetibetpost.com
@@ -17895,7 +17908,7 @@ DOMAIN-SUFFIX,tibetanyouthcongress.org
 DOMAIN-SUFFIX,tibetcorps.org
 DOMAIN-SUFFIX,tibetexpress.net
 DOMAIN-SUFFIX,tibetfocus.com
-DOMAIN-SUFFIX,tibetfund.org
+DOMAIN-SUFFIX,jiaoyou8.com
 DOMAIN-SUFFIX,tibethouse.org
 DOMAIN-SUFFIX,tibetmuseum.org
 DOMAIN-SUFFIX,tibetnetwork.org
