@@ -1,0 +1,3 @@
+Temporary GitHub MCP write-permission test.
+Created at: 2026-07-31T00:00:00Z
+This file is safe to delete.
