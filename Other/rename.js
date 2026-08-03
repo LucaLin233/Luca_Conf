@@ -8,7 +8,7 @@
  *
  * 默认 format=compact，只输出旗帜、机场名、地区和自动识别的服务商。
  * format=full 保留完整节点名，仅规范地区、旗帜、重复地区和序号。
- * number=remove 会清理名称中独立的 01/001 类序号，以及名称末尾的数字序号。
+ * number=remove 会清理名称中的 01/001 类零填充序号，以及 #1/节点1 类明确序号。
  * 默认 clear=true，会清理流量、到期、官网等信息节点。
  * airport=true 优先读取当前 Sub-Store 订阅的“名称”，并输出为「机场名」；
  * 集合级脚本无法区分每个节点来源时，会回退到 name= 或节点已有的括号名称。
@@ -27,7 +27,7 @@
  * 参数：
  *   format=compact|full         紧凑命名或完整名称，默认 compact
  *   out=zh|en|code              地区输出为中文、英文全称或两位代码，默认 zh
- *   provider=auto|off           自动提取尾部服务商，DP V 类名称会整体保留，默认 auto
+ *   provider=auto|off           自动提取尾部服务商短语，DP V 类名称会整体保留，默认 auto
  *   providerkey=FXT+JinX+BGP    服务商白名单，命中时优先使用
  *   dropkey=关键词1+关键词2     provider=auto 时额外忽略的线路描述词
  *   airport=true|false          读取 Sub-Store 订阅名称并输出为「机场名」，默认 true
@@ -103,33 +103,13 @@ const config = {
 };
 
 const DEFAULT_CLEAR_KEYS = [
-  "套餐",
-  "到期",
-  "有效期",
-  "剩余",
-  "已用",
-  "过期",
-  "失联",
-  "测试",
-  "官方",
-  "网址",
-  "客服",
-  "网站",
-  "获取订阅",
-  "流量",
-  "下次",
-  "官址",
-  "联系",
-  "邮箱",
-  "工单",
-  "USE",
-  "USED",
-  "TOTAL",
-  "EXPIRE",
-  "EMAIL",
+  "套餐", "到期", "有效期", "剩余", "已用", "过期", "失联", "测试",
+  "官方", "网址", "客服", "网站", "获取订阅", "流量", "下次", "官址",
+  "联系", "邮箱", "工单",
 ];
+const DEFAULT_CLEAR_WORD_RE = /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b/i;
 const REGION_ROWS = [
-  ["HK","香港","Hong Kong",["Hong Kong","Hongkong","Hong Kong SAR","HKG","港"],["九龙","九龙城","Kowloon"]],
+  ["HK","香港","Hong Kong",["Hong Kong","Hongkong","Hong Kong SAR","HKG","港","深港","沪港","呼港","京港","广港","杭港"],["九龙","九龙城","Kowloon"]],
   ["MO","澳门","Macao",["Macao","Macau","Macao SAR"],[]],
   ["TW","台湾","Taiwan",["Taiwan","台灣","Taiwan China"],["台北","新北","高雄","臺北","Taipei","Kaohsiung"]],
   ["JP","日本","Japan",["Japan"],["东京","大阪","大坂","名古屋","Tokyo","Osaka","Nagoya"]],
@@ -337,7 +317,6 @@ const REGIONS = REGION_ROWS.map(([code, zh, en, aliases, cities]) => {
     flag: code === "TW" ? "🇨🇳" : inputFlag,
     coreAliases: core,
     matchAliases: [...new Set([zh, en, code, inputFlag, ...aliases, ...cityAliases])],
-    providerAliases: uniqueSorted([zh, en, code, ...aliases, ...cityAliases], true),
   };
 });
 const FLAG_RE = /(?:[\uD83C][\uDDE6-\uDDFF]){2}/g;
@@ -346,13 +325,20 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^$(){}|[\]\\]/g, "\\$&");
 }
 const ALIAS_REGEX_CACHE = new Map();
-function aliasRegExp(alias) {
-  if (ALIAS_REGEX_CACHE.has(alias)) return ALIAS_REGEX_CACHE.get(alias);
+function aliasRegExp(alias, global = false) {
+  const cacheKey = alias + (global ? "\u0000g" : "");
+  if (ALIAS_REGEX_CACHE.has(cacheKey)) return ALIAS_REGEX_CACHE.get(cacheKey);
   const escaped = escapeRegExp(alias);
-  const regex = /^[A-Za-z0-9][A-Za-z0-9 .'-]*$/.test(alias)
-    ? new RegExp("(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])", "i")
-    : new RegExp("(" + escaped + ")", "i");
-  ALIAS_REGEX_CACHE.set(alias, regex);
+  let pattern;
+  if (/^[A-Za-z0-9][A-Za-z0-9 .'-]*$/.test(alias)) {
+    pattern = "(^|[^A-Za-z0-9])(" + escaped + ")(?=$|[^A-Za-z0-9])";
+  } else if (/^[\u3400-\u9FFF]$/.test(alias)) {
+    pattern = "(^|[^A-Za-z0-9\\u3400-\\u9FFF])(" + escaped + ")(?=$|[^A-Za-z\\u3400-\\u9FFF])";
+  } else {
+    pattern = "(" + escaped + ")";
+  }
+  const regex = new RegExp(pattern, global ? "gi" : "i");
+  ALIAS_REGEX_CACHE.set(cacheKey, regex);
   return regex;
 }
 function buildMatchers() {
@@ -432,6 +418,14 @@ function formatAirportName(value) {
   const airport = cleanAirportName(value);
   return airport ? "「" + airport + "」" : "";
 }
+function contextAirportName(context) {
+  const source = context && context.source;
+  if (!source || typeof source !== "object") return "";
+  const keys = Object.keys(source).filter((key) => key && !key.startsWith("_") && key !== "$file");
+  if (keys.length !== 1) return "";
+  const sub = source[keys[0]] || {};
+  return cleanAirportName(sub.displayName) || cleanAirportName(sub.name) || cleanAirportName(keys[0]);
+}
 function extractAirport(name, sourceAirport) {
   if (!config.airport) return "";
   if (config.name) return cleanAirportName(config.name);
@@ -493,6 +487,20 @@ const PROVIDER_NOISE = new Set([
   "节点",
   "節點",
 ]);
+function providerTail(name, region) {
+  let lastEnd = -1;
+  region.matchAliases.forEach((alias) => {
+    const regex = aliasRegExp(alias, true);
+    regex.lastIndex = 0;
+    let match;
+    while ((match = regex.exec(name))) {
+      const value = match[2] !== undefined ? match[2] : match[1];
+      const prefixLength = match[2] !== undefined ? match[1].length : 0;
+      lastEnd = Math.max(lastEnd, match.index + prefixLength + value.length);
+    }
+  });
+  return lastEnd < 0 ? name : name.slice(lastEnd);
+}
 function extractProvider(name, region, airport) {
   if (config.provider === "off") return "";
   const explicit = config.providerKeys.find((key) =>
@@ -500,36 +508,27 @@ function extractProvider(name, region, airport) {
   );
   if (explicit) return explicit;
 
-  let text = name
+  const text = providerTail(name, region)
     .replace(FLAG_RE, " ")
-    .replace(/「[^」]*」|『[^』]*』|【[^】]*】|\[[^\]]*\]/g, " ");
-  region.providerAliases.forEach((alias) => {
-    text = removeAllAlias(text, alias);
-  });
-  text = text.replace(/[\-_|/\\,:;·•]+/g, " ");
-
+    .replace(/「[^」]*」|『[^』]*』|【[^】]*】|\[[^\]]*\]/g, " ")
+    .replace(/[\-_|/\\,:;·•]+/g, " ");
   const airportLower = airport.toLowerCase();
   const drop = new Set(config.dropKeys.map((key) => key.toLowerCase()));
-  const tokens = text
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .filter((token) => {
-      const lower = token.toLowerCase();
-      return (
-        lower !== airportLower &&
-        !PROVIDER_NOISE.has(lower) &&
-        !drop.has(lower) &&
-        !/^\d{1,4}$/.test(token) &&
-        !/^\d+(?:\.\d+)?(?:x|×|倍)$/i.test(token)
-      );
-    });
-  if (!tokens.length) return "";
-  const last = tokens[tokens.length - 1];
-  if (tokens.length > 1 && /^[A-Z]$/.test(last)) {
-    return tokens[tokens.length - 2] + " " + last;
-  }
-  return last;
+  const tokens = text.split(/\s+/).map((token) => token.trim()).filter(Boolean).filter((token) => {
+    const lower = token.toLowerCase();
+    return lower !== airportLower && !PROVIDER_NOISE.has(lower) && !drop.has(lower) &&
+      !/^\d{1,4}$/.test(token) && !/^\d+(?:\.\d+)?(?:x|×|倍)$/i.test(token);
+  });
+  if (tokens.length > 1 && tokens[0].toLowerCase() === "bgp") tokens.shift();
+  return tokens.join(" ");
+}
+function extractSequence(name) {
+  const trailing = name.match(/(?:^|[\s\-_|#])(\d{1,3})\s*$/);
+  if (trailing) return trailing[1];
+  const standalone = name.match(/(?:^|[\s\-_|#])(0\d{1,2})(?=$|[\s\-_|#])/);
+  if (standalone) return standalone[1];
+  const attached = name.match(/[A-Za-z\u3400-\u9FFF](0\d{1,2})\s*$/);
+  return attached ? attached[1] : "";
 }
 function compactName(originalName, region, sourceAirport) {
   const airport = extractAirport(originalName, sourceAirport);
@@ -541,6 +540,10 @@ function compactName(originalName, region, sourceAirport) {
   if (airportLabel && !config.nameFirst) parts.push(airportLabel);
   parts.push(outputRegion(region));
   if (provider) parts.push(provider);
+  if (config.number === "off") {
+    const sequence = extractSequence(originalName);
+    if (sequence) parts.push(sequence);
+  }
   return parts.join(config.separator);
 }
 function stripFlags(name) {
@@ -566,10 +569,12 @@ function contains(name, keyword) {
 }
 function clearReason(name) {
   if (config.clear) {
-    const key = DEFAULT_CLEAR_KEYS.concat(config.clearKeys).find((item) =>
-      contains(name, item),
-    );
+    const key = DEFAULT_CLEAR_KEYS.find((item) => contains(name, item));
     if (key) return "clear:" + key;
+    const word = name.match(DEFAULT_CLEAR_WORD_RE);
+    if (word) return "clear:" + word[0];
+    const custom = config.clearKeys.find((item) => contains(name, item));
+    if (custom) return "clear:" + custom;
   }
   const excluded = config.exclude.find((item) => contains(name, item));
   if (excluded) return "exclude:" + excluded;
@@ -688,7 +693,7 @@ function transformProxy(proxy, index, sourceAirport) {
 function removeSequence(name) {
   return name
     .replace(/(?:\s*[-_|#]\s*|\s+)0\d{1,2}(?=$|[\s\-_|#])/g, "")
-    .replace(/(?:\s*[-_|#]\s*|\s+)\d{1,3}\s*$/, "")
+    .replace(/(?:\s*(?:#|节点|Node)\s*)\d{1,3}\s*$/i, "")
     .replace(/([A-Za-z\u4E00-\u9FFF])0\d{1,2}\s*$/, "$1")
     .replace(/\s{2,}/g, " ")
     .trim();
@@ -709,7 +714,9 @@ function renumber(items) {
   Object.keys(groups).forEach((key) => {
     const group = groups[key];
     group.forEach((item, index) => {
-      const base = removeSequence(item.proxy.name);
+      const base = removeSequence(item.proxy.name)
+        .replace(/(?:\s*[-_|#]\s*|\s+)\d{1,3}\s*$/, "")
+        .trim();
       item.proxy.name =
         config.one && group.length === 1
           ? base
@@ -730,6 +737,7 @@ function sortItems(items) {
   return items;
 }
 function operator(proxies, targetPlatform, context) {
+  const fallbackAirport = contextAirportName(context);
   const stats = {
     input: proxies.length,
     kept: 0,
@@ -739,7 +747,11 @@ function operator(proxies, targetPlatform, context) {
   };
   let items = proxies
     .map((proxy, index) =>
-      transformProxy(proxy, index, proxy._subDisplayName || proxy._subName),
+      transformProxy(
+        proxy,
+        index,
+        cleanAirportName(proxy._subDisplayName) || cleanAirportName(proxy._subName) || fallbackAirport,
+      ),
     )
     .filter((item) => {
       if (!item) {
