@@ -6,8 +6,8 @@
  * 原作者仓库：https://github.com/Keywos/rule
  * 参考脚本：https://raw.githubusercontent.com/Keywos/rule/main/rename.js
  *
- * 本脚本不会重建节点名。除匹配到的地区字段外，BGP、IPLC、IEPL、
- * 服务商、倍率、编号和其他备注均按原顺序保留；同一节点中的重复地区写法会合并。
+ * 默认 format=compact，只输出旗帜、机场名、地区和自动识别的服务商。
+ * format=full 保留完整节点名，仅规范地区、旗帜、重复地区和序号。
  * number=remove 会清理名称中独立的 01/001 类序号，以及名称末尾的数字序号。
  * 默认 clear=true，会清理流量、到期、官网等信息节点。
  * 台湾地区统一使用 🇨🇳，避免部分国行设备无法显示 🇹🇼。
@@ -15,20 +15,25 @@
  * 用法：在 Sub-Store 的“脚本操作”中填入脚本 URL，并在 URL 后用 # 传参；
  * 多个参数使用 & 连接。布尔参数可用 true/false、on/off 或 1/0。
  * 示例：
- *   script.js#out=zh
- *   script.js#out=en&flag=true&city=true
+ *   script.js#format=compact&name=Viking
+ *   script.js#format=full&out=en&flag=true&city=true
  *   script.js#out=code&clear=false
  *   script.js#name=机场A&nf=true&fgf=%20-%20
  *   script.js#include=IPLC+BGP&exclude=测试
  *   script.js#multiplier=max:2&number=region&one=true&sort=region
  *
  * 参数：
+ *   format=compact|full         紧凑命名或完整名称，默认 compact
  *   out=zh|en|code              地区输出为中文、英文全称或两位代码，默认 zh
+ *   provider=auto|off           自动提取尾部服务商或关闭，默认 auto
+ *   providerkey=FXT+JinX+BGP    服务商白名单，命中时优先使用
+ *   dropkey=关键词1+关键词2     provider=auto 时额外忽略的线路描述词
+ *   airport=true|false          紧凑模式是否保留机场名，默认 true
  *   flag=true|false             添加并规范化旗帜，默认 true
  *   city=true|false             识别常见城市和地区别名，默认 true
  *   clear=true|false            清理流量、到期、官网等信息节点，默认 true
  *   clearkey=关键词1+关键词2    追加自定义清理关键词
- *   name=前缀                   给所有保留节点添加订阅/机场前缀
+ *   name=机场名                 指定机场名；紧凑模式输出在地区前
  *   nf=true|false               true 时前缀位于旗帜前，默认 false
  *   fgf=分隔符                  新增前缀和旗帜的分隔符，默认空格
  *   unknown=keep|drop|mark      未识别地区：保留、删除或标记，默认 keep
@@ -61,8 +66,12 @@ function list(value) {
 }
 
 const config = {
+  format: /^(compact|full)$/.test(inArg.format) ? inArg.format : "compact",
   out: /^(zh|en|code)$/.test(inArg.out) ? inArg.out : "zh",
   flag: bool(inArg.flag, true), city: bool(inArg.city, true), clear: bool(inArg.clear, true),
+  provider: /^(auto|off)$/.test(inArg.provider) ? inArg.provider : "auto",
+  providerKeys: list(inArg.providerkey), dropKeys: list(inArg.dropkey),
+  airport: bool(inArg.airport, true),
   clearKeys: list(inArg.clearkey), name: decode(inArg.name, "").trim(),
   nameFirst: bool(inArg.nf, false), separator: decode(inArg.fgf, " "),
   unknown: /^(keep|drop|mark)$/.test(inArg.unknown) ? inArg.unknown : "keep",
@@ -2396,6 +2405,59 @@ function normalizeRegionAliases(name, region, canonical, canonicalIndex) {
   [...new Set(aliases)].forEach((alias) => { name = removeAllAlias(name, alias); });
   return name.replace(marker, canonical).replace(/\s{2,}/g, " ").trim();
 }
+function cleanAirportName(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(?:「([^」]+)」|『([^』]+)』|【([^】]+)】|\[([^\]]+)\])$/);
+  return match ? match.slice(1).find(Boolean).trim() : text;
+}
+function extractAirport(name) {
+  if (!config.airport) return "";
+  if (config.name) return cleanAirportName(config.name);
+  const match = name.match(/「([^」]+)」|『([^』]+)』|【([^】]+)】|\[([^\]]+)\]/);
+  return match ? match.slice(1).find(Boolean).trim() : "";
+}
+const PROVIDER_NOISE = new Set([
+  "trojan", "vmess", "vless", "ss", "ssr", "hysteria", "hysteria2", "hy2",
+  "tuic", "anytls", "socks", "socks5", "http", "https", "quic", "grpc", "ws",
+  "iplc", "iepl", "ipsec", "premium", "pro", "standard", "std", "direct", "relay",
+  "go", "实验线路", "實驗線路", "实验", "實驗", "线路", "線路", "专线", "專線",
+  "直连", "直連", "中转", "中轉", "入口", "出口", "落地", "高级", "高級",
+  "标准", "標準", "优化", "優化", "节点", "節點"
+]);
+function extractProvider(name, region, airport) {
+  if (config.provider === "off") return "";
+  const explicit = config.providerKeys.find((key) => name.toLowerCase().includes(key.toLowerCase()));
+  if (explicit) return explicit;
+
+  let text = name.replace(FLAG_RE, " ")
+    .replace(/「[^」]*」|『[^』]*』|【[^】]*】|\[[^\]]*\]/g, " ");
+  const aliases = [region.zh, region.en, region.code]
+    .concat(region.aliases || []).concat(config.city ? (region.cities || []) : [])
+    .filter((alias) => alias && (alias.length > 1 || /^[A-Za-z0-9]{2,}$/.test(alias)))
+    .sort((a, b) => b.length - a.length);
+  [...new Set(aliases)].forEach((alias) => { text = removeAllAlias(text, alias); });
+  text = text.replace(/[\-_|/\\,:;·•]+/g, " ");
+
+  const airportLower = airport.toLowerCase();
+  const drop = new Set(config.dropKeys.map((key) => key.toLowerCase()));
+  const tokens = text.split(/\s+/).map((token) => token.trim()).filter(Boolean).filter((token) => {
+    const lower = token.toLowerCase();
+    return lower !== airportLower && !PROVIDER_NOISE.has(lower) && !drop.has(lower) &&
+      !/^\d{1,4}$/.test(token) && !/^\d+(?:\.\d+)?(?:x|×|倍)$/i.test(token);
+  });
+  return tokens.length ? tokens[tokens.length - 1] : "";
+}
+function compactName(originalName, region) {
+  const airport = extractAirport(originalName);
+  const provider = extractProvider(originalName, region, airport);
+  const parts = [];
+  if (airport && config.nameFirst) parts.push(airport);
+  if (config.flag) parts.push(region.flag);
+  if (airport && !config.nameFirst) parts.push(airport);
+  parts.push(outputRegion(region));
+  if (provider) parts.push(provider);
+  return parts.join(config.separator);
+}
 function stripFlags(name) { return name.replace(FLAG_RE, "").replace(/^\s+|\s+$/g, ""); }
 function addPrefix(name, region) {
   const parts = [];
@@ -2452,15 +2514,21 @@ function transformProxy(proxy, index) {
 
   let name = originalName;
   if (found) {
-    const canonical = outputRegion(found.region);
-    name = name.slice(0, found.index) + canonical + name.slice(found.index + found.value.length);
-    name = normalizeRegionAliases(name, found.region, canonical, found.index);
-    if (config.flag) name = stripFlags(name);
+    if (config.format === "compact") {
+      name = compactName(originalName, found.region);
+    } else {
+      const canonical = outputRegion(found.region);
+      name = name.slice(0, found.index) + canonical + name.slice(found.index + found.value.length);
+      name = normalizeRegionAliases(name, found.region, canonical, found.index);
+      if (config.flag) name = stripFlags(name);
+    }
   } else if (config.unknown === "mark") {
     const mark = config.out === "en" ? "Unknown Region" : config.out === "code" ? "UN" : "未知地区";
     name = mark + config.separator + name;
   }
-  name = addPrefix(name, found ? found.region : null);
+  if (!(found && config.format === "compact")) {
+    name = addPrefix(name, found ? found.region : null);
+  }
   const result = { ...proxy, name };
   if (config.blockQuic === "on") result["block-quic"] = "on";
   if (config.blockQuic === "off") result["block-quic"] = "off";
