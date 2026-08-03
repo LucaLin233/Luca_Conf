@@ -10,6 +10,8 @@
  * format=full 保留完整节点名，仅规范地区、旗帜、重复地区和序号。
  * number=remove 会清理名称中独立的 01/001 类序号，以及名称末尾的数字序号。
  * 默认 clear=true，会清理流量、到期、官网等信息节点。
+ * airport=true 优先读取当前 Sub-Store 订阅的“名称”，并输出为「机场名」；
+ * 集合级脚本无法区分每个节点来源时，会回退到 name= 或节点已有的括号名称。
  * 台湾地区统一使用 🇨🇳，避免部分国行设备无法显示 🇹🇼。
  *
  * 用法：在 Sub-Store 的“脚本操作”中填入脚本 URL，并在 URL 后用 # 传参；
@@ -28,12 +30,12 @@
  *   provider=auto|off           自动提取尾部服务商或关闭，默认 auto
  *   providerkey=FXT+JinX+BGP    服务商白名单，命中时优先使用
  *   dropkey=关键词1+关键词2     provider=auto 时额外忽略的线路描述词
- *   airport=true|false          紧凑模式是否保留机场名，默认 true
+ *   airport=true|false          读取 Sub-Store 订阅名称并输出为「机场名」，默认 true
  *   flag=true|false             添加并规范化旗帜，默认 true
  *   city=true|false             识别常见城市和地区别名，默认 true
  *   clear=true|false            清理流量、到期、官网等信息节点，默认 true
  *   clearkey=关键词1+关键词2    追加自定义清理关键词
- *   name=机场名                 指定机场名；紧凑模式输出在地区前
+ *   name=机场名                 手动覆盖 Sub-Store 订阅名称，输出为「机场名」
  *   nf=true|false               true 时前缀位于旗帜前，默认 false
  *   fgf=分隔符                  新增前缀和旗帜的分隔符，默认空格
  *   unknown=keep|drop|mark      未识别地区：保留、删除或标记，默认 keep
@@ -2410,9 +2412,22 @@ function cleanAirportName(value) {
   const match = text.match(/^(?:「([^」]+)」|『([^』]+)』|【([^】]+)】|\[([^\]]+)\])$/);
   return match ? match.slice(1).find(Boolean).trim() : text;
 }
-function extractAirport(name) {
+function formatAirportName(value) {
+  const airport = cleanAirportName(value);
+  return airport ? "「" + airport + "」" : "";
+}
+function getContextAirport(context) {
+  if (!config.airport || !context || !context.source || typeof context.source !== "object") return "";
+  const source = context.source;
+  const keys = Object.keys(source).filter((key) => key && !key.startsWith("_") && key !== "$file");
+  if (keys.length !== 1) return "";
+  const item = source[keys[0]];
+  return cleanAirportName(item && typeof item.name === "string" ? item.name : keys[0]);
+}
+function extractAirport(name, sourceAirport) {
   if (!config.airport) return "";
   if (config.name) return cleanAirportName(config.name);
+  if (sourceAirport) return cleanAirportName(sourceAirport);
   const match = name.match(/「([^」]+)」|『([^』]+)』|【([^】]+)】|\[([^\]]+)\]/);
   return match ? match.slice(1).find(Boolean).trim() : "";
 }
@@ -2447,23 +2462,27 @@ function extractProvider(name, region, airport) {
   });
   return tokens.length ? tokens[tokens.length - 1] : "";
 }
-function compactName(originalName, region) {
-  const airport = extractAirport(originalName);
+function compactName(originalName, region, sourceAirport) {
+  const airport = extractAirport(originalName, sourceAirport);
   const provider = extractProvider(originalName, region, airport);
+  const airportLabel = formatAirportName(airport);
   const parts = [];
-  if (airport && config.nameFirst) parts.push(airport);
+  if (airportLabel && config.nameFirst) parts.push(airportLabel);
   if (config.flag) parts.push(region.flag);
-  if (airport && !config.nameFirst) parts.push(airport);
+  if (airportLabel && !config.nameFirst) parts.push(airportLabel);
   parts.push(outputRegion(region));
   if (provider) parts.push(provider);
   return parts.join(config.separator);
 }
 function stripFlags(name) { return name.replace(FLAG_RE, "").replace(/^\s+|\s+$/g, ""); }
-function addPrefix(name, region) {
+function addPrefix(name, region, sourceAirport) {
+  const airport = config.name
+    ? formatAirportName(config.name)
+    : (config.airport ? formatAirportName(sourceAirport) : "");
   const parts = [];
-  if (config.name && config.nameFirst) parts.push(config.name);
+  if (airport && config.nameFirst) parts.push(airport);
   if (config.flag && region) parts.push(region.flag);
-  if (config.name && !config.nameFirst) parts.push(config.name);
+  if (airport && !config.nameFirst) parts.push(airport);
   if (!parts.length) return name;
   return parts.join(config.separator) + config.separator + name;
 }
@@ -2502,7 +2521,7 @@ function multiplierAllowed(name) {
 function log(message) {
   if (config.debug && typeof console !== "undefined" && console.log) console.log("[region-rename] " + message);
 }
-function transformProxy(proxy, index) {
+function transformProxy(proxy, index, sourceAirport) {
   const originalName = String(proxy.name || "");
   const reason = clearReason(originalName);
   if (reason) { log("DROP " + JSON.stringify(originalName) + " (" + reason + ")"); return null; }
@@ -2515,7 +2534,7 @@ function transformProxy(proxy, index) {
   let name = originalName;
   if (found) {
     if (config.format === "compact") {
-      name = compactName(originalName, found.region);
+      name = compactName(originalName, found.region, sourceAirport);
     } else {
       const canonical = outputRegion(found.region);
       name = name.slice(0, found.index) + canonical + name.slice(found.index + found.value.length);
@@ -2527,7 +2546,7 @@ function transformProxy(proxy, index) {
     name = mark + config.separator + name;
   }
   if (!(found && config.format === "compact")) {
-    name = addPrefix(name, found ? found.region : null);
+    name = addPrefix(name, found ? found.region : null, sourceAirport);
   }
   const result = { ...proxy, name };
   if (config.blockQuic === "on") result["block-quic"] = "on";
@@ -2573,9 +2592,10 @@ function sortItems(items) {
   }
   return items;
 }
-function operator(proxies) {
+function operator(proxies, targetPlatform, context) {
+  const sourceAirport = getContextAirport(context);
   const stats = { input: proxies.length, kept: 0, dropped: 0, matched: 0, unknown: 0 };
-  let items = proxies.map(transformProxy).filter((item) => {
+  let items = proxies.map((proxy, index) => transformProxy(proxy, index, sourceAirport)).filter((item) => {
     if (!item) { stats.dropped++; return false; }
     stats.kept++;
     if (item.region) stats.matched++; else stats.unknown++;
