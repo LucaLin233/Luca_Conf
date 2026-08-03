@@ -27,7 +27,7 @@
  * 参数：
  *   format=compact|full         紧凑命名或完整名称，默认 compact
  *   out=zh|en|code              地区输出为中文、英文全称或两位代码，默认 zh
- *   provider=auto|off           自动提取尾部服务商或关闭，默认 auto
+ *   provider=auto|off           自动提取尾部服务商，DP V 类名称会整体保留，默认 auto
  *   providerkey=FXT+JinX+BGP    服务商白名单，命中时优先使用
  *   dropkey=关键词1+关键词2     provider=auto 时额外忽略的线路描述词
  *   airport=true|false          读取 Sub-Store 订阅名称并输出为「机场名」，默认 true
@@ -2460,7 +2460,12 @@ function extractProvider(name, region, airport) {
     return lower !== airportLower && !PROVIDER_NOISE.has(lower) && !drop.has(lower) &&
       !/^\d{1,4}$/.test(token) && !/^\d+(?:\.\d+)?(?:x|×|倍)$/i.test(token);
   });
-  return tokens.length ? tokens[tokens.length - 1] : "";
+  if (!tokens.length) return "";
+  const last = tokens[tokens.length - 1];
+  if (tokens.length > 1 && /^[A-Z]$/.test(last)) {
+    return tokens[tokens.length - 2] + " " + last;
+  }
+  return last;
 }
 function compactName(originalName, region, sourceAirport) {
   const airport = extractAirport(originalName, sourceAirport);
