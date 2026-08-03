@@ -36,7 +36,7 @@
  *   multiplier=all|normal|high|max:N
  *                               倍率筛选，默认 all；high 表示 >1 倍
  *   blockquic=keep|on|off       保留、开启或关闭 block-quic，默认 keep
- *   number=off|region           是否按地区重新编号，默认 off
+ *   number=off|remove|region    序号处理：保留、移除或按地区重编，默认 remove
  *   one=true|false              number=region 时单节点不添加 01，默认 false
  *   sort=original|region|name   保持原序、按地区或按名称排序，默认 original
  *   debug=true|false            输出匹配、过滤和统计日志，默认 false
@@ -67,7 +67,7 @@ const config = {
   include: list(inArg.include), exclude: list(inArg.exclude),
   caseSensitive: bool(inArg.case, false), multiplier: decode(inArg.multiplier, "all").toLowerCase(),
   blockQuic: /^(keep|on|off)$/.test(inArg.blockquic) ? inArg.blockquic : "keep",
-  number: /^(off|region)$/.test(inArg.number) ? inArg.number : "off",
+  number: /^(off|remove|region)$/.test(inArg.number) ? inArg.number : "remove",
   one: bool(inArg.one, false),
   sort: /^(original|region|name)$/.test(inArg.sort) ? inArg.sort : "original",
   debug: bool(inArg.debug, false)
@@ -2447,7 +2447,17 @@ function transformProxy(proxy, index) {
   return { proxy: result, region: found ? found.region : null,
     regionIndex: found ? found.regionIndex : Number.MAX_SAFE_INTEGER, index };
 }
+function removeSequence(name) {
+  return name
+    .replace(/(?:\s*[-_|#]\s*|\s+)\d{1,3}\s*$/, "")
+    .replace(/([A-Za-z\u4E00-\u9FFF])0\d{1,2}\s*$/, "$1")
+    .trim();
+}
 function renumber(items) {
+  if (config.number === "remove") {
+    items.forEach((item) => { item.proxy.name = removeSequence(item.proxy.name); });
+    return items;
+  }
   if (config.number !== "region") return items;
   const groups = {};
   items.forEach((item) => {
@@ -2457,7 +2467,7 @@ function renumber(items) {
   Object.keys(groups).forEach((key) => {
     const group = groups[key];
     group.forEach((item, index) => {
-      const base = item.proxy.name.replace(/(?:\s+|[-_|])+\d{1,3}\s*$/, "").trim();
+      const base = removeSequence(item.proxy.name);
       item.proxy.name = config.one && group.length === 1 ? base
         : base + config.separator + String(index + 1).padStart(2, "0");
     });
