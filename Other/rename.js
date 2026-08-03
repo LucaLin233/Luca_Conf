@@ -7,7 +7,9 @@
  * 参考脚本：https://raw.githubusercontent.com/Keywos/rule/main/rename.js
  *
  * 本脚本不会重建节点名。除匹配到的地区字段外，BGP、IPLC、IEPL、
- * 服务商、倍率、编号和其他备注均按原顺序保留。默认会清理信息节点。
+ * 服务商、倍率、编号和其他备注均按原顺序保留；同一节点中的重复地区写法会合并。
+ * number=remove 会清理名称中独立的 01/001 类序号，以及名称末尾的数字序号。
+ * 默认 clear=true，会清理流量、到期、官网等信息节点。
  * 台湾地区统一使用 🇨🇳，避免部分国行设备无法显示 🇹🇼。
  *
  * 用法：在 Sub-Store 的“脚本操作”中填入脚本 URL，并在 URL 后用 # 传参；
@@ -2376,6 +2378,24 @@ function outputRegion(region) {
   if (config.out === "code") return region.code;
   return region.zh;
 }
+function removeAllAlias(name, alias) {
+  let match;
+  while ((match = aliasRegExp(alias).exec(name))) {
+    const value = match[2] !== undefined ? match[2] : match[1];
+    const index = match.index + (match[2] !== undefined ? match[1].length : 0);
+    name = name.slice(0, index) + name.slice(index + value.length);
+  }
+  return name;
+}
+function normalizeRegionAliases(name, region, canonical, canonicalIndex) {
+  const marker = "\uE000REGION\uE001";
+  name = name.slice(0, canonicalIndex) + marker + name.slice(canonicalIndex + canonical.length);
+  const aliases = [region.zh, region.en, region.code].concat(region.aliases || [])
+    .filter((alias) => alias && (alias.length > 1 || /^[A-Za-z0-9]{2,}$/.test(alias)))
+    .sort((a, b) => b.length - a.length);
+  [...new Set(aliases)].forEach((alias) => { name = removeAllAlias(name, alias); });
+  return name.replace(marker, canonical).replace(/\s{2,}/g, " ").trim();
+}
 function stripFlags(name) { return name.replace(FLAG_RE, "").replace(/^\s+|\s+$/g, ""); }
 function addPrefix(name, region) {
   const parts = [];
@@ -2432,7 +2452,9 @@ function transformProxy(proxy, index) {
 
   let name = originalName;
   if (found) {
-    name = name.slice(0, found.index) + outputRegion(found.region) + name.slice(found.index + found.value.length);
+    const canonical = outputRegion(found.region);
+    name = name.slice(0, found.index) + canonical + name.slice(found.index + found.value.length);
+    name = normalizeRegionAliases(name, found.region, canonical, found.index);
     if (config.flag) name = stripFlags(name);
   } else if (config.unknown === "mark") {
     const mark = config.out === "en" ? "Unknown Region" : config.out === "code" ? "UN" : "未知地区";
@@ -2449,8 +2471,10 @@ function transformProxy(proxy, index) {
 }
 function removeSequence(name) {
   return name
+    .replace(/(?:\s*[-_|#]\s*|\s+)0\d{1,2}(?=$|[\s\-_|#])/g, "")
     .replace(/(?:\s*[-_|#]\s*|\s+)\d{1,3}\s*$/, "")
     .replace(/([A-Za-z\u4E00-\u9FFF])0\d{1,2}\s*$/, "$1")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 function renumber(items) {
