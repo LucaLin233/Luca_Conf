@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-03T14:00:02Z
-# Total:   20025
+# Updated: 2026-08-05T14:00:01Z
+# Total:   20034
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -4796,6 +4796,8 @@ DOMAIN-SUFFIX,deepfreeze.net
 DOMAIN-SUFFIX,deepfreeze.tech
 DOMAIN-SUFFIX,deepl.com
 DOMAIN-SUFFIX,deepmind.com
+DOMAIN-SUFFIX,deepwiki.com
+DOMAIN-SUFFIX,deepwiki.org
 DOMAIN-SUFFIX,deezer.com
 DOMAIN-SUFFIX,definebabe.com
 DOMAIN-SUFFIX,definefetish.com
@@ -6720,6 +6722,7 @@ DOMAIN-SUFFIX,fluidpreview.com
 DOMAIN-SUFFIX,flutterapp.com
 DOMAIN-SUFFIX,flyflv.com
 DOMAIN-SUFFIX,flyingjizz.com
+DOMAIN-SUFFIX,flyio.net
 DOMAIN-SUFFIX,flypool.org
 DOMAIN-SUFFIX,flyvpn.com
 DOMAIN-SUFFIX,flyzy2005.com
@@ -7568,6 +7571,7 @@ DOMAIN-SUFFIX,glamourtits.com
 DOMAIN-SUFFIX,glasamerike.net
 DOMAIN-SUFFIX,gle
 DOMAIN-SUFFIX,gleline.com
+DOMAIN-SUFFIX,glitchwave.com
 DOMAIN-SUFFIX,global-sci.org
 DOMAIN-SUFFIX,globaledu.org
 DOMAIN-SUFFIX,globaljihad.net
@@ -12994,6 +12998,8 @@ DOMAIN-SUFFIX,ozodi.org
 DOMAIN-SUFFIX,ozodlik.org
 DOMAIN-SUFFIX,ozon.com
 DOMAIN-SUFFIX,ozon.express
+DOMAIN-SUFFIX,ozon.global
+DOMAIN-SUFFIX,ozon.market
 DOMAIN-SUFFIX,ozon.tech
 DOMAIN-SUFFIX,ozon.travel
 DOMAIN-SUFFIX,ozoncamp.pro
@@ -14738,6 +14744,7 @@ DOMAIN-SUFFIX,rutracker.me
 DOMAIN-SUFFIX,rutracker.net
 DOMAIN-SUFFIX,rutracker.org
 DOMAIN-SUFFIX,rutrk.org
+DOMAIN-SUFFIX,rutube.sport
 DOMAIN-SUFFIX,ruvideos.net
 DOMAIN-SUFFIX,rwbautomation.tech
 DOMAIN-SUFFIX,rxhj.net
@@ -15603,6 +15610,8 @@ DOMAIN-SUFFIX,solutionstation.com
 DOMAIN-SUFFIX,solv.finance
 DOMAIN-SUFFIX,solveforx.com
 DOMAIN-SUFFIX,somee.com
+DOMAIN-SUFFIX,sonematic.net
+DOMAIN-SUFFIX,sonemic.com
 DOMAIN-SUFFIX,songjianjun.com
 DOMAIN-SUFFIX,sonorousporn.com
 DOMAIN-SUFFIX,sony
