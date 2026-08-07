@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-06T14:00:02Z
-# Total:   20064
+# Updated: 2026-08-07T14:00:01Z
+# Total:   20062
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -3559,7 +3559,6 @@ DOMAIN-SUFFIX,byrut.org
 DOMAIN-SUFFIX,byspotify.com
 DOMAIN-SUFFIX,bystys.tech
 DOMAIN-SUFFIX,bytedapm.com
-DOMAIN-SUFFIX,byteoversea.com
 DOMAIN-SUFFIX,bytick.com
 DOMAIN-SUFFIX,c-est-simple.com
 DOMAIN-SUFFIX,c-ij.com
@@ -4854,7 +4853,6 @@ DOMAIN-SUFFIX,delltechnologiesworld.com
 DOMAIN-SUFFIX,deluxe.com.hk
 DOMAIN-SUFFIX,delvenetworks.com
 DOMAIN-SUFFIX,demandware.com
-DOMAIN-SUFFIX,demdex.net
 DOMAIN-SUFFIX,democracy.earth
 DOMAIN-SUFFIX,demoprint.com
 DOMAIN-SUFFIX,demosisto.hk
