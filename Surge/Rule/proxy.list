@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-07T14:00:01Z
-# Total:   20062
+# Updated: 2026-08-10T14:00:02Z
+# Total:   20064
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -900,6 +900,7 @@ DOMAIN-SUFFIX,ai.studio
 DOMAIN-SUFFIX,ai7995.site
 DOMAIN-SUFFIX,ai91porn.cc
 DOMAIN-SUFFIX,aiaa.org
+DOMAIN-SUFFIX,aihub.top
 DOMAIN-SUFFIX,aimei133.com
 DOMAIN-SUFFIX,aimsciences.org
 DOMAIN-SUFFIX,aiosearch.com
@@ -5943,6 +5944,7 @@ DOMAIN-SUFFIX,eset.systems
 DOMAIN-SUFFIX,esetsoftware.com
 DOMAIN-SUFFIX,esforce.com
 DOMAIN-SUFFIX,esg.t91y.com
+DOMAIN-SUFFIX,esim.redteago.com
 DOMAIN-SUFFIX,eskimotube.com
 DOMAIN-SUFFIX,eslite.com
 DOMAIN-SUFFIX,esm.run
