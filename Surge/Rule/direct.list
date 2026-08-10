@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    direct
-# Updated: 2026-08-08T14:00:18Z
-# Total:   139014
+# Updated: 2026-08-10T14:00:22Z
+# Total:   139017
 
 DOMAIN,asusrouter.com
 DOMAIN,instant.arubanetworks.com
@@ -134928,6 +134928,9 @@ IP-CIDR,165.101.70.0/24
 IP-CIDR,165.101.208.0/23
 IP-CIDR,166.0.97.0/24
 IP-CIDR,166.0.100.0/23
+IP-CIDR,166.1.139.0/24
+IP-CIDR,166.1.218.0/24
+IP-CIDR,166.1.232.0/24
 IP-CIDR,166.111.0.0/16
 IP-CIDR,167.139.0.0/16
 IP-CIDR,167.189.0.0/16
