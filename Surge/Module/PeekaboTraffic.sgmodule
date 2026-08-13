@@ -1,12 +1,12 @@
 #!name=Peekabo 流量信息
-#!desc=仅展示已用流量、到期日期与剩余时间；支持自定义到期提醒天数
+#!desc=展示已用/总流量、到期日期与剩余时间；支持自定义查询间隔和到期提醒
 #!category=⚙️ ▸ Function
 
-#!arguments=id,token,notify-days:5,icon:xserve,icon-color:3B82F6
-#!arguments-desc=官网: gigo.peekabo.io\n\nServer ID:\n    └ 控制面板服务器页面 URL 中“/server/”后的内容\nAPI Token:\n    └ Account → API\n通知天数:\n    ├ 到期前多少天开始通知\n    └ 填 0 关闭通知；启用后每天最多通知一次
+#!arguments=id,token,query-interval:86400,notify-days:3,icon:xserve,icon-color:3B82F6
+#!arguments-desc=官网: gigo.peekabo.io\n\nServer ID:\n    └ 控制面板服务器页面 URL 中“/server/”后的内容\nAPI Token:\n    └ Account → API\n查询间隔（秒）:\n    ├ 默认 86400（每天一次）\n    ├ 43200 = 12 小时\n    └ 172800 = 2 天\n通知天数:\n    ├ 默认到期前 3 天开始通知\n    └ 填 0 关闭通知；启用后每天最多通知一次
 
 [Panel]
-Peekabo 流量信息 = title="Peekabo Server",content="正在获取...",style=info,script-name=peekabo-traffic-panel,update-interval=60
+Peekabo 流量信息 = title="Peekabo Server",content="正在获取...",style=info,script-name=peekabo-traffic-panel,update-interval={{{query-interval}}}
 
 [Script]
 peekabo-traffic-panel = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/peekabo_traffic.js,argument="id={{{id}}}&token={{{token}}}&notify-days={{{notify-days}}}&icon={{{icon}}}&icon-color={{{icon-color}}}"

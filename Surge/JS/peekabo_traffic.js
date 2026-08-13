@@ -1,4 +1,4 @@
-/* Peekabo 流量信息面板：仅展示已用流量、到期日期、剩余时间。 */
+/* Peekabo 流量信息面板：展示已用/总流量、到期日期、剩余时间。 */
 
 const ARGS = parseArgs($argument || "");
 const API_TOKEN = ARGS.token;
@@ -12,7 +12,7 @@ const PANEL_ICON_COLOR = /^[0-9a-fA-F]{6}$/.test(color) ? `#${color}` : "#3B82F6
 const notifyDaysRaw = Number(ARGS["notify-days"]);
 const NOTIFY_DAYS = Number.isFinite(notifyDaysRaw)
   ? Math.max(0, Math.floor(notifyDaysRaw))
-  : 5;
+  : 3;
 
 function safeDecode(value) {
   try { return decodeURIComponent(value); } catch (_) { return value; }
@@ -103,8 +103,16 @@ function fail(message) {
     catch (_) { return fail("API 响应解析失败"); }
 
     const used = Number(json?.data?.state?.network?.primary?.traffic?.tx);
+    const limitMatch = String(json?.data?.network?.primary?.limit || "")
+      .trim()
+      .match(/^(\d+(?:\.\d+)?)\s*GB$/i);
+    const total = limitMatch ? Number(limitMatch[1]) * 1024 ** 3 : NaN;
     const expireTimestamp = Date.parse(json?.data?.currentMonthlyPeriod?.end);
-    if (!Number.isFinite(used) || used < 0 || !Number.isFinite(expireTimestamp)) {
+    if (
+      !Number.isFinite(used) || used < 0 ||
+      !Number.isFinite(total) || total <= 0 ||
+      !Number.isFinite(expireTimestamp)
+    ) {
       return fail("API 返回的流量或到期信息不完整");
     }
 
@@ -113,7 +121,7 @@ function fail(message) {
     notifyExpiring(daysLeft, expireTimestamp);
 
     finish([
-      `已用流量：${formatBytes(used)}`,
+      `流量情况：${formatBytes(used)} / ${formatBytes(total)}`,
       `到期日期：${formatDate(expireTimestamp)}`,
       `剩余时间：${formatRemaining(remainingMs)}`,
     ].join("\n"));
