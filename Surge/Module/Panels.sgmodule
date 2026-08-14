@@ -13,7 +13,7 @@ functionstatus = script-name=functionstatus,title=Surge,content=请刷新,update
 Peekabo 流量信息 = title="Peekabo Server",content="正在获取...",style=info,script-name=peekabo-traffic-panel,update-interval={{{query-interval}}}
 
 # CCH 配额与调用监控
-CCH 配额与监控 = title="CCH",content="正在获取...",style=info,script-name=cch-monitor-panel,update-interval={{{cch_query_interval}}}
+CCH 配额与监控 = title="CCH",content="正在获取...",style=info,script-name=cch-monitor-panel-v2,update-interval={{{cch_query_interval}}}
 
 [Script]
 # 功能检测
@@ -23,4 +23,4 @@ functionstatus = type=generic,script-path=https://raw.githubusercontent.com/smar
 peekabo-traffic-panel = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/peekabo_traffic.js,argument="id={{{id}}}&token={{{token}}}&notify-days={{{notify-days}}}&icon={{{icon}}}&icon-color={{{icon-color}}}"
 
 # CCH 配额与调用监控
-cch-monitor-panel = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/cch_monitor.js,timeout=30,argument="cch_url={{{cch_url}}}&cch_admin_token={{{cch_admin_token}}}&cch_quota_interval={{{cch_quota_interval}}}&cch_icon={{{cch_icon}}}&cch_icon_color={{{cch_icon_color}}}"
+cch-monitor-panel-v2 = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/dac3d15ee4e7bf682f24d3addca46474be4f9db2/Surge/JS/cch_monitor.js,timeout=30,argument="cch_url={{{cch_url}}}&cch_admin_token={{{cch_admin_token}}}&cch_quota_interval={{{cch_quota_interval}}}&cch_icon={{{cch_icon}}}&cch_icon_color={{{cch_icon_color}}}"
