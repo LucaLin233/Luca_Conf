@@ -213,7 +213,7 @@ function fail(message) {
     if (quotaResult.ok) {
       const quota = quotaResult.value.data;
       const providers = quota.providers;
-      lines.push(`供应商总额度（${providers.length}/${quota.totalProviders}）`);
+      lines.push(`额度概览 · ${providers.length}/${quota.totalProviders}`);
       if (providers.length === 0) {
         lines.push("未设置供应商总限额");
       } else {
@@ -221,7 +221,7 @@ function fail(message) {
           const percent = quotaPercent(provider);
           if (Number.isFinite(percent)) maxQuotaPercent = Math.max(maxQuotaPercent, percent);
           lines.push(
-            `${provider.name}：${formatUsd(provider.current)} / ${formatUsd(provider.limit)} · ${formatPercent(percent)}`
+            `${provider.name} · ${formatPercent(percent)} · ${formatUsd(provider.current)} / ${formatUsd(provider.limit)}`
           );
         }
       }
@@ -236,14 +236,14 @@ function fail(message) {
       const overview = overviewResult.value;
       errorRate = Number(overview.todayErrorRate || 0);
       lines.push(
-        `今日调用：${formatInteger(overview.todayRequests)} 次 · ${formatUsd(overview.todayCost)}`,
-        `RPM：${formatInteger(overview.recentMinuteRequests)} · 并发：${formatInteger(overview.concurrentSessions)}`,
-        `错误率：${formatPercent(errorRate)} · 平均响应：${formatDuration(overview.avgResponseTime)}`
+        `调用监控 · 今日 ${formatInteger(overview.todayRequests)} 次 · ${formatUsd(overview.todayCost)}`,
+        `实时负载 · ${formatInteger(overview.recentMinuteRequests)} RPM · 并发 ${formatInteger(overview.concurrentSessions)}`,
+        `调用质量 · 错误 ${formatPercent(errorRate)} · 响应 ${formatDuration(overview.avgResponseTime)}`
       );
     } else {
       lines.push("⚠️ 调用监控获取失败");
     }
-    lines.push(`更新：${formatTime(Date.now())}`);
+    lines.push(`最后更新 · ${formatTime(Date.now())}`);
 
     const partialFailure = !quotaResult.ok || !overviewResult.ok || quotaResult.value?.stale;
     const critical = maxQuotaPercent >= 95 || errorRate >= 10;
