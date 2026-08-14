@@ -1,6 +1,6 @@
 #!name=Panels
 #!desc=面板项目：Surge 功能开关检测、Peekabo 流量信息
-#!category=⚙️ ▸ System
+#!category=System
 
 #!arguments=id,token,query-interval:86400,notify-days:3,icon:xserve,icon-color:3B82F6
 #!arguments-desc=Peekabo 官网: gigo.peekabo.io\n\nServer ID:\n    └ 控制面板服务器页面 URL 中“/server/”后的内容\nAPI Token:\n    └ Account → API\n查询间隔（秒）:\n    ├ 默认 86400（每天一次）\n    ├ 43200 = 12 小时\n    └ 172800 = 2 天\n通知天数:\n    ├ 默认到期前 3 天开始通知\n    └ 填 0 关闭通知；启用后每天最多通知一次
