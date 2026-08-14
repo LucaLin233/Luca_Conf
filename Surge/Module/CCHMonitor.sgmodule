@@ -7,7 +7,7 @@
 #!arguments-desc=CCH 地址:\n    └ 必填，请输入 CCH HTTPS 地址，请勿添加末尾“/”\n管理员 Token:\n    └ 使用 ADMIN_TOKEN；仅保存在 Surge 本地模块参数中\n面板刷新间隔（秒）:\n    └ 默认 60\n额度刷新间隔（秒）:\n    └ 默认 300，期间使用本地缓存\n图标与颜色:\n    └ 使用 SF Symbol 名称和六位 HEX 颜色
 
 [Panel]
-CCH 配额与监控 = title="CCH",content="正在获取...",style=info,script-name=cch-monitor-panel-v2,update-interval={{{cch_query_interval}}}
+CCH 配额与监控 = title="CCH",content="正在获取...",style=info,script-name=cch-monitor-panel,update-interval={{{cch_query_interval}}}
 
 [Script]
-cch-monitor-panel-v2 = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/dac3d15ee4e7bf682f24d3addca46474be4f9db2/Surge/JS/cch_monitor.js,timeout=30,argument="cch_url={{{cch_url}}}&cch_admin_token={{{cch_admin_token}}}&cch_quota_interval={{{cch_quota_interval}}}&cch_icon={{{cch_icon}}}&cch_icon_color={{{cch_icon_color}}}"
+cch-monitor-panel = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Luca_Conf/main/Surge/JS/cch_monitor.js,timeout=30,argument="cch_url={{{cch_url}}}&cch_admin_token={{{cch_admin_token}}}&cch_quota_interval={{{cch_quota_interval}}}&cch_icon={{{cch_icon}}}&cch_icon_color={{{cch_icon_color}}}"
