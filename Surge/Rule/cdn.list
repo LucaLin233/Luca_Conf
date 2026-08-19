@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-15T07:51:57Z
-# Total:   6701
+# Updated: 2026-08-19T06:57:00Z
+# Total:   6703
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -3447,7 +3447,6 @@ DOMAIN-SUFFIX,replicateassets.com
 DOMAIN-SUFFIX,report-uri.cloudflare.com
 DOMAIN-SUFFIX,report-uri.com
 DOMAIN-SUFFIX,res-3.cdn.office.net
-DOMAIN-SUFFIX,res-etl-ssl.mypikpak.com
 DOMAIN-SUFFIX,res-geo.cdn.office.net
 DOMAIN-SUFFIX,res.abc.net.au
 DOMAIN-SUFFIX,res.cloudinary.com
@@ -3669,7 +3668,6 @@ DOMAIN-SUFFIX,sfbassets.com
 DOMAIN-SUFFIX,sfdcstatic.com
 DOMAIN-SUFFIX,sfiles.cnyes.cool
 DOMAIN-SUFFIX,sftcdn.net
-DOMAIN-SUFFIX,sg-thumbnail-drive.mypikpak.com
 DOMAIN-SUFFIX,sh-pod2-smp-device.apple.com
 DOMAIN-SUFFIX,share-assets.fe.garmin.com
 DOMAIN-SUFFIX,share.chessbase.com
@@ -4015,7 +4013,6 @@ DOMAIN-SUFFIX,static.moomoo.com
 DOMAIN-SUFFIX,static.moonpay.com
 DOMAIN-SUFFIX,static.mul-pay.jp
 DOMAIN-SUFFIX,static.music.com
-DOMAIN-SUFFIX,static.mypikpak.com
 DOMAIN-SUFFIX,static.mysph.sph.com.sg
 DOMAIN-SUFFIX,static.mytonwallet.io
 DOMAIN-SUFFIX,static.na1.visioncritical.com
@@ -5088,8 +5085,6 @@ DOMAIN-SUFFIX,dl.motrix.app
 DOMAIN-SUFFIX,dl.nssurge.com
 DOMAIN-SUFFIX,dl.nwjs.io
 DOMAIN-SUFFIX,dl.orangefox.download
-DOMAIN-SUFFIX,dl.pikpak.io
-DOMAIN-SUFFIX,dl.pikpak.site
 DOMAIN-SUFFIX,dl.playstation.net
 DOMAIN-SUFFIX,dl.pstmn.io
 DOMAIN-SUFFIX,dl.snipaste.com
@@ -6106,6 +6101,8 @@ DOMAIN-SUFFIX,msdl.microsoft.com
 DOMAIN-SUFFIX,muug.ca
 DOMAIN-SUFFIX,mvnrepository.com
 DOMAIN-SUFFIX,mx-app-blob-prod.maxon.net
+DOMAIN-SUFFIX,mypikpak.com
+DOMAIN-SUFFIX,mypikpak.net
 DOMAIN-SUFFIX,nic.funet.fi
 DOMAIN-SUFFIX,nitro.download
 DOMAIN-SUFFIX,nobara-images.nobaraproject.org
@@ -6160,6 +6157,11 @@ DOMAIN-SUFFIX,packages.virtfusion.net
 DOMAIN-SUFFIX,packagespc.xboxlive.com
 DOMAIN-SUFFIX,packagist.org
 DOMAIN-SUFFIX,pf-cdn-content-prod.azureedge.net
+DOMAIN-SUFFIX,pickpackapp.com
+DOMAIN-SUFFIX,pikpak.io
+DOMAIN-SUFFIX,pikpak.me
+DOMAIN-SUFFIX,pikpak.site
+DOMAIN-SUFFIX,pikpakdrive.com
 DOMAIN-SUFFIX,piston-data.mojang.com
 DOMAIN-SUFFIX,piston-meta.mojang.com
 DOMAIN-SUFFIX,pixeldrain.com
