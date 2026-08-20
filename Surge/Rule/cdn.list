@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-19T06:57:00Z
-# Total:   6703
+# Updated: 2026-08-20T14:00:21Z
+# Total:   6704
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -4876,6 +4876,7 @@ DOMAIN-SUFFIX,cdn.azul.com
 DOMAIN-SUFFIX,cdn.blizzard.com
 DOMAIN-SUFFIX,cdn.cocoapods.org
 DOMAIN-SUFFIX,cdn.cypress.io
+DOMAIN-SUFFIX,cdn.dyn.com
 DOMAIN-SUFFIX,cdn.ea.com
 DOMAIN-SUFFIX,cdn.electronic.us
 DOMAIN-SUFFIX,cdn.evolution-x.org
