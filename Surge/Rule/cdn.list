@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-20T14:00:21Z
-# Total:   6704
+# Updated: 2026-08-21T14:00:17Z
+# Total:   6703
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -341,7 +341,6 @@ DOMAIN-SUFFIX,assets.nintendo.com
 DOMAIN-SUFFIX,assets.northflank.com
 DOMAIN-SUFFIX,assets.nxtrace.org
 DOMAIN-SUFFIX,assets.nypost.com
-DOMAIN-SUFFIX,assets.onestore.ms
 DOMAIN-SUFFIX,assets.ontrack.com
 DOMAIN-SUFFIX,assets.openalternative.co
 DOMAIN-SUFFIX,assets.openlogi.org
@@ -806,7 +805,6 @@ DOMAIN-SUFFIX,cdn.cms-twdigitalassets.com
 DOMAIN-SUFFIX,cdn.cnn.com
 DOMAIN-SUFFIX,cdn.cnx-software.com
 DOMAIN-SUFFIX,cdn.codeblackbelt.com
-DOMAIN-SUFFIX,cdn.commandbar.com
 DOMAIN-SUFFIX,cdn.comparitech.com
 DOMAIN-SUFFIX,cdn.concert.io
 DOMAIN-SUFFIX,cdn.configcat.com
@@ -893,6 +891,7 @@ DOMAIN-SUFFIX,cdn.geekzone.co.nz
 DOMAIN-SUFFIX,cdn.getfeedback.com
 DOMAIN-SUFFIX,cdn.gethypervisual.com
 DOMAIN-SUFFIX,cdn.getkoala.com
+DOMAIN-SUFFIX,cdn.getmerlin.in
 DOMAIN-SUFFIX,cdn.gettr.com
 DOMAIN-SUFFIX,cdn.ghostery.com
 DOMAIN-SUFFIX,cdn.giftcardpro.app
@@ -961,6 +960,7 @@ DOMAIN-SUFFIX,cdn.kobo.com
 DOMAIN-SUFFIX,cdn.langshop.app
 DOMAIN-SUFFIX,cdn.leandata.com
 DOMAIN-SUFFIX,cdn.lemonsqueezy.com
+DOMAIN-SUFFIX,cdn.leonardo.ai
 DOMAIN-SUFFIX,cdn.lgrckt-in.com
 DOMAIN-SUFFIX,cdn.libravatar.org
 DOMAIN-SUFFIX,cdn.lihkg.com
@@ -1913,6 +1913,7 @@ DOMAIN-SUFFIX,fonts.gsma.com
 DOMAIN-SUFFIX,fonts.loox.io
 DOMAIN-SUFFIX,fonts.mailerlite.com
 DOMAIN-SUFFIX,fonts.net
+DOMAIN-SUFFIX,fonts.reown.com
 DOMAIN-SUFFIX,fonts.sony.net
 DOMAIN-SUFFIX,fonts.svc.ui.com
 DOMAIN-SUFFIX,fonts.twitter.com
@@ -1928,7 +1929,6 @@ DOMAIN-SUFFIX,fourhoi.com
 DOMAIN-SUFFIX,framercdn.com
 DOMAIN-SUFFIX,framerstatic.com
 DOMAIN-SUFFIX,framerusercontent.com
-DOMAIN-SUFFIX,frames-commandbar-prod.commandbar.com
 DOMAIN-SUFFIX,freeshippingbar.herokuapp.com
 DOMAIN-SUFFIX,front-resource.fs.com
 DOMAIN-SUFFIX,frontapp.com
@@ -3542,10 +3542,10 @@ DOMAIN-SUFFIX,s3-figma-force-client-reloads-production.figma.com
 DOMAIN-SUFFIX,s3-figma-plugin-images-production-sig.figma.com
 DOMAIN-SUFFIX,s3-symbol-logo.tradingview.com
 DOMAIN-SUFFIX,s3.2233778.xyz
-DOMAIN-SUFFIX,s3.aaaaa.io
 DOMAIN-SUFFIX,s3.acg.mn
 DOMAIN-SUFFIX,s3.anilist.co
 DOMAIN-SUFFIX,s3.arkjp.net
+DOMAIN-SUFFIX,s3.beta.coinmarketcap.com
 DOMAIN-SUFFIX,s3.c.im
 DOMAIN-SUFFIX,s3.coinmarketcap.com
 DOMAIN-SUFFIX,s3.cointelegraph.com
@@ -3867,7 +3867,6 @@ DOMAIN-SUFFIX,static.arxiv.org
 DOMAIN-SUFFIX,static.assetlab.io
 DOMAIN-SUFFIX,static.assets-stash.eet-china.com
 DOMAIN-SUFFIX,static.axios.com
-DOMAIN-SUFFIX,static.bad.news
 DOMAIN-SUFFIX,static.bangumi.moe
 DOMAIN-SUFFIX,static.bbc.co.uk
 DOMAIN-SUFFIX,static.bbci.co.uk
