@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-21T14:00:17Z
-# Total:   6703
+# Updated: 2026-08-22T14:00:18Z
+# Total:   6704
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -3464,6 +3464,7 @@ DOMAIN-SUFFIX,resource-accel.fs.com
 DOMAIN-SUFFIX,resource.akashic.coe.nicovideo.jp
 DOMAIN-SUFFIX,resource.fs.com
 DOMAIN-SUFFIX,resource.logitech.com
+DOMAIN-SUFFIX,resource.logitechg.com
 DOMAIN-SUFFIX,resource.tnlmediagene.com
 DOMAIN-SUFFIX,resource.video.nimg.jp
 DOMAIN-SUFFIX,resources-cache.prod.sketch.com
