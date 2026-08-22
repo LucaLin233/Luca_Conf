@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-20T14:00:02Z
-# Total:   20113
+# Updated: 2026-08-22T14:00:02Z
+# Total:   20114
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -3358,6 +3358,7 @@ DOMAIN-SUFFIX,brepolis.net
 DOMAIN-SUFFIX,brewmp.com
 DOMAIN-SUFFIX,briantreepayments.net
 DOMAIN-SUFFIX,briantreepayments.tv
+DOMAIN-SUFFIX,briarproject.org
 DOMAIN-SUFFIX,bridgebim.com
 DOMAIN-SUFFIX,bridgestone
 DOMAIN-SUFFIX,bridgestone-asiapacific.com
