@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-22T14:00:18Z
-# Total:   6704
+# Updated: 2026-08-23T14:00:17Z
+# Total:   6709
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -1519,6 +1519,7 @@ DOMAIN-SUFFIX,content.powerapps.com
 DOMAIN-SUFFIX,content.presspage.com
 DOMAIN-SUFFIX,content.wepik.com
 DOMAIN-SUFFIX,content001.bet365.com
+DOMAIN-SUFFIX,contentful-asset-proxy.sd.indazn.com
 DOMAIN-SUFFIX,contenthub.allstate.com
 DOMAIN-SUFFIX,contents-thumbnail2.fc2.com
 DOMAIN-SUFFIX,contents.fc2.com
@@ -1593,6 +1594,7 @@ DOMAIN-SUFFIX,dataplane.rudderstack.com
 DOMAIN-SUFFIX,datocms-assets.com
 DOMAIN-SUFFIX,daumcdn.net
 DOMAIN-SUFFIX,david-dm.org
+DOMAIN-SUFFIX,dazn-content-proxy.sd.indazn.com
 DOMAIN-SUFFIX,db.onlinewebfonts.com
 DOMAIN-SUFFIX,dc-cdn.cdw.com
 DOMAIN-SUFFIX,dc-telemetry.net
@@ -1836,6 +1838,7 @@ DOMAIN-SUFFIX,fbcdn.net
 DOMAIN-SUFFIX,fbsbx.com
 DOMAIN-SUFFIX,fdn.gsmarena.com
 DOMAIN-SUFFIX,fdn2.gsmarena.com
+DOMAIN-SUFFIX,fe.indazn.com
 DOMAIN-SUFFIX,featureassets.org
 DOMAIN-SUFFIX,featureflags.netlify.com
 DOMAIN-SUFFIX,feedercdn.com
@@ -2215,6 +2218,7 @@ DOMAIN-SUFFIX,image.civitai.com
 DOMAIN-SUFFIX,image.cnbcfm.com
 DOMAIN-SUFFIX,image.comicbz.com
 DOMAIN-SUFFIX,image.crisp.chat
+DOMAIN-SUFFIX,image.discovery.indazn.com
 DOMAIN-SUFFIX,image.dooo.ng
 DOMAIN-SUFFIX,image.email.microsoftemail.com
 DOMAIN-SUFFIX,image.freepik.com
@@ -3911,6 +3915,7 @@ DOMAIN-SUFFIX,static.cracked.sh
 DOMAIN-SUFFIX,static.crunchyroll.com
 DOMAIN-SUFFIX,static.crypto.com
 DOMAIN-SUFFIX,static.dash.cloudflare.com
+DOMAIN-SUFFIX,static.dazndn.com
 DOMAIN-SUFFIX,static.deepl.com
 DOMAIN-SUFFIX,static.domains
 DOMAIN-SUFFIX,static.doujins.com
