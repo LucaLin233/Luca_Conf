@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-22T14:00:02Z
-# Total:   20114
+# Updated: 2026-08-23T14:00:02Z
+# Total:   20117
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -8379,6 +8379,7 @@ DOMAIN-SUFFIX,hipaa6020.com
 DOMAIN-SUFFIX,hiporn.net
 DOMAIN-SUFFIX,hippyhillscomix.com
 DOMAIN-SUFFIX,hipzoom.net
+DOMAIN-SUFFIX,historylines.net
 DOMAIN-SUFFIX,historyofdota.com
 DOMAIN-SUFFIX,historyofdota.net
 DOMAIN-SUFFIX,historyofdota.org
@@ -10177,6 +10178,7 @@ DOMAIN-SUFFIX,kismia.com
 DOMAIN-SUFFIX,kisscos.net
 DOMAIN-SUFFIX,kissjav.com
 DOMAIN-SUFFIX,kiwibrowser.com
+DOMAIN-SUFFIX,kiwix.org
 DOMAIN-SUFFIX,kk.stream
 DOMAIN-SUFFIX,kkbox.com
 DOMAIN-SUFFIX,kkddsex7.com
@@ -11024,6 +11026,7 @@ DOMAIN-SUFFIX,mcdonalds.com.hk
 DOMAIN-SUFFIX,mcdonalds.hk
 DOMAIN-SUFFIX,mcdonaldsapps.com
 DOMAIN-SUFFIX,mcdonaldsarabia.com
+DOMAIN-SUFFIX,mceindex.com
 DOMAIN-SUFFIX,mcisco.com
 DOMAIN-SUFFIX,mcpeaceofmind.com
 DOMAIN-SUFFIX,mcrouter.net
