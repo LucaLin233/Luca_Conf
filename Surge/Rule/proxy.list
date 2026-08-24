@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-23T14:00:02Z
-# Total:   20117
+# Updated: 2026-08-24T14:00:01Z
+# Total:   20118
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -1394,6 +1394,7 @@ DOMAIN-SUFFIX,api-extractor.com
 DOMAIN-SUFFIX,api.moomoobull.com
 DOMAIN-SUFFIX,api.news
 DOMAIN-SUFFIX,api.palworldgame.com
+DOMAIN-SUFFIX,api.shuaiapi.com
 DOMAIN-SUFFIX,apibay.org
 DOMAIN-SUFFIX,apigee.com
 DOMAIN-SUFFIX,apina.biz
