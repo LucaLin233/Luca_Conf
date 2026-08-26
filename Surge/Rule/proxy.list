@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-24T14:00:01Z
-# Total:   20118
+# Updated: 2026-08-26T14:00:02Z
+# Total:   20122
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -703,6 +703,7 @@ DOMAIN-SUFFIX,adguard.com
 DOMAIN-SUFFIX,adguard.info
 DOMAIN-SUFFIX,adguard.org
 DOMAIN-SUFFIX,adguardaccount.com
+DOMAIN-SUFFIX,adguardaccount.net
 DOMAIN-SUFFIX,adguardcdn.com
 DOMAIN-SUFFIX,adguardvpn.com
 DOMAIN-SUFFIX,adhelpnews.com
@@ -1376,6 +1377,7 @@ DOMAIN-SUFFIX,aoaou.iillii.net
 DOMAIN-SUFFIX,aodahl.com
 DOMAIN-SUFFIX,aofriend.com
 DOMAIN-SUFFIX,aokwholesale.net
+DOMAIN-SUFFIX,aolcdn.com
 DOMAIN-SUFFIX,aomedia.org
 DOMAIN-SUFFIX,aomiwang.com
 DOMAIN-SUFFIX,aorus.com
@@ -13017,6 +13019,7 @@ DOMAIN-SUFFIX,oursexgames.com
 DOMAIN-SUFFIX,ourshdtv.com
 DOMAIN-SUFFIX,ourshemales.com
 DOMAIN-SUFFIX,ourtv.hk
+DOMAIN-SUFFIX,ouryahoo.com
 DOMAIN-SUFFIX,out-app-purchase.com
 DOMAIN-SUFFIX,outdoorpublicsex.com
 DOMAIN-SUFFIX,outingsapp.com
@@ -18958,6 +18961,7 @@ DOMAIN-SUFFIX,yahooapis.com
 DOMAIN-SUFFIX,yahoodns.net
 DOMAIN-SUFFIX,yahoofinance.com
 DOMAIN-SUFFIX,yahoohealth.com
+DOMAIN-SUFFIX,yahooinc.com
 DOMAIN-SUFFIX,yahoomusic.com
 DOMAIN-SUFFIX,yahoosandbox.com
 DOMAIN-SUFFIX,yahoosportsbook.com
