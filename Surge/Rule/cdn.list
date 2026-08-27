@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-23T14:00:17Z
-# Total:   6709
+# Updated: 2026-08-27T14:00:19Z
+# Total:   6710
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -2033,6 +2033,7 @@ DOMAIN-SUFFIX,gsp4-cn.ls.apple.com
 DOMAIN-SUFFIX,gsp4-cn.ls.apple.com.edgekey.net.globalredir.akadns.net
 DOMAIN-SUFFIX,gsp5-cn.ls.apple.com
 DOMAIN-SUFFIX,gsp85-cn-ssl.ls.apple.com
+DOMAIN-SUFFIX,gspe11-2-cn-ssl.ls.apple.com
 DOMAIN-SUFFIX,gspe19-2-cn-ssl.ls-apple.com.akadns.net
 DOMAIN-SUFFIX,gspe19-2-cn-ssl.ls.apple.com
 DOMAIN-SUFFIX,gspe19-cn-ssl.ls.apple.com
