@@ -1,6 +1,6 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-27T14:00:19Z
+# Updated: 2026-08-28T14:00:19Z
 # Total:   6710
 
 DOMAIN,res-1.cdn.office.net
@@ -1457,7 +1457,6 @@ DOMAIN-SUFFIX,cms.typenetwork.com
 DOMAIN-SUFFIX,cms.worldpokerdeals.com
 DOMAIN-SUFFIX,cmtycdn.powerpages.microsoft.com
 DOMAIN-SUFFIX,cn-smp-paymentservices.apple.com
-DOMAIN-SUFFIX,cn.windowssearch.com
 DOMAIN-SUFFIX,cnbetacdn.com
 DOMAIN-SUFFIX,code.benco.io
 DOMAIN-SUFFIX,code.buywithprime.amazon.com
@@ -3436,6 +3435,7 @@ DOMAIN-SUFFIX,reasoningtheory.net
 DOMAIN-SUFFIX,rebound.postmarkapp.com
 DOMAIN-SUFFIX,rechargecdn.com
 DOMAIN-SUFFIX,recharts.org
+DOMAIN-SUFFIX,reconvert-cdn.com
 DOMAIN-SUFFIX,redcdn.net
 DOMAIN-SUFFIX,redd.it
 DOMAIN-SUFFIX,redditmedia.com
