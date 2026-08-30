@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-28T14:00:19Z
-# Total:   6710
+# Updated: 2026-08-30T14:00:18Z
+# Total:   6718
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -1606,6 +1606,7 @@ DOMAIN-SUFFIX,dditscdn.com
 DOMAIN-SUFFIX,ddpic.info
 DOMAIN-SUFFIX,dejavu.apple.com
 DOMAIN-SUFFIX,delegated-ipfs.dev
+DOMAIN-SUFFIX,delivery.twentythree.com
 DOMAIN-SUFFIX,dellcdn.com
 DOMAIN-SUFFIX,demo.unified-streaming.com
 DOMAIN-SUFFIX,demotiles.maplibre.org
@@ -1853,6 +1854,7 @@ DOMAIN-SUFFIX,file1.hkepc.net
 DOMAIN-SUFFIX,filecunhua.top
 DOMAIN-SUFFIX,files.armorgames.com
 DOMAIN-SUFFIX,files.bbci.co.uk
+DOMAIN-SUFFIX,files.blocktempo.ai
 DOMAIN-SUFFIX,files.buildwithfern.com
 DOMAIN-SUFFIX,files.gempages.net
 DOMAIN-SUFFIX,files.gitbook.io
@@ -1965,6 +1967,7 @@ DOMAIN-SUFFIX,gateway.scarf.sh
 DOMAIN-SUFFIX,gateway.serph.network
 DOMAIN-SUFFIX,gauthstatic.com
 DOMAIN-SUFFIX,gayzyimage.com
+DOMAIN-SUFFIX,gazzettaobjects.it
 DOMAIN-SUFFIX,gcr.si
 DOMAIN-SUFFIX,gdb.rferl.org
 DOMAIN-SUFFIX,gdb.voanews.com
@@ -2214,6 +2217,7 @@ DOMAIN-SUFFIX,image-stgus.samsung.com
 DOMAIN-SUFFIX,image-us.samsung.com
 DOMAIN-SUFFIX,image.acg.lol
 DOMAIN-SUFFIX,image.ap-mail.org
+DOMAIN-SUFFIX,image.blocktempo.com
 DOMAIN-SUFFIX,image.civitai.com
 DOMAIN-SUFFIX,image.cnbcfm.com
 DOMAIN-SUFFIX,image.comicbz.com
@@ -3425,6 +3429,7 @@ DOMAIN-SUFFIX,raxcdn.com
 DOMAIN-SUFFIX,raygun.io
 DOMAIN-SUFFIX,rbds-static.redbull.com
 DOMAIN-SUFFIX,rbxcdn.com
+DOMAIN-SUFFIX,rcsobjects.it
 DOMAIN-SUFFIX,rdr.windy.com
 DOMAIN-SUFFIX,rdtcdn.com
 DOMAIN-SUFFIX,react.dev
@@ -4135,6 +4140,7 @@ DOMAIN-SUFFIX,static1.smartbear.co
 DOMAIN-SUFFIX,static1.squarespace.com
 DOMAIN-SUFFIX,static10.lottiefiles.com
 DOMAIN-SUFFIX,static2.avg.com
+DOMAIN-SUFFIX,static2.giroditalia.it
 DOMAIN-SUFFIX,static2.lottiefiles.com
 DOMAIN-SUFFIX,static2.onlyfans.com
 DOMAIN-SUFFIX,static2.sharepointonline.com
@@ -4559,6 +4565,7 @@ DOMAIN-SUFFIX,video-meta.humix.com
 DOMAIN-SUFFIX,video.bsky.app
 DOMAIN-SUFFIX,video.cdnbye.com
 DOMAIN-SUFFIX,video.dailymail.co.uk
+DOMAIN-SUFFIX,video.giroditalia.it
 DOMAIN-SUFFIX,video.missav.com
 DOMAIN-SUFFIX,video1.7mmtv.sx
 DOMAIN-SUFFIX,video2.7mmtv.sx
@@ -4838,6 +4845,7 @@ DOMAIN-SUFFIX,artfiles.org
 DOMAIN-SUFFIX,artifacts.electronjs.org
 DOMAIN-SUFFIX,artifacts.nixos.org
 DOMAIN-SUFFIX,artifacts.ui.com
+DOMAIN-SUFFIX,assets-tcpviewer.proxyman.com
 DOMAIN-SUFFIX,assets.dataflare.app
 DOMAIN-SUFFIX,assets1.xboxlive.com
 DOMAIN-SUFFIX,assets2.xboxlive.com
