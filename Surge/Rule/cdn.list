@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-30T14:00:18Z
-# Total:   6718
+# Updated: 2026-08-31T14:00:21Z
+# Total:   6724
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -785,6 +785,7 @@ DOMAIN-SUFFIX,cdn.camweara.com
 DOMAIN-SUFFIX,cdn.candid.org
 DOMAIN-SUFFIX,cdn.candu.ai
 DOMAIN-SUFFIX,cdn.candy.ai
+DOMAIN-SUFFIX,cdn.candycode.com
 DOMAIN-SUFFIX,cdn.casestudies.svc.ui.com
 DOMAIN-SUFFIX,cdn.casetify.com
 DOMAIN-SUFFIX,cdn.catch.dmm.co.jp
@@ -1268,6 +1269,8 @@ DOMAIN-SUFFIX,cdn2.stamped.io
 DOMAIN-SUFFIX,cdn2.suno.ai
 DOMAIN-SUFFIX,cdn2.sysgears.com
 DOMAIN-SUFFIX,cdn2.techbang.com
+DOMAIN-SUFFIX,cdn2.telegram.space
+DOMAIN-SUFFIX,cdn2.telesco.pe
 DOMAIN-SUFFIX,cdn2.ttloli.com
 DOMAIN-SUFFIX,cdn2.tubeteen18.com
 DOMAIN-SUFFIX,cdn2.turboviplay.cc
@@ -1282,6 +1285,8 @@ DOMAIN-SUFFIX,cdn3.iconfinder.com
 DOMAIN-SUFFIX,cdn3.onlyfans.com
 DOMAIN-SUFFIX,cdn3.stamped.io
 DOMAIN-SUFFIX,cdn3.sysgears.com
+DOMAIN-SUFFIX,cdn3.telegram.space
+DOMAIN-SUFFIX,cdn3.telesco.pe
 DOMAIN-SUFFIX,cdn3.tubeteen18.com
 DOMAIN-SUFFIX,cdn3.unrealengine.com
 DOMAIN-SUFFIX,cdn4.apple-mapkit.com
@@ -4653,6 +4658,7 @@ DOMAIN-SUFFIX,website-cdn.ipinfo.io
 DOMAIN-SUFFIX,website-files.com
 DOMAIN-SUFFIX,website-media.deel.com
 DOMAIN-SUFFIX,website-prod.cache.wpscdn.com
+DOMAIN-SUFFIX,websiteres.nmteam.xyz
 DOMAIN-SUFFIX,webstatic.chargebee.com
 DOMAIN-SUFFIX,widen.net
 DOMAIN-SUFFIX,widencdn.net
