@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-08-27T14:00:01Z
-# Total:   20123
+# Updated: 2026-08-31T14:00:01Z
+# Total:   20124
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -7480,6 +7480,7 @@ DOMAIN-SUFFIX,getgom.com
 DOMAIN-SUFFIX,geti2p.net
 DOMAIN-SUFFIX,getlantern.org
 DOMAIN-SUFFIX,getmalus.com
+DOMAIN-SUFFIX,getmonero.org
 DOMAIN-SUFFIX,getoutline.org
 DOMAIN-SUFFIX,getpaint.net
 DOMAIN-SUFFIX,getpersonas.com
