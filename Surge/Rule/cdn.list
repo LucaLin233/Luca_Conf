@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-08-31T14:00:21Z
-# Total:   6724
+# Updated: 2026-09-01T14:00:22Z
+# Total:   6725
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -1413,6 +1413,7 @@ DOMAIN-SUFFIX,claritystatic.azureedge.net
 DOMAIN-SUFFIX,claudeusercontent.com
 DOMAIN-SUFFIX,cldup.com
 DOMAIN-SUFFIX,clickup.marketlinc.com
+DOMAIN-SUFFIX,client-log-forwarder.1password.com
 DOMAIN-SUFFIX,clientflow.apple.com
 DOMAIN-SUFFIX,clientflow.apple.com.akadns.net
 DOMAIN-SUFFIX,clientmetrics-pa.googleapis.com
