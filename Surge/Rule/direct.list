@@ -1,6 +1,6 @@
 # Rules Merger - VPS edition
 # Name:    direct
-# Updated: 2026-09-01T14:00:20Z
+# Updated: 2026-09-02T14:00:18Z
 # Total:   139016
 
 DOMAIN,asusrouter.com
@@ -139005,7 +139005,7 @@ IP-CIDR6,2a12:cb41:1300::/44
 IP-CIDR6,2a12:cb41:13f0::/44
 IP-CIDR6,2a13:1801:180::/43
 IP-CIDR6,2a13:a5c3:f000::/40
-IP-CIDR6,2a14:4380::/29
+IP-CIDR6,2a14:4380::/30
 IP-CIDR6,2a14:5f00::/29
 IP-CIDR6,2a14:7580:d10::/44
 IP-CIDR6,2a14:7580:d20::/46
