@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-09-03T14:00:19Z
-# Total:   6729
+# Updated: 2026-09-05T06:49:45Z
+# Total:   6730
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -928,6 +928,7 @@ DOMAIN-SUFFIX,cdn.ifixit.com
 DOMAIN-SUFFIX,cdn.imageengine.io
 DOMAIN-SUFFIX,cdn.imago-images.com
 DOMAIN-SUFFIX,cdn.img.ly
+DOMAIN-SUFFIX,cdn.imgchest.com
 DOMAIN-SUFFIX,cdn.imgeng.in
 DOMAIN-SUFFIX,cdn.imghaste.com
 DOMAIN-SUFFIX,cdn.infoq.com
