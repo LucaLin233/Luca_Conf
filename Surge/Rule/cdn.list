@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    cdn
-# Updated: 2026-09-05T06:49:45Z
-# Total:   6730
+# Updated: 2026-09-06T14:00:17Z
+# Total:   6732
 
 DOMAIN,res-1.cdn.office.net
 DOMAIN,res-2.cdn.office.net
@@ -383,7 +383,6 @@ DOMAIN-SUFFIX,assets.squarespace.com
 DOMAIN-SUFFIX,assets.squarewebsites.org
 DOMAIN-SUFFIX,assets.st-note.com
 DOMAIN-SUFFIX,assets.stash.com
-DOMAIN-SUFFIX,assets.static-upwork.com
 DOMAIN-SUFFIX,assets.stickpng.com
 DOMAIN-SUFFIX,assets.stigg.io
 DOMAIN-SUFFIX,assets.streamlinehq.com
@@ -3223,6 +3222,7 @@ DOMAIN-SUFFIX,perf.hsforms.com
 DOMAIN-SUFFIX,permaweb.eu.org
 DOMAIN-SUFFIX,permaweb.io
 DOMAIN-SUFFIX,pg2dhpc3p5ec22g3.jkforum.net
+DOMAIN-SUFFIX,pgimgs.com
 DOMAIN-SUFFIX,pgl.yoyo.org
 DOMAIN-SUFFIX,pgw.udn.com.tw
 DOMAIN-SUFFIX,ph.langfuse.com
@@ -3861,6 +3861,7 @@ DOMAIN-SUFFIX,static-resource.np.community.playstation.net
 DOMAIN-SUFFIX,static-secure-uploads.ui.com
 DOMAIN-SUFFIX,static-sg-cdn.eporner.com
 DOMAIN-SUFFIX,static-sv.fc2.com
+DOMAIN-SUFFIX,static-upwork.com
 DOMAIN-SUFFIX,static-us.afterpay.com
 DOMAIN-SUFFIX,static-web-prod.skillshare.com
 DOMAIN-SUFFIX,static-web.grammarly.com
@@ -3989,6 +3990,7 @@ DOMAIN-SUFFIX,static.hosting.com
 DOMAIN-SUFFIX,static.hotjar.com
 DOMAIN-SUFFIX,static.hubspot.com
 DOMAIN-SUFFIX,static.hugedomains.com
+DOMAIN-SUFFIX,static.idp.sph.com.sg
 DOMAIN-SUFFIX,static.ietf.org
 DOMAIN-SUFFIX,static.ifunny.co
 DOMAIN-SUFFIX,static.incapsula.com
