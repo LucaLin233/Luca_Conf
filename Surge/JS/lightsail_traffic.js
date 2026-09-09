@@ -576,10 +576,7 @@ function notifyOveruse(groups) {
   const isDaily = mode === "daily";
   try {
     if (!ACCESS_KEY || !SECRET_KEY) {
-      if (isDaily) {
-        $notification.post("AWS Lightsail 流量日报", "查询失败", "缺少 ak / sk 参数");
-        return $done();
-      }
+      if (isDaily) return $done(); // 未配置密钥时日报静默跳过，避免每日骚扰
       return fail("缺少 ak / sk 参数");
     }
     if (isDaily && String(ARGS["daily-notify"] || "true").trim().toLowerCase() === "false") {
