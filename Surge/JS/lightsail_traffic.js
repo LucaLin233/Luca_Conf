@@ -3,8 +3,9 @@
 const ARGS = parseArgs($argument || "");
 const ACCESS_KEY = ARGS.ak || "";
 const SECRET_KEY = ARGS.sk || "";
-const REGIONS = String(ARGS.region || "ap-northeast-1")
-  .split(",")
+/* 模块参数用逗号分隔参数名，默认值里的多区域改用竖线或分号 */
+const REGIONS = String(ARGS.region || "ap-east-1|ap-northeast-1")
+  .split(/[,;|]/)
   .map((item) => item.trim())
   .filter(Boolean);
 const PANEL_TITLE = "AWS Lightsail";
@@ -285,17 +286,33 @@ function monthStartEpoch() {
   return Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1) / 1000);
 }
 
+/* 今日按北京时间日切 */
+function todayStartEpoch() {
+  const now = new Date();
+  const beijing = new Date(now.getTime() + 8 * 3600 * 1000);
+  const dayStart = Date.UTC(beijing.getUTCFullYear(), beijing.getUTCMonth(), beijing.getUTCDate());
+  return Math.floor((dayStart - 8 * 3600 * 1000) / 1000);
+}
+
+/* period 不能大于查询窗口，月初窗口不足一天时按窗口收缩 */
+function metricPeriod(startEpoch, endEpoch) {
+  const window = endEpoch - startEpoch;
+  if (window >= 86400) return 86400;
+  return Math.max(60, Math.floor(window / 60) * 60);
+}
+
 function getInstances(region) {
   return lightsail(region, "GetInstances", {}).then((response) => response.instances || []);
 }
 
-function getMetricSum(region, instanceName, metricName) {
+function getMetricSum(region, instanceName, metricName, startEpoch) {
+  const endEpoch = Math.floor(Date.now() / 1000);
   return lightsail(region, "GetInstanceMetricData", {
     instanceName,
     metricName,
-    period: 86400,
-    startTime: monthStartEpoch(),
-    endTime: Math.floor(Date.now() / 1000),
+    period: metricPeriod(startEpoch, endEpoch),
+    startTime: startEpoch,
+    endTime: endEpoch,
     unit: "Bytes",
     statistics: ["Sum"],
   }).then((response) => (response.metricData || []).reduce((total, point) => total + (point.sum || 0), 0));
@@ -339,6 +356,7 @@ function buildGroups(entries, bundleMap) {
         quotaBytes: 0,
         inBytes: 0,
         outBytes: 0,
+        todayBytes: 0,
         instances: [],
       });
     }
@@ -347,6 +365,7 @@ function buildGroups(entries, bundleMap) {
     group.quotaBytes += quotaGb * BYTES_PER_GB;
     group.inBytes += entry.inBytes;
     group.outBytes += entry.outBytes;
+    group.todayBytes += entry.todayBytes || 0;
     group.instances.push({
       name: instance.name,
       ip: String(instance.publicIpAddress || "").trim(),
@@ -362,7 +381,7 @@ function buildGroups(entries, bundleMap) {
   });
 }
 
-async function collectGroups() {
+async function collectGroups(withToday) {
   const entries = [];
   for (const region of REGIONS) {
     const instances = await getInstances(region);
@@ -375,13 +394,25 @@ async function collectGroups() {
     try { bundleMap = await getBundleMap(REGIONS[0]); } catch (_) { bundleMap = {}; }
   }
 
+  const monthStart = monthStartEpoch();
+  const todayStart = todayStartEpoch();
   await Promise.all(entries.map(async (entry) => {
     const [inBytes, outBytes] = await Promise.all([
-      getMetricSum(entry.region, entry.instance.name, "NetworkIn"),
-      getMetricSum(entry.region, entry.instance.name, "NetworkOut"),
+      getMetricSum(entry.region, entry.instance.name, "NetworkIn", monthStart),
+      getMetricSum(entry.region, entry.instance.name, "NetworkOut", monthStart),
     ]);
     entry.inBytes = inBytes;
     entry.outBytes = outBytes;
+    if (!withToday) return;
+    try {
+      const [todayIn, todayOut] = await Promise.all([
+        getMetricSum(entry.region, entry.instance.name, "NetworkIn", todayStart),
+        getMetricSum(entry.region, entry.instance.name, "NetworkOut", todayStart),
+      ]);
+      entry.todayBytes = todayIn + todayOut;
+    } catch (_) {
+      entry.todayBytes = 0;
+    }
   }));
 
   return buildGroups(entries, bundleMap);
@@ -421,6 +452,31 @@ function renderPanel(groups) {
       if (instance.geo) parts.push(instance.geo);
       lines.push(`    ${branch} ${parts.join(" · ")}`);
     });
+  });
+  return lines.join("\n");
+}
+
+/* ===== 每日日报 ===== */
+
+function dailySubtitle(groups) {
+  const used = groups.reduce((total, group) => total + group.usedBytes, 0);
+  const quota = groups.reduce((total, group) => total + group.quotaBytes, 0);
+  const percent = quota > 0 ? `（${((used / quota) * 100).toFixed(2)}%）` : "";
+  return `当月 ${formatBytes(used)} / ${formatBytes(quota)}${percent}`;
+}
+
+function renderDaily(groups) {
+  if (!groups.length) return "未找到 Lightsail 实例";
+
+  const lines = [];
+  groups.forEach((group, index) => {
+    if (index > 0) lines.push("");
+    const countSuffix = group.instances.length > 1 ? `（${group.instances.length} 个实例）` : "";
+    lines.push(`${regionLabel(group.region)} · ${group.bundleId}${countSuffix}`);
+    const quotaText = group.quotaBytes > 0 ? formatBytes(group.quotaBytes) : "未知";
+    const percentText = group.quotaBytes > 0 ? `${group.percent.toFixed(2)}%` : "--";
+    lines.push(`当月：${formatBytes(group.usedBytes)} / ${quotaText}（${percentText}）`);
+    lines.push(`今日：${formatBytes(group.todayBytes)}`);
   });
   return lines.join("\n");
 }
@@ -516,13 +572,36 @@ function notifyOveruse(groups) {
 }
 
 (async () => {
+  const mode = String(ARGS.mode || "panel").trim().toLowerCase();
+  const isDaily = mode === "daily";
   try {
-    if (!ACCESS_KEY || !SECRET_KEY) return fail("缺少 ak / sk 参数");
-    const groups = await collectGroups();
+    if (!ACCESS_KEY || !SECRET_KEY) {
+      if (isDaily) {
+        $notification.post("AWS Lightsail 流量日报", "查询失败", "缺少 ak / sk 参数");
+        return $done();
+      }
+      return fail("缺少 ak / sk 参数");
+    }
+    if (isDaily && String(ARGS["daily-notify"] || "true").trim().toLowerCase() === "false") {
+      return $done();
+    }
+
+    const groups = await collectGroups(isDaily);
+
+    if (isDaily) {
+      $notification.post("AWS Lightsail 流量日报", dailySubtitle(groups), renderDaily(groups));
+      return $done();
+    }
+
     if (IP_MODE !== "hide") await fillGeo(groups);
     notifyOveruse(groups);
     finish(renderPanel(groups));
   } catch (error) {
-    fail(String((error && error.message) || error));
+    const message = String((error && error.message) || error);
+    if (isDaily) {
+      $notification.post("AWS Lightsail 流量日报", "查询失败", message);
+      return $done();
+    }
+    fail(message);
   }
 })();
