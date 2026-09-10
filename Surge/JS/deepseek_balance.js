@@ -12,7 +12,9 @@ const PANEL_ICON_COLOR = /^[0-9a-fA-F]{6}$/.test(iconColorRaw) ? `#${iconColorRa
 const notifyText = String(ARGS.deepseek_notify_balance || "").trim();
 const notifyRaw = notifyText === "" ? NaN : Number(notifyText);
 const NOTIFY_BALANCE = Number.isFinite(notifyRaw) ? Math.max(0, notifyRaw) : 10;
-const WARN_BALANCE = 5;
+const warnText = String(ARGS.deepseek_warn_balance || "").trim();
+const warnRaw = warnText === "" ? NaN : Number(warnText);
+const WARN_BALANCE = Number.isFinite(warnRaw) ? Math.max(0, warnRaw) : 5;
 
 const API_URL = "https://api.deepseek.com/user/balance";
 const CURRENCY_SYMBOLS = { CNY: "¥", USD: "$" };
@@ -85,23 +87,25 @@ function renderPanel(json, infos) {
   if (json.is_available === false) lines.push("⚠️ 余额不足，API 调用已不可用");
   if (infos.length === 1) {
     const info = infos[0];
-    lines.push(`余额：${money(info.currency, info.total_balance)}`);
-    lines.push(`赠送：${money(info.currency, info.granted_balance)}`);
+    lines.push(`当前余额：${money(info.currency, info.total_balance)}`);
+    lines.push(`赠送金额：${money(info.currency, info.granted_balance)}`);
   } else {
     infos.forEach((info) => {
       lines.push(
-        `${info.currency}：${money(info.currency, info.total_balance)}` +
-        `（赠送 ${money(info.currency, info.granted_balance)}）`
+        `${info.currency}：当前余额 ${money(info.currency, info.total_balance)}` +
+        `（赠送金额 ${money(info.currency, info.granted_balance)}）`
       );
     });
   }
   lines.push(`查询时间：${formatTime()}`);
-  infos.forEach((info) => {
-    const amount = Number(info.total_balance);
-    if (Number.isFinite(amount) && amount < WARN_BALANCE) {
-      lines.push(`⚠️ 余额低于 ${currencySymbol(info.currency)}${WARN_BALANCE}，请及时充值`);
-    }
-  });
+  if (WARN_BALANCE > 0) {
+    infos.forEach((info) => {
+      const amount = Number(info.total_balance);
+      if (Number.isFinite(amount) && amount < WARN_BALANCE) {
+        lines.push(`⚠️ 余额低于 ${currencySymbol(info.currency)}${WARN_BALANCE}，请及时充值`);
+      }
+    });
+  }
   return lines.join("\n");
 }
 
@@ -149,8 +153,8 @@ function dailySubtitle(json, infos) {
 
 function renderDaily(infos) {
   return infos.map((info) => (
-    `${info.currency}：余额 ${money(info.currency, info.total_balance)}` +
-    `（赠送 ${money(info.currency, info.granted_balance)}）`
+    `${info.currency}：当前余额 ${money(info.currency, info.total_balance)}` +
+    `（赠送金额 ${money(info.currency, info.granted_balance)}）`
   )).join("\n");
 }
 
