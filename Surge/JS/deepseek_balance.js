@@ -1,4 +1,4 @@
-/* DeepSeek 余额信息面板：展示账户总余额与充值/赠送明细，支持低余额提醒。 */
+/* DeepSeek 余额信息面板：展示账户余额、赠送金额与查询时间，支持低余额提醒。 */
 
 const ARGS = parseArgs($argument || "");
 const API_KEY = ARGS.deepseek_key || "";
@@ -12,6 +12,7 @@ const PANEL_ICON_COLOR = /^[0-9a-fA-F]{6}$/.test(iconColorRaw) ? `#${iconColorRa
 const notifyText = String(ARGS.deepseek_notify_balance || "").trim();
 const notifyRaw = notifyText === "" ? NaN : Number(notifyText);
 const NOTIFY_BALANCE = Number.isFinite(notifyRaw) ? Math.max(0, notifyRaw) : 10;
+const WARN_BALANCE = 5;
 
 const API_URL = "https://api.deepseek.com/user/balance";
 const CURRENCY_SYMBOLS = { CNY: "¥", USD: "$" };
@@ -68,22 +69,39 @@ function fail(message) {
   finish(`❌ ${message}`, ERROR_ICON, ERROR_COLOR);
 }
 
+/* 12 小时制查询时间，手动格式化以兼容 JSCore */
+function formatTime() {
+  const date = new Date();
+  const pad = (number) => String(number).padStart(2, "0");
+  const hours = date.getHours();
+  const period = hours < 12 ? "AM" : "PM";
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(hour12)}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ${period}`;
+}
+
 function renderPanel(json, infos) {
   const lines = [];
   if (json.is_available === false) lines.push("⚠️ 余额不足，API 调用已不可用");
   if (infos.length === 1) {
     const info = infos[0];
     lines.push(`余额：${money(info.currency, info.total_balance)}`);
-    lines.push(`充值：${money(info.currency, info.topped_up_balance)}`);
     lines.push(`赠送：${money(info.currency, info.granted_balance)}`);
   } else {
     infos.forEach((info) => {
       lines.push(
         `${info.currency}：${money(info.currency, info.total_balance)}` +
-        `（充值 ${money(info.currency, info.topped_up_balance)} / 赠送 ${money(info.currency, info.granted_balance)}）`
+        `（赠送 ${money(info.currency, info.granted_balance)}）`
       );
     });
   }
+  lines.push(`查询时间：${formatTime()}`);
+  infos.forEach((info) => {
+    const amount = Number(info.total_balance);
+    if (Number.isFinite(amount) && amount < WARN_BALANCE) {
+      lines.push(`⚠️ 余额低于 ${currencySymbol(info.currency)}${WARN_BALANCE}，请及时充值`);
+    }
+  });
   return lines.join("\n");
 }
 
@@ -132,7 +150,7 @@ function dailySubtitle(json, infos) {
 function renderDaily(infos) {
   return infos.map((info) => (
     `${info.currency}：余额 ${money(info.currency, info.total_balance)}` +
-    `（充值 ${money(info.currency, info.topped_up_balance)} / 赠送 ${money(info.currency, info.granted_balance)}）`
+    `（赠送 ${money(info.currency, info.granted_balance)}）`
   )).join("\n");
 }
 

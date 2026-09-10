@@ -1,5 +1,5 @@
 #!name=DeepSeek 余额信息
-#!desc=展示 DeepSeek API 账户总余额与充值/赠送明细；支持自定义查询间隔、低余额提醒和每日日报
+#!desc=展示 DeepSeek API 账户余额、赠送金额与查询时间；支持自定义查询间隔、低余额提醒和每日日报
 #!category=System
 
 #!arguments=deepseek_key,deepseek_query_interval:3600,deepseek_notify_balance:10,deepseek_daily_notify:true,deepseek_icon:yensign.circle,deepseek_icon_color:4D6BFE
