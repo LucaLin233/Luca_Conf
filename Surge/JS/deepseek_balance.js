@@ -11,7 +11,7 @@ const PANEL_ICON_COLOR = /^[0-9a-fA-F]{6}$/.test(iconColorRaw) ? `#${iconColorRa
 /* 参数留空时 Number("") 为 0，会静默关闭提醒，故空值按未配置处理 */
 const notifyText = String(ARGS.deepseek_notify_balance || "").trim();
 const notifyRaw = notifyText === "" ? NaN : Number(notifyText);
-const NOTIFY_BALANCE = Number.isFinite(notifyRaw) ? Math.max(0, notifyRaw) : 10;
+const NOTIFY_BALANCE = Number.isFinite(notifyRaw) ? Math.max(0, notifyRaw) : 5;
 const warnText = String(ARGS.deepseek_warn_balance || "").trim();
 const warnRaw = warnText === "" ? NaN : Number(warnText);
 const WARN_BALANCE = Number.isFinite(warnRaw) ? Math.max(0, warnRaw) : 5;
