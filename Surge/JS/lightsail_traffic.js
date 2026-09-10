@@ -431,8 +431,6 @@ function renderPanel(groups) {
     const quotaText = group.quotaBytes > 0 ? formatBytes(group.quotaBytes) : "未知";
     const percentText = group.quotaBytes > 0 ? `${group.percent.toFixed(2)}%` : "--";
     lines.push(`流量情况：${formatBytes(group.usedBytes)} / ${quotaText}（${percentText}）`);
-    lines.push(`入站流量：${formatBytes(group.inBytes)}`);
-    lines.push(`出站流量：${formatBytes(group.outBytes)}`);
 
     if (group.instances.length === 1) {
       const instance = group.instances[0];
