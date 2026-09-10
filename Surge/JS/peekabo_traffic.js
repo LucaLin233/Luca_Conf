@@ -1,4 +1,4 @@
-/* Peekabo 流量信息面板：展示已用/总流量、到期日期、剩余时间。 */
+/* Peekabo 流量信息面板：展示已用/总流量（含百分比）、到期日期、剩余时间。 */
 
 const ARGS = parseArgs($argument || "");
 const API_TOKEN = ARGS.token;
@@ -120,8 +120,9 @@ function fail(message) {
     const daysLeft = Math.max(0, Math.ceil(remainingMs / 86400000));
     notifyExpiring(daysLeft, expireTimestamp);
 
+    const percent = (used / total) * 100;
     finish([
-      `流量情况：${formatBytes(used)} / ${formatBytes(total)}`,
+      `流量情况：${formatBytes(used)} / ${formatBytes(total)}（${percent.toFixed(2)}%）`,
       `到期日期：${formatDate(expireTimestamp)}`,
       `剩余时间：${formatRemaining(remainingMs)}`,
     ].join("\n"));
