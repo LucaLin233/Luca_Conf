@@ -8,7 +8,20 @@ controller commands that are not all shown by `-h`.
 
 > Minis adaptation: this command catalog is synchronized from the Surge-bundled Skill. In Minis, `/usr/local/bin/surge-cli` connects directly to Surge iOS External Controller. Use this section's adapted invocation rules; the remaining command semantics are upstream documentation and platform restrictions still apply.
 
-### 1.1 Basic format
+### 1.1 Controller protocol requirements
+
+执行前核对协议门槛，不满足或未知时不得直接执行；`surge-cli --raw version` 可读当前协议。
+
+| 命令 / 功能 | 最低协议 |
+|---|---|
+| `rule`、`dns`、`http probe`、`security ban` | ≥20 |
+| `geoip`、性能 / 规则使用 / 虚拟 IP dump、`benchmark rule-matching` | ≥22 |
+| `vmnet`（macOS only） | ≥23 |
+| `plugin`（macOS only）、`restart-engine` | ≥24 |
+
+已验证组合：Surge iOS 5.22.0（Controller 5.102.0 build 3830）/ Protocol 25，兼容旧 JSON `argv` 请求，客户端已对齐 macOS 6.9.0 build 12250 文本编码。
+
+### 1.2 Basic format
 
 ```bash
 surge-cli [--remote host:port] [--password-stdin] [--raw] <command> [args...]

@@ -1,5 +1,21 @@
 # Upstream Source and Synchronization
 
+## Maintenance scripts
+
+执行安装、验收、打包或上游同步前先读本节；完成后按「Acceptance」核对再交付。
+
+| 脚本 | 用途 | 备注 |
+|---|---|---|
+| `scripts/install.sh` | 安装本 Skill 到目标环境 | |
+| `scripts/acceptance.sh` | 只读验收：核对命令可用性、凭据来源与参考文件完整性 | 不产生写操作 |
+| `scripts/package_release.py` | 打包分享 | 禁止打包凭据、profile、抓包、请求正文、数据库与运行输出 |
+| `scripts/sync_upstream.sh` | 拉取上游快照 | 同步后**人工合并**，不盲目覆盖本 `SKILL.md` |
+
+## Acceptance
+
+- 安装/同步后核对：`SKILL.md` 与 `references/manifest` 指向的参考文件齐全、命令可执行、凭据仅来自环境变量。
+- 版本或平台变化后重跑 `scripts/acceptance.sh`，异常先 `surge-cli --raw version` 核对协议。
+
 ## Current snapshot
 
 Synchronized from the Surge Skill bundled on the user's Mac mini on 2026-09-02:

@@ -29,17 +29,14 @@ metadata:
 
 ## 3. 配置工作流
 
-检查：
-- 核验 section、行语法、选项值、最低版本与平台限制，以及引用关系（规则策略、组成员、MITM/Rewrite/Script hostname、远程资源格式）。
-- 检查规则顺序与 `FINAL`、DNS 循环/绕过、模块 `%APPEND%`/`%INSERT%`、脚本全部 `$done()` 路径与无关数据收集。
-- 配置语法手册入口：`references/manual-index.md`。
+检查：核验 section、行语法、选项值、最低版本与平台限制，以及引用关系（规则策略、组成员、MITM/Rewrite/Script hostname、远程资源格式）；检查规则顺序与 `FINAL`、DNS 循环/绕过、模块 `%APPEND%`/`%INSERT%`、脚本全部 `$done()` 路径与无关数据收集。配置语法手册入口：`references/manual-index.md`。
 
 修改与验证：
 - 只改必需内容、不改变原路由意图；返回完整文件或精确 patch 并标明插入位置；模块保持单一目的、可逆，说明覆盖/插入/追加行为与 MITM、脚本等前置条件。
 - 无 Controller 时：导入/应用 → 检查 parser warning → 复现问题 → 从请求查看器确认 matched rule 与 policy。
 - `--check <path>` 上传指定 Profile 到 Surge 官方 Beta 验证服务（联网，非本地解析器）；不得自动上传当前 Profile，上传前告知用户、必要时先验证脱敏副本。
 - 给出验证与回滚方法。
-- 模块开发约定（Luca_Conf）：参数统一 `<面板名>_` 前缀、下划线；`#!arguments` 逗号分隔，默认值不得含逗号（多值用 `|`），占位符 `{{{name}}}`。
+- 模块开发约定：参数统一 `<面板名>_` 前缀、下划线；`#!arguments` 逗号分隔，默认值不得含逗号（多值用 `|`），占位符 `{{{name}}}`。
 
 ## 4. CLI 工作流
 
@@ -68,8 +65,8 @@ surge-cli profile diff
 
 变更、流与隧道：
 - `set` 支持批量 key-path（`<nil>`/`(null)` 表示 null），变更前后读取最窄相关状态：`surge-cli --raw set ProxyMode=2`、`surge-cli --raw set ProxyGroupSelection.Proxy=HK`。
-- `diagnostics`、`watch speed`、`log watch`、带宽测试与加密 benchmark 可能返回多帧：有限流读至 `hasMore=false`，长期订阅限时后停止。
-- Tailscale/WireGuard：从 `dump policy` 取 `lineHash` 后运行 `proxy-runtime-status <line-hash>`，优先检查握手、底层策略、Exit Node、DERP、peer path 与近期错误。加密 benchmark 测设备本地性能，不是网络带宽。
+- 多帧命令（`diagnostics`、各 `watch`、带宽与加密 benchmark）必须限流读至 `hasMore=false`，长期订阅限时后停止；事件字段与判读见 `references/command-reference.md`。
+- Tailscale/WireGuard：`dump policy` 取 `lineHash` → `proxy-runtime-status <line-hash>`；先查握手、底层策略、Exit Node、DERP 与 peer path，加密 benchmark 是设备本地性能、不是网络带宽。
 - 完整命令与 key-path：`references/command-reference.md`。
 
 平台限制（macOS only）：
@@ -78,18 +75,19 @@ surge-cli profile diff
 
 ## 5. 兼容性与回退
 
-- 协议要求：`rule`/`dns`/`http probe`/`security ban` ≥20；`geoip`、性能/规则使用/虚拟 IP dump、`benchmark rule-matching` ≥22；`vmnet` ≥23（macOS）；`plugin` ≥24（macOS）；`restart-engine` ≥24。
-- 已在 Surge iOS 5.22.0（Controller 5.102.0 build 3830）/ Protocol 25 验证认证、CRLF 文本命令、JSON Lines 与 `restart-engine`；Protocol 25 兼容旧 JSON `argv` 请求，客户端已对齐 macOS 6.9.0 build 12250 文本编码。遇异常先 `surge-cli --raw version` 核对。
-- Controller 不可用、要求 `/v1/*` 或需 Prometheus 指标时：读 `references/http-api.md`、用 `scripts/surge_ios.py`（默认 `127.0.0.1:6171`，密钥仅从 `SURGE_HTTP_API_KEY` 取；iOS 5.22.0 指标端点 `/v1/metrics` 需 `X-Key`；`stop` 需显式危险确认）。
-- 测试未写入 Profile 的新节点：用 `scripts/test_policy_descriptor.py`（经 `POST /v1/scripting/evaluate` 传 `policy-descriptor`，不改配置）。描述符含密码/PSK，只从受限文件或 stdin 读取。本机 Surge 被 Suspend 时可能返回 `EOF`/超时；仅在用户明确指定后把 `SURGE_HTTP_API_BASE` 指向可信局域网实例。
+执行前先核对协议门槛，不满足或未知时不得直接执行：`rule`/`dns`/`http probe`/`security ban` ≥20；`geoip`、性能/规则使用/虚拟 IP dump、`benchmark rule-matching` ≥22；`vmnet` ≥23（macOS）；`plugin` ≥24（macOS）；`restart-engine` ≥24。已知验证点：Surge iOS 5.22.0（Controller 5.102.0 build 3830）/ Protocol 25，兼容旧 JSON `argv` 请求，已对齐 macOS 6.9.0 build 12250 文本编码；异常先 `surge-cli --raw version` 核对。
+
+Controller 不可用、需要 `/v1/*` 接口或 Prometheus 指标时走 HTTP API 回退：先确认目标端点（默认本机 `127.0.0.1:6171`，仅在用户明确指定后才指向可信局域网实例）、认证方式与所需 `X-Key`，再执行；同样适用危险操作的再次确认，`stop` 需显式危险确认。用法与脚本见 `references/http-api.md` 与 `scripts/surge_ios.py`。
+
+测试未写入 Profile 的新节点：用 `scripts/test_policy_descriptor.py`（经 `POST /v1/scripting/evaluate` 传 `policy-descriptor`，不改配置）。描述符含密码/PSK，只从受限文件或 stdin 读取。本机 Surge 被 Suspend 时可能返回 `EOF`/超时。
 
 ## 6. 维护与交付
 
-- 安装 `scripts/install.sh`；只读验收 `scripts/acceptance.sh`；打包分享 `scripts/package_release.py`；上游同步 `scripts/sync_upstream.sh`（按需读 `references/SOURCE.md`；同步后人工合并，不盲目覆盖本 `SKILL.md`）。
+- 安装、只读验收、打包分享与上游同步脚本清单及用法见 `references/SOURCE.md`；执行上述任一操作前先读该文件，同步后人工合并，不盲目覆盖本 `SKILL.md`。
 - 禁止打包凭据、profile、抓包、请求正文、数据库与运行输出。
 - 模块推送：凭据不入命令行；用临时 git-cred-helper 从 `$GH_TOKEN` 读取，用后立即删除；推送结果以 `gh api` 回读为准（raw CDN 缓存 2–7 分钟）。
 - 输出默认含：**结论、修改/操作、验证、回滚/注意**；实际执行与仅建议的命令必须区分。
 
 ## 参考按需加载
 
-- `source-routing.md` 官方资料路由；`command-reference.md` 命令与 key-path；`manual-index.md` 配置语法手册入口；`controller-cli.md` Minis 客户端与凭据；`http-api.md` HTTP API 回退；`plugin-authoring.md` Plugin 开发；`SOURCE.md` 上游同步；`upstream-SKILL.md` 上游快照（仅参考）。以上均在 `references/`。
+`source-routing.md` 官方资料路由；`command-reference.md` 命令、key-path 与协议要求；`manual-index.md` 配置语法手册；`controller-cli.md` 客户端与凭据；`http-api.md` HTTP API 回退；`plugin-authoring.md` Plugin 开发；`SOURCE.md` 上游同步与脚本清单；`upstream-SKILL.md` 上游快照。以上均在 `references/`。
