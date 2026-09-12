@@ -1,0 +1,6 @@
+interface:
+  display_name: "Surge"
+  short_description: "配置、审查并安全控制 Surge"
+  default_prompt: "Use this skill for Surge configuration and runtime work. Default to iOS, inspect actual artifacts or baseline state first, apply the smallest safe change, and verify afterward."
+  icon_large: "./assets/logo.png"
+  icon_small: "./assets/logo.png"
