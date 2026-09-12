@@ -7,7 +7,7 @@
 * ...
 * [Script]
 * #节点检测
-* ipcheck = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/Ipcheck.js
+* ipcheck = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/ipcheck.js
 */
 
 let url = "http://ip-api.com/json/?lang=zh-CN"

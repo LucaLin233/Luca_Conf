@@ -1,0 +1,11 @@
+# 统一换行：仓库内文件一律 LF，避免规则文件出现 CRLF 漂移
+* text=auto eol=lf
+
+# 二进制文件不做换行转换与行级 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.zip binary
+*.tar.gz binary

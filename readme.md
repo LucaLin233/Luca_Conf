@@ -37,18 +37,18 @@
 - 吃透以上几点，对于QuantumultX的初步玩法想必你已经掌握得差不多了，请往下看。
 
 ### 脚本食用（长按复制链接食用即可）
-- [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/Get_cookies.conf)
+- [Get Cookies远程重写](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/get_cookies.conf)
   - 如果你使用的是ztxtop的看看赚，请添加他的看看赚CK重写：[中青看看赚](https://raw.githubusercontent.com/ztxtop/x/main/rewrite-zqkkz.plugin)
   - 补充中青抓body重写：[中青抓body](https://raw.githubusercontent.com/LucaLin233/ScriptCopy_Maomaoyu0319/main/TaskConf/youth/qx_youthread.txt)
 
   **食用方式如下（在下图中的框框内填入重写链接）**
   
-  ![](https://github.com/LucaLin233/Proxy/blob/main/docs/Qx_rewrite_guide.png)
-- [Gallery仓库](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/Gallery.json)
+  ![](https://github.com/LucaLin233/Proxy/blob/main/docs/qx_rewrite_guide.png)
+- [Gallery仓库](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/gallery.json)
   
   **食用方式如下（在下图标记的+号中填入链接仓库链接）**
   
-  ![](https://github.com/LucaLin233/Proxy/blob/main/docs/Qx_gallery_guide.jpg)
+  ![](https://github.com/LucaLin233/Proxy/blob/main/docs/qx_gallery_guide.jpg)
 - 已引用的大佬脚本如下：
   - By[@sunert](https://github.com/Sunert)
     - 中青系列
@@ -62,10 +62,10 @@
 - Hello World大佬Github地址：[Hello World](https://github.com/JDHelloWorld/jd_scripts)
 
 ### 一些APP JS重写规则（如同上方的Get Cookies重写使用方式一致，长按复制链接食用即可）
-- [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/Apps_js.conf)
+- [JS重写规则](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/apps_js.conf)
 - 具体内容自己体验或查看库内代码说明，懂的都懂
 ### 新增Emby分流规则
-[Emby分流](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/Emby.list)
+[Emby分流](https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/emby.list)
 - 包含以下服务器：
   - 普拉斯AGA服务器（中国电信直连使用）
   - CF公益服(仅限挂代理观看)

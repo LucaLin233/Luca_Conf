@@ -9,5 +9,5 @@
 DeepSeek 余额信息 = title="DeepSeek",content="正在获取...",style=info,script-name=deepseek-balance-panel,update-interval={{{deepseek_query_interval}}}
 
 [Script]
-deepseek-balance-panel = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/Deepseek_balance.js,timeout=30,argument="deepseek_key={{{deepseek_key}}}&deepseek_notify_balance={{{deepseek_notify_balance}}}&deepseek_warn_balance={{{deepseek_warn_balance}}}&deepseek_icon={{{deepseek_icon}}}&deepseek_icon_color={{{deepseek_icon_color}}}"
-deepseek-balance-daily = type=cron,cronexp="50 23 * * *",wake-system=true,timeout=30,script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/Deepseek_balance.js,argument="deepseek_key={{{deepseek_key}}}&deepseek_daily_notify={{{deepseek_daily_notify}}}&mode=daily"
+deepseek-balance-panel = type=generic,script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/deepseek_balance.js,timeout=30,argument="deepseek_key={{{deepseek_key}}}&deepseek_notify_balance={{{deepseek_notify_balance}}}&deepseek_warn_balance={{{deepseek_warn_balance}}}&deepseek_icon={{{deepseek_icon}}}&deepseek_icon_color={{{deepseek_icon_color}}}"
+deepseek-balance-daily = type=cron,cronexp="50 23 * * *",wake-system=true,timeout=30,script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/deepseek_balance.js,argument="deepseek_key={{{deepseek_key}}}&deepseek_daily_notify={{{deepseek_daily_notify}}}&mode=daily"
