@@ -8,11 +8,11 @@
 ## 支持范围
 
 - **Surge（iOS / macOS）**：模块 `surge/modules/*.sgmodule`、脚本 `surge/scripts/*.js`、分流规则 `surge/rules/*.list`；
-- **Quantumult X**：重写 `quantumultx/get_cookies.conf` 与 `quantumultx/apps_js.conf`、资源仓库 `quantumultx/gallery.json`、分流规则 `quantumultx/emby.list`；
+- **Quantumult X**：重写 `quantumultx/get_cookies.conf` 与 `quantumultx/apps_js.conf`、分流规则 `quantumultx/emby.list`；
 - **Sub-Store**：`substore/rename.js`，节点名称与地区文案规范化脚本（同目录附测试）；
 - **代理服务端**：`systemd/*.service` 单元模板（Snell、Hysteria2，Debian/Ubuntu）；
 - **面板脚本**：需要较新的 Surge 版本（模块参数 `#!arguments` 需 Surge 5 及以上）；DeepSeek、CCH、AWS Lightsail、Peekabo 四个面板还需要各自服务的 API Key 或 Token，仅保存在 Surge 本地模块参数中；
-- 本仓库**不提供** Quantumult X 的完整配置文件，只提供重写、Gallery 与分流规则；
+- 本仓库**不提供** Quantumult X 的完整配置文件，只提供重写与分流规则；
 - 所有文件通过 `raw.githubusercontent.com` 直接引用，仓库不提供额外加速方式。
 
 ## 目录结构
@@ -24,7 +24,7 @@ Proxy/
 │   ├── scripts/     Surge 脚本（.js）
 │   ├── rules/       分流规则（.list；legacy/ 为 2022 年遗留版本）
 │   └── data/        Telegram MTProto DC 配置
-├── quantumultx/     Quantumult X 重写、Gallery 与规则
+├── quantumultx/     Quantumult X 重写与规则
 ├── substore/        Sub-Store 脚本
 ├── icons/           策略组图标
 ├── docs/            README 引用的教程截图
@@ -65,17 +65,12 @@ RULE-SET,https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/rules/dir
 ```text
 远程重写    https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/get_cookies.conf
 JS 重写     https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/apps_js.conf
-资源仓库    https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/gallery.json
 Emby 分流   https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/emby.list
 ```
 
 远程重写：在“重写 → 引用”中填入链接。
 
 ![](https://github.com/LucaLin233/Proxy/blob/main/docs/qx_rewrite_guide.png)
-
-资源仓库：在“资源 → 引用”中填入 Gallery 链接。
-
-![](https://github.com/LucaLin233/Proxy/blob/main/docs/qx_gallery_guide.jpg)
 
 使用前建议先掌握 Quantumult X 的配置导入方式：
 
@@ -163,7 +158,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 ## 图标与文档
 
 - `icons/`：策略组图标，可直接作为 `icon-url` 引用；
-- `docs/`：README 中两张 Quantumult X 操作截图，`other/` 内为其它图片。
+- `docs/`：README 引用的 Quantumult X 操作截图，`other/` 内为其它图片。
 
 ## 功能重叠与选择
 
