@@ -131,7 +131,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 | `lightsail_traffic.js` | AWS Lightsail 流量信息面板 | 自建 |
 | `peekabo_traffic.js` | Peekabo 流量信息面板 | 自建 |
 | `function.js` | Surge 功能开关与运行状态检测面板 | 参考 chaizia/Profiles |
-| `ip_check.js` | 当前节点详情面板 | 感谢 @congcong0806 |
+| `ip_check.js` | 当前节点详情面板 | 感谢 @congcong |
 | `sub_info.js` | 订阅流量与到期信息面板 | 模板来自 @mieqq |
 | `reload.js` | 配置重载面板 | Author: Pysta |
 | `rename.js` | 节点名称按地区字典规范化 | 感谢 @bluman / @qwerzl |
