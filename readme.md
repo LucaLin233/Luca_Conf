@@ -84,9 +84,7 @@ Emby 分流   https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumult
 - [@limbopro 的节点筛选正则](https://limbopro.xyz/archives/11131.html)；
 - 分流规则推荐 [@blackmatrix7 的规则仓库](https://github.com/blackmatrix7/ios_rule_script)。
 
-`get_cookies.conf` 抓取的是中青系列 Cookie。如果使用 ztxtop 的看看赚，另需添加
-[中青看看赚重写](https://raw.githubusercontent.com/ztxtop/x/main/rewrite-zqkkz.plugin)；
-[中青抓 body 重写](https://raw.githubusercontent.com/LucaLin233/ScriptCopy_Maomaoyu0319/main/TaskConf/youth/qx_youthread.txt)。
+`get_cookies.conf` 目前包含饿了么每日任务、今日头条极速版与聚看点的 Cookie 抓取。
 
 上述 Cookie 类重写只用于自用抓取，请勿用于商业化或批量使用。
 
@@ -188,7 +186,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 
 发现编写错误或有建议欢迎提 issue；**因个人使用方式不当导致的脚本不可用，不予处理**。
 
-脚本引用与整合过程中参考过以下作者的工作：[@sunert](https://github.com/Sunert)（中青系列）、
+脚本引用与整合过程中参考过以下作者的工作：[@sunert](https://github.com/Sunert)、
 [@age174](https://github.com/age174)（招招试药）、[@NobyDa](https://github.com/NobyDa)（京东多合一签到）、
 [@blackmatrix7](https://github.com/blackmatrix7)（滴滴出行系列）。京东系列脚本可配合
 [Hello World 的仓库](https://github.com/JDHelloWorld/jd_scripts) 使用。
