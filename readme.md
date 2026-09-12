@@ -128,7 +128,6 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 | `rename.js` | 节点名称按地区字典规范化 | 感谢 @bluman / @qwerzl |
 | `stream_check.js` | 奈飞、油管解锁检测 | 上游通用脚本 |
 | `stream_all.js` | 流媒体全量解锁检测 | 上游通用脚本 |
-| `covid19.js` | 疫情数据查询面板（数据源为腾讯新闻接口，可能已停更） | 上游通用脚本 |
 
 `panels` 与四个独立面板模块引用的就是前四个脚本，单独引用脚本时请注意与模块二选一。
 

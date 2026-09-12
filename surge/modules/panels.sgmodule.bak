@@ -1,5 +1,5 @@
-#!name=Panels
-#!desc=一个Luca自用的信息面板模块
+#!name=Panels (备份)
+#!desc=一个Luca自用的信息面板模块（旧版备份，面板脚本与现行 panels 模块不同，仅供参照）
 [Panel]
 #节点检测
 ipcheck = script-name=ipcheck, title="节点详情", content="请刷新", style=info, update-interval=1
@@ -7,8 +7,6 @@ ipcheck = script-name=ipcheck, title="节点详情", content="请刷新", style=
 配置重载 = title=配置重载,content=配置重载,style=info,script-name=配置重载,update-interval=-1
 # 刷新DNS
 刷新DNS = script-name=刷新DNS,update-interval=1
-# 疫情查询
-covid19 = script-name=covid19,title=疫情检测,content=请刷新,update-interval=3600
 # D+检测
 disney_check = script-name=disney_check,title=Disney+ 解锁检测,style=alert,content=请刷新面板,update-interval=21600
 # nf检测
@@ -25,8 +23,6 @@ ipcheck = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/L
 配置重载=script-path=https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/scripts/reload.js,type=generic
 # 刷新DNS
 刷新DNS = type=generic,timeout=3,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/flushDNS.js,argument=title=刷新DNS缓存&icon=repeat.circle.fill&color=#FF9F0A&server=false
-# 新冠疫情查询
-covid19 = type=generic,script-path=https://raw.githubusercontent.com/smartmimi/conf/master/surge/covid19.js
 # D+解锁检测
 disney_check = type=generic,script-path=https://gist.githubusercontent.com/Hyseen/729fc4c3ac28c3f2e7c4a832d81780f3/raw/disney_check.js?version=1637153952428
 # nf检测
