@@ -1,7 +1,7 @@
 # Rules Merger - VPS edition
 # Name:    proxy
-# Updated: 2026-09-09T14:00:02Z
-# Total:   20137
+# Updated: 2026-09-12T14:00:02Z
+# Total:   20138
 
 DOMAIN,1password.drift.click
 DOMAIN,a4e8s8k3.map2.ssl.hwcdn.net
@@ -14275,6 +14275,7 @@ DOMAIN-SUFFIX,qqbs.asia
 DOMAIN-SUFFIX,qqbs.work
 DOMAIN-SUFFIX,qstatus.com
 DOMAIN-SUFFIX,qt-project.org
+DOMAIN-SUFFIX,quakemachinex.com
 DOMAIN-SUFFIX,qualcomm-email.com
 DOMAIN-SUFFIX,qualcomm-inc.com
 DOMAIN-SUFFIX,qualcomm.com
