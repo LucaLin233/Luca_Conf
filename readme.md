@@ -8,7 +8,7 @@
 ## 支持范围
 
 - **Surge（iOS / macOS）**：模块 `surge/modules/*.sgmodule`、脚本 `surge/scripts/*.js`、分流规则 `surge/rules/*.list`；
-- **Quantumult X**：重写 `quantumultx/get_cookies.conf` 与 `quantumultx/apps_js.conf`、分流规则 `quantumultx/emby.list`；
+- **Quantumult X**：重写 `quantumultx/apps_js.conf`、分流规则 `quantumultx/emby.list`；
 - **Sub-Store**：`substore/rename.js`，节点名称与地区文案规范化脚本（同目录附测试）；
 - **代理服务端**：`systemd/*.service` 单元模板（Snell、Hysteria2，Debian/Ubuntu）；
 - **面板脚本**：需要较新的 Surge 版本（模块参数 `#!arguments` 需 Surge 5 及以上）；DeepSeek、CCH、AWS Lightsail、Peekabo 四个面板还需要各自服务的 API Key 或 Token，仅保存在 Surge 本地模块参数中；
@@ -63,12 +63,11 @@ RULE-SET,https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/rules/dir
 ### Quantumult X
 
 ```text
-远程重写    https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/get_cookies.conf
 JS 重写     https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/apps_js.conf
 Emby 分流   https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/emby.list
 ```
 
-远程重写：在“重写 → 引用”中填入链接。
+JS 重写：在“重写 → 引用”中填入链接。
 
 ![](https://github.com/LucaLin233/Proxy/blob/main/docs/qx_rewrite_guide.png)
 
@@ -78,8 +77,6 @@ Emby 分流   https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumult
 - [@KOP-XIAO 的懒人配置](https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/QuantumultX_Profiles.conf)；
 - [@limbopro 的节点筛选正则](https://limbopro.xyz/archives/11131.html)；
 - 分流规则推荐 [@blackmatrix7 的规则仓库](https://github.com/blackmatrix7/ios_rule_script)。
-
-`get_cookies.conf` 目前包含饿了么每日任务、今日头条极速版与聚看点的 Cookie 抓取。
 
 上述 Cookie 类重写只用于自用抓取，请勿用于商业化或批量使用。
 
