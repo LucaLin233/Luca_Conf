@@ -8,7 +8,7 @@
 ## 支持范围
 
 - **Surge（iOS / macOS）**：模块 `surge/modules/*.sgmodule`、脚本 `surge/scripts/*.js`、分流规则 `surge/rules/*.list`；
-- **Quantumult X**：重写 `quantumultx/apps_js.conf`、分流规则 `quantumultx/emby.list`；
+- **Quantumult X**：重写 `quantumultx/apps_js.conf`；
 - **Sub-Store**：`substore/rename.js`，节点名称与地区文案规范化脚本（同目录附测试）；
 - **代理服务端**：`systemd/*.service` 单元模板（Snell、Hysteria2，Debian/Ubuntu）；
 - **面板脚本**：需要较新的 Surge 版本（模块参数 `#!arguments` 需 Surge 5 及以上）；DeepSeek、CCH、AWS Lightsail、Peekabo 四个面板还需要各自服务的 API Key 或 Token，仅保存在 Surge 本地模块参数中；
@@ -24,7 +24,7 @@ Proxy/
 │   ├── scripts/     Surge 脚本（.js）
 │   ├── rules/       分流规则（.list；legacy/ 为 2022 年遗留版本）
 │   └── data/        Telegram MTProto DC 配置
-├── quantumultx/     Quantumult X 重写与规则
+├── quantumultx/     Quantumult X 重写
 ├── substore/        Sub-Store 脚本
 ├── icons/           策略组图标
 ├── docs/            README 引用的教程截图
@@ -64,7 +64,6 @@ RULE-SET,https://raw.githubusercontent.com/LucaLin233/Proxy/main/surge/rules/dir
 
 ```text
 JS 重写     https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/apps_js.conf
-Emby 分流   https://raw.githubusercontent.com/LucaLin233/Proxy/main/quantumultx/emby.list
 ```
 
 JS 重写：在“重写 → 引用”中填入链接。
@@ -148,9 +147,9 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 | `lan.list`、`stun.list` | 局域网直连、STUN 协议 | 手工维护 |
 | `legacy/proxy.list`、`legacy/direct.list` | 2022 年遗留版本，仅存档 | 不再维护 |
 
-`quantumultx/emby.list` 为同一批 Emby 服务器在 Quantumult X 下的版本，覆盖：普拉斯 AGA
-（中国电信可直连）、CF 公益服（需挂代理）、普拉斯备用服（4 个）、Exflux、Nexitally/AmyTelecom
-（共用，仅限美国特定节点）、Skicat、Godetia（猫熊和 3DM）。
+`surge/rules/emby_filter.list` 覆盖的 Emby 服务器：普拉斯 AGA（中国电信可直连）、CF 公益服
+（需挂代理）、普拉斯备用服（4 个）、Exflux、Nexitally/AmyTelecom（共用，仅限美国特定节点）、
+Skicat、Godetia（猫熊和 3DM）。
 
 ## 图标与文档
 
@@ -164,7 +163,6 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 | 全部面板 | `panels.sgmodule` | 四个独立面板模块 |
 | 单个面板 | 对应的独立模块 | `panels.sgmodule` |
 | 只做 APP 重写 | `app_js.sgmodule` | 与本仓库其它重写模块重复的部分 |
-| Surge 分流 | `surge/rules/*.list` | `quantumultx/emby.list`（语法不同，仅 QX 使用） |
 
 ## 高风险与注意事项
 
