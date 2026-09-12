@@ -193,10 +193,10 @@ sudo systemctl daemon-reload && sudo systemctl enable --now snell
 
 特别感谢以下脚本作者，以及整合时参考的作者（排名不分先后，如有遗漏万分抱歉，请联系我加上）：
 
-- **脚本**：[@NobyDa](https://github.com/NobyDa)、[@chavyleung](https://github.com/chavyleung)、[@Sunert](https://github.com/Sunert)、[@lxk0301](https://github.com/lxk0301)、[@blackmatrix7](https://github.com/blackmatrix7)、[@WowYiJiu](https://github.com/WowYiJiu)、[@ZhiYi-N](https://github.com/ZhiYi-N)、[@zhiyi](https://github.com/Ariszy)、@ziye（防止大佬再被封，故不贴出）、[@age174](https://github.com/age174)、[@yangtingxiao](https://github.com/yangtingxiao)、[@ChuheGit](https://github.com/ChuheGit)、[@zZPiglet](https://github.com/zZPiglet)、[@whyour](https://github.com/whyour)、[@mieqq](https://github.com/mieqq)、[@congcong0806](https://github.com/congcong0806)、@bluman / @qwerzl；
+- **脚本**：[@NobyDa](https://github.com/NobyDa)、[@chavyleung](https://github.com/chavyleung)、[@Sunert](https://github.com/Sunert)、[@lxk0301](https://github.com/lxk0301)、[@blackmatrix7](https://github.com/blackmatrix7)、[@WowYiJiu](https://github.com/WowYiJiu)、[@zhiyi](https://github.com/Ariszy)、@ziye（防止大佬再被封，故不贴出）、[@age174](https://github.com/age174)、[@yangtingxiao](https://github.com/yangtingxiao)、[@ChuheGit](https://github.com/ChuheGit)、[@zZPiglet](https://github.com/zZPiglet)、[@whyour](https://github.com/whyour)、[@mieqq](https://github.com/mieqq)、@bluman / @qwerzl；
 - **配置文件**：[@KOP-XIAO](https://github.com/KOP-XIAO)；
 - **分流规则**：[@blackmatrix7](https://github.com/blackmatrix7)；
-- **图标**：[@shoujiqiyuan](https://github.com/shoujiqiyuan)、[@erdongchanyo](https://github.com/erdongchanyo)、[@Orz-3](https://github.com/Orz-3)、[@ChuheGit](https://github.com/ChuheGit)、[@58xinian](https://github.com/58xinian)、@ziye（防止大佬再被封，故不贴出）。
+- **图标**：[@shoujiqiyuan](https://github.com/shoujiqiyuan)、[@erdongchanyo](https://github.com/erdongchanyo)、[@Orz-3](https://github.com/Orz-3)、[@ChuheGit](https://github.com/ChuheGit)、@ziye（防止大佬再被封，故不贴出）。
 
 如果这里的说明和整合的脚本对你的使用有帮助，欢迎点个 Star，感激不尽 :gift_heart:
 
